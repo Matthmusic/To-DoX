@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Minus, Square, X } from 'lucide-react';
+import iconPng from '../assets/icon.png';
 
 export function TitleBar() {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -39,7 +40,7 @@ export function TitleBar() {
       {/* Logo et titre */}
       <div className="flex items-center gap-2 px-3">
         <img
-          src="/src/assets/icon.png"
+          src={iconPng}
           alt="To-DoX"
           className="h-4 w-4"
         />
