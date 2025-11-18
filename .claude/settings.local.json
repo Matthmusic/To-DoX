@@ -9,7 +9,10 @@
       "Bash(gh run list:*)",
       "Bash(npm run build:*)",
       "Bash(npm run build:electron:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(dir:*)",
+      "Bash(nul)",
+      "Bash(node create-icon.js:*)"
     ],
     "deny": [],
     "ask": []
