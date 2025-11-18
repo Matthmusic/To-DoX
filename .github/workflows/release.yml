@@ -6,12 +6,8 @@ on:
       - 'v*.*.*'
 
 jobs:
-  release:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+  release-windows:
+    runs-on: windows-latest
 
     steps:
       - name: Checkout code
@@ -35,56 +31,20 @@ jobs:
           npm run build
 
       - name: Build Electron app (Windows)
-        if: matrix.os == 'windows-latest'
         run: |
           cd smart-todo
           npm run electron:build:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Electron app (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          cd smart-todo
-          npm run electron:build:mac
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Electron app (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cd smart-todo
-          npm run electron:build:linux
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload artifacts (Windows)
-        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: windows-installer
           path: smart-todo/release/*.exe
 
-      - name: Upload artifacts (macOS)
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-installer
-          path: |
-            smart-todo/release/*.dmg
-            smart-todo/release/*.zip
-
-      - name: Upload artifacts (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-installer
-          path: |
-            smart-todo/release/*.AppImage
-            smart-todo/release/*.deb
-
   create-release:
-    needs: release
+    needs: release-windows
     runs-on: ubuntu-latest
 
     steps:
@@ -96,10 +56,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/windows-installer/*
-            artifacts/macos-installer/*
-            artifacts/linux-installer/*
+          files: artifacts/windows-installer/*
           draft: false
           prerelease: false
           generate_release_notes: true
