@@ -1,18 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Minus, Square, X } from 'lucide-react';
 
-declare global {
-  interface Window {
-    electronAPI?: {
-      windowMinimize: () => Promise<void>;
-      windowMaximize: () => Promise<boolean>;
-      windowClose: () => Promise<void>;
-      windowIsMaximized: () => Promise<boolean>;
-      isElectron: boolean;
-    };
-  }
-}
-
 export function TitleBar() {
   const [isMaximized, setIsMaximized] = useState(false);
 

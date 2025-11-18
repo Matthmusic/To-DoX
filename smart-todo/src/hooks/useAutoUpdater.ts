@@ -20,6 +20,10 @@ interface ElectronAPI {
   onDownloadProgress: (callback: (progress: DownloadProgress) => void) => void;
   onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => void;
   onUpdateError: (callback: (error: { message: string }) => void) => void;
+  windowMinimize: () => Promise<void>;
+  windowMaximize: () => Promise<boolean>;
+  windowClose: () => Promise<void>;
+  windowIsMaximized: () => Promise<boolean>;
   isElectron: boolean;
 }
 
