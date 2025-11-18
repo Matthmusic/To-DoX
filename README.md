@@ -34,14 +34,28 @@ Une application Kanban minimaliste et intelligente pour la gestion de tâches av
 - **Tailwind CSS** pour un design moderne et responsive
 - **Lucide React** pour les icônes
 - **localStorage API** pour la persistance
+- **Electron** pour l'application desktop multi-plateforme
+- **electron-updater** pour les mises à jour automatiques
 
 ## Installation
 
-### Prérequis
-- Node.js 16+
+### Téléchargement de l'application (recommandé)
+
+Téléchargez la dernière version de To-DoX directement depuis la [page des releases](https://github.com/Matthmusic/To-DoX/releases) :
+
+- **Windows** : Téléchargez le fichier `.exe` et exécutez l'installateur
+- **macOS** : Téléchargez le fichier `.dmg`, montez-le et glissez To-DoX dans Applications
+- **Linux** : Téléchargez le fichier `.AppImage` ou `.deb` selon votre distribution
+
+L'application vérifie automatiquement les mises à jour au démarrage et vous notifie quand une nouvelle version est disponible.
+
+### Installation pour développeurs
+
+#### Prérequis
+- Node.js 20+
 - npm ou yarn
 
-### Étapes
+#### Étapes
 
 1. Clonez le dépôt :
 ```bash
@@ -54,19 +68,51 @@ cd To-DoX/smart-todo
 npm install
 ```
 
-3. Lancez le serveur de développement :
+3. Lancez l'application en mode développement :
+
+**Version web** :
 ```bash
 npm run dev
+# Ouvrez http://localhost:5173 dans votre navigateur
 ```
 
-4. Ouvrez votre navigateur à l'adresse indiquée (généralement `http://localhost:5173`)
+**Version Electron** :
+```bash
+npm run dev:electron
+# L'application desktop s'ouvre automatiquement
+```
 
 ## Scripts disponibles
 
-- `npm run dev` : Lance le serveur de développement avec hot-reload
-- `npm run build` : Compile l'application pour la production
-- `npm run preview` : Prévisualise la version de production
+### Développement
+- `npm run dev` : Lance le serveur de développement web avec hot-reload
+- `npm run dev:electron` : Lance l'application Electron en mode développement
 - `npm run lint` : Vérifie le code avec ESLint
+
+### Production
+- `npm run build` : Compile l'application web pour la production
+- `npm run build:electron` : Compile l'application Electron (toutes plateformes)
+- `npm run electron:build:win` : Build pour Windows et publie sur GitHub
+- `npm run electron:build:mac` : Build pour macOS et publie sur GitHub
+- `npm run electron:build:linux` : Build pour Linux et publie sur GitHub
+- `npm run preview` : Prévisualise la version de production web
+
+## Créer une release
+
+Pour publier une nouvelle version :
+
+1. Mettez à jour la version dans [smart-todo/package.json](smart-todo/package.json)
+2. Commitez les changements
+3. Créez un tag Git et poussez-le :
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Le workflow GitHub Actions se déclenche automatiquement et :
+- Build l'application pour Windows, macOS et Linux
+- Crée une release GitHub avec les installateurs
+- Configure l'auto-update pour les utilisateurs existants
 
 ## Utilisation
 
@@ -104,6 +150,14 @@ npm run dev
 ### Exporter/Importer
 - **Export** : Cliquez sur "Export JSON" pour télécharger vos données
 - **Import** : Cliquez sur "Import JSON" et sélectionnez un fichier JSON précédemment exporté
+
+### Mises à jour automatiques (version desktop)
+
+L'application Electron vérifie automatiquement les mises à jour au démarrage :
+- Une notification apparaît quand une nouvelle version est disponible
+- Vous pouvez télécharger et installer la mise à jour en un clic
+- L'installation se fait au redémarrage de l'application
+- Le système utilise GitHub Releases de manière sécurisée
 
 ## Personnalisation
 

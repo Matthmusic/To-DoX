@@ -6,3 +6,9 @@ Thumbs.db
 smart-todo/node_modules/
 smart-todo/dist/
 smart-todo/.vite/
+smart-todo/release/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.snap

@@ -1,18 +1,32 @@
 {
-  "name": "smart-todo",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "to-dox",
+  "productName": "To-DoX",
+  "description": "Application Kanban minimaliste et intelligente pour la gestion de tâches",
+  "version": "1.0.0",
+  "author": "Matthmusic <matthieu@maurelfamily.fr>",
+  "homepage": "https://github.com/Matthmusic/To-DoX",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Matthmusic/To-DoX.git"
+  },
+  "main": "electron.js",
+  "type": "commonjs",
   "scripts": {
     "dev": "vite",
+    "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "build": "tsc -b && vite build",
+    "build:electron": "npm run build && electron-builder",
+    "electron:build:win": "npm run build && electron-builder --win --publish always",
+    "electron:build:mac": "npm run build && electron-builder --mac --publish always",
+    "electron:build:linux": "npm run build && electron-builder --linux --publish always",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "lucide-react": "^0.464.0",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "lucide-react": "^0.464.0"
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
@@ -22,6 +36,11 @@
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
     "babel-plugin-react-compiler": "^19.1.0-rc.3",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^39.2.1",
+    "electron-builder": "^26.0.12",
+    "electron-updater": "^6.6.2",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
@@ -30,6 +49,85 @@
     "tailwindcss": "^3.4.15",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.45.0",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "wait-on": "^9.0.3"
+  },
+  "build": {
+    "appId": "com.matthmusic.todox",
+    "productName": "To-DoX",
+    "copyright": "Copyright © 2025 Matthmusic",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron.js",
+      "preload.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "src/assets",
+        "to": "assets",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/assets/icon.png",
+      "publisherName": "Matthmusic"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "src/assets/icon.png",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "src/assets/icon.png",
+      "category": "Office"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Matthmusic",
+      "repo": "To-DoX"
+    }
   }
 }

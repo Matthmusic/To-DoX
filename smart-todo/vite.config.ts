@@ -10,4 +10,13 @@ export default defineConfig({
       },
     }),
   ],
+  base: './', // Important pour Electron
+  server: {
+    port: 5173,
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    emptyOutDir: true,
+  },
 })
