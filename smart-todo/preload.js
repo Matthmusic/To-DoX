@@ -25,6 +25,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Utilitaires
   openFolder: (folderPath) => ipcRenderer.invoke('open-folder', folderPath),
 
+  // Contrôles de la fenêtre
+  windowMinimize: () => ipcRenderer.invoke('window-minimize'),
+  windowMaximize: () => ipcRenderer.invoke('window-maximize'),
+  windowClose: () => ipcRenderer.invoke('window-close'),
+  windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+
   // Vérifier si on est dans Electron
   isElectron: true
 });

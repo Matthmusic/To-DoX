@@ -1,9 +1,12 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, nativeTheme } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development';
 
 let mainWindow;
+
+// Forcer le thème dark
+nativeTheme.themeSource = 'dark';
 
 // Configuration de l'auto-updater
 autoUpdater.autoDownload = false;
@@ -16,6 +19,8 @@ function createWindow() {
     minWidth: 1200,
     minHeight: 700,
     backgroundColor: '#030513', // Fond dark mode par défaut
+    frame: false, // Enlève la barre de titre native
+    titleBarStyle: 'hidden',
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -157,4 +162,33 @@ ipcMain.handle('open-folder', async (event, folderPath) => {
   } catch (error) {
     return { success: false, error: error.message };
   }
+});
+
+// Contrôles de la fenêtre personnalisée
+ipcMain.handle('window-minimize', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+    return mainWindow.isMaximized();
+  }
+  return false;
+});
+
+ipcMain.handle('window-close', () => {
+  if (mainWindow) {
+    mainWindow.close();
+  }
+});
+
+ipcMain.handle('window-is-maximized', () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
 });
