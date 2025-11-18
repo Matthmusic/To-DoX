@@ -24,6 +24,7 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "electron-updater": "^6.6.2",
     "lucide-react": "^0.464.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"
@@ -125,7 +126,14 @@
     "publish": {
       "provider": "github",
       "owner": "Matthmusic",
-      "repo": "To-DoX"
+      "repo": "To-DoX",
+      "releaseType": "release"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     }
   }
 }

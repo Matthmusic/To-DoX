@@ -5,8 +5,11 @@ on:
     tags:
       - 'v*.*.*'
 
+permissions:
+  contents: write
+
 jobs:
-  release-windows:
+  release:
     runs-on: windows-latest
 
     steps:
@@ -25,40 +28,9 @@ jobs:
           cd smart-todo
           npm ci
 
-      - name: Build application
-        run: |
-          cd smart-todo
-          npm run build
-
-      - name: Build Electron app (Windows)
+      - name: Build and publish Electron app
         run: |
           cd smart-todo
           npm run electron:build:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload artifacts (Windows)
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-installer
-          path: smart-todo/release/*.exe
-
-  create-release:
-    needs: release-windows
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: artifacts/windows-installer/*
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

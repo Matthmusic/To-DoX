@@ -7,7 +7,9 @@
       "Bash(git push:*)",
       "Bash(git tag:*)",
       "Bash(gh run list:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(npm run build:electron:*)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
