@@ -12,6 +12,10 @@ jobs:
   release:
     runs-on: windows-latest
 
+    defaults:
+      run:
+        working-directory: smart-todo
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,13 +28,9 @@ jobs:
           cache-dependency-path: smart-todo/package-lock.json
 
       - name: Install dependencies
-        run: |
-          cd smart-todo
-          npm ci
+        run: npm ci
 
       - name: Build and publish Electron app
-        run: |
-          cd smart-todo
-          npm run electron:build:win
+        run: npm run electron:build:win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

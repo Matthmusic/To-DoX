@@ -20,8 +20,7 @@
     "electron:build:mac": "npm run build && electron-builder --mac --publish always",
     "electron:build:linux": "npm run build && electron-builder --linux --publish always",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "postinstall": "electron-builder install-app-deps"
+    "preview": "vite preview"
   },
   "dependencies": {
     "electron-updater": "^6.6.2",
@@ -57,7 +56,8 @@
     "productName": "To-DoX",
     "copyright": "Copyright © 2025 Matthmusic",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
     "files": [
       "dist/**/*",
@@ -83,7 +83,8 @@
           ]
         }
       ],
-      "icon": "src/assets/icon.png"
+      "icon": "src/assets/icon.png",
+      "requestedExecutionLevel": "asInvoker"
     },
     "mac": {
       "target": [
