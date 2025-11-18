@@ -15,6 +15,7 @@ function createWindow() {
     height: 900,
     minWidth: 1200,
     minHeight: 700,
+    backgroundColor: '#030513', // Fond dark mode par défaut
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
