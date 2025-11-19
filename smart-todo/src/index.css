@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -37,7 +37,7 @@ body {
 }
 
 select {
-  @apply appearance-none rounded-2xl border border-white/15 bg-[#0b1124] px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60;
+  @apply appearance-none rounded-2xl border border-white/15 bg-[#0b1124] px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A];
   background-image: linear-gradient(45deg, transparent 50%, #a5f3fc 50%),
     linear-gradient(135deg, #a5f3fc 50%, transparent 50%);
   background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 13px) calc(50% - 2px);
@@ -69,3 +69,4 @@ select::-ms-expand {
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
+

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertTriangle,
@@ -7,19 +7,21 @@ import {
   FolderOpen,
   Loader2,
   SearchCheck,
+  User,
+  MoreHorizontal,
 } from "lucide-react";
 import ToDoXLogo from "./assets/To Do X.svg";
 
 /**
- * Smart To‑Do — single-file React component
+ * Smart Toâ€‘Do â€” single-file React component
  * - Kanban colonnes: À faire, En cours, À réviser, ✅ Fait
  * - Ajout rapide (titre, projet, échéance, priorité)
- * - Indicateurs visuels: J- / En retard, badge "⚠ À relancer" si >3j sans mouvement en "En cours"
+ * - Indicateurs visuels: J- / En retard, badge "âš  À relancer" si >3j sans mouvement en "En cours"
  * - Filtres (recherche, projet, priorité, statut)
  * - Statistiques par projet (progress bar)
  * - Drag & drop natif entre colonnes
  * - Persistance localStorage + Export/Import JSON
- * - **NOUVEAU**: Lien vers le **dossier projet** (file://) via un mapping Projet → Chemin
+ * - **NOUVEAU**: Lien vers le **dossier projet** (file://) via un mapping Projet â†’ Chemin
  *   • Bouton "Ouvrir dossier" sur chaque tâche (si chemin défini)
  *   • Panneau "Dossiers projets" pour gérer les chemins par projet
  * - Aucune dépendance externe; Tailwind pour le style (fourni par l'environnement)
@@ -40,11 +42,6 @@ const PRIORITIES = [
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
-}
-
-function daysBetween(a, b) {
-  const ms = 1000 * 60 * 60 * 24;
-  return Math.floor((b - a) / ms);
 }
 
 /**
@@ -125,7 +122,7 @@ export default function SmartTodo() {
       },
       {
         id: uid(),
-        title: "Dossier DOE — schémas CFA",
+        title: "Dossier DOE â€” schémas CFA",
         project: "ACME-2025-001",
         due: addDaysISO(1),
         priority: "high",
@@ -407,7 +404,7 @@ export default function SmartTodo() {
   }
 
   function exportJSON() {
-    const raw = JSON.stringify({ tasks, directories, users });
+    const raw = JSON.stringify({ tasks, directories, projectHistory, users });
     const blob = new Blob([raw], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -427,6 +424,18 @@ export default function SmartTodo() {
         if (parsed?.tasks) setTasks(parsed.tasks);
         if (parsed?.directories) {
           setDirectories((prev) => ({ ...prev, ...parsed.directories }));
+        }
+        if (parsed?.projectHistory) {
+          setProjectHistory((prev) => {
+            // Fusionner l'historique en évitant les doublons
+            const merged = [...prev];
+            for (const project of parsed.projectHistory) {
+              if (!merged.includes(project)) {
+                merged.push(project);
+              }
+            }
+            return merged;
+          });
         }
         if (parsed?.users) {
           // Fusionner les utilisateurs importés avec les existants
@@ -463,7 +472,7 @@ export default function SmartTodo() {
               className="h-20 w-auto drop-shadow-[0_12px_40px_rgba(16,185,129,0.35)]"
             />
             <p className="text-sm text-gray-600 mt-1">
-              Kanban minimaliste • deadlines visuelles • auto‑flags d'inactivité (3j)
+              Kanban minimaliste • deadlines visuelles • autoâ€‘flags d'inactivité (3j)
             </p>
           </div>
           <div className="flex flex-wrap gap-2 md:justify-end">
@@ -473,7 +482,7 @@ export default function SmartTodo() {
             >
               Export JSON
             </button>
-            <label className="cursor-pointer rounded-2xl border border-white/20 px-4 py-2 text-center text-slate-200 transition hover:bg-white/10">
+            <label className="cursor-pointer rounded-2xl border border-white/20 px-4 py-2 text-center text-slate-200 transition hover:bg-[#1E3A8A]/60">
               Import JSON
               <input type="file" accept="application/json" className="hidden" onChange={onImport} />
             </label>
@@ -625,7 +634,10 @@ export default function SmartTodo() {
 function ProjectAutocomplete({ value, onChange, projectHistory, placeholder, className }) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const inputRef = useRef(null);
   const wrapperRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const [dropdownPosition, setDropdownPosition] = useState(null);
 
   const suggestions = useMemo(() => {
     if (!value) return projectHistory;
@@ -634,14 +646,49 @@ function ProjectAutocomplete({ value, onChange, projectHistory, placeholder, cla
   }, [value, projectHistory]);
 
   useEffect(() => {
+    if (!showSuggestions) return;
+
     function handleClickOutside(event) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
-        setShowSuggestions(false);
+      if (
+        wrapperRef.current?.contains(event.target) ||
+        dropdownRef.current?.contains(event.target)
+      ) {
+        return;
       }
+      setShowSuggestions(false);
+      setFocusedIndex(-1);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [showSuggestions]);
+
+  useEffect(() => {
+    if (!showSuggestions) {
+      setDropdownPosition(null);
+    }
+  }, [showSuggestions]);
+
+  useLayoutEffect(() => {
+    if (!showSuggestions) return;
+
+    function updatePosition() {
+      if (!inputRef.current) return;
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [showSuggestions]);
 
   function handleKeyDown(e) {
     if (!showSuggestions) return;
@@ -678,6 +725,7 @@ function ProjectAutocomplete({ value, onChange, projectHistory, placeholder, cla
   return (
     <div ref={wrapperRef} className="relative flex gap-1">
       <input
+        ref={inputRef}
         type="text"
         className={className}
         placeholder={placeholder}
@@ -689,30 +737,172 @@ function ProjectAutocomplete({ value, onChange, projectHistory, placeholder, cla
       <button
         type="button"
         onClick={clearField}
-        className="rounded-xl border border-white/20 bg-white/5 px-2 text-slate-100 transition hover:bg-white/10"
+        className="rounded-xl border border-white/20 bg-white/5 px-2 text-slate-100 transition hover:bg-[#1E3A8A]/60"
         title="Nouveau projet"
       >
         +
       </button>
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-auto rounded-2xl border border-white/15 bg-[#0b1124] shadow-2xl">
-          {suggestions.map((suggestion, idx) => (
-            <div
-              key={suggestion}
-              className={classNames(
-                "cursor-pointer px-3 py-2 text-sm text-slate-100 transition",
-                idx === focusedIndex
-                  ? "bg-emerald-400/20"
-                  : "hover:bg-white/10"
-              )}
-              onClick={() => selectSuggestion(suggestion)}
-              onMouseEnter={() => setFocusedIndex(idx)}
-            >
-              {suggestion}
-            </div>
-          ))}
-        </div>
-      )}
+      {showSuggestions &&
+        suggestions.length > 0 &&
+        dropdownPosition &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className="fixed z-[99999] max-h-48 overflow-auto rounded-2xl border border-white/15 bg-[#0b1124] shadow-2xl"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width,
+            }}
+          >
+            {suggestions.map((suggestion, idx) => (
+              <div
+                key={suggestion}
+                className={classNames(
+                  "cursor-pointer px-3 py-2 text-sm text-slate-100 transition",
+                  idx === focusedIndex ? "bg-[#1E3A8A]" : "hover:bg-[#1E3A8A]/60"
+                )}
+                onClick={() => selectSuggestion(suggestion)}
+                onMouseEnter={() => setFocusedIndex(idx)}
+              >
+                {suggestion}
+              </div>
+            ))}
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+}
+
+// Composant générique d'autocomplete/dropdown
+function Autocomplete({ value, onChange, options, placeholder, className, renderOption, getValue, getLabel }) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const wrapperRef = useRef(null);
+  const buttonRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const [dropdownPosition, setDropdownPosition] = useState(null);
+
+  useEffect(() => {
+    if (!showDropdown) return;
+
+    function handleClickOutside(event) {
+      if (
+        wrapperRef.current?.contains(event.target) ||
+        dropdownRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      setShowDropdown(false);
+      setFocusedIndex(-1);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showDropdown]);
+
+  useEffect(() => {
+    if (!showDropdown) {
+      setDropdownPosition(null);
+    }
+  }, [showDropdown]);
+
+  useLayoutEffect(() => {
+    if (!showDropdown) return;
+
+    function updatePosition() {
+      if (!buttonRef.current) return;
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [showDropdown]);
+
+  function handleKeyDown(e) {
+    if (!showDropdown) {
+      if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+        e.preventDefault();
+        setShowDropdown(true);
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setFocusedIndex((i) => (i < options.length - 1 ? i + 1 : i));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setFocusedIndex((i) => (i > 0 ? i - 1 : 0));
+    } else if (e.key === "Enter" && focusedIndex >= 0) {
+      e.preventDefault();
+      onChange(getValue(options[focusedIndex]));
+      setShowDropdown(false);
+      setFocusedIndex(-1);
+    } else if (e.key === "Escape") {
+      setShowDropdown(false);
+      setFocusedIndex(-1);
+    }
+  }
+
+  function selectOption(option) {
+    onChange(getValue(option));
+    setShowDropdown(false);
+    setFocusedIndex(-1);
+  }
+
+  const selectedOption = options.find((opt) => getValue(opt) === value);
+  const displayValue = selectedOption ? getLabel(selectedOption) : placeholder;
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        className={className}
+        onClick={() => setShowDropdown(!showDropdown)}
+        onKeyDown={handleKeyDown}
+      >
+        {displayValue}
+      </button>
+      {showDropdown &&
+        dropdownPosition &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className="fixed z-[99999] max-h-48 overflow-auto rounded-2xl border border-white/15 bg-[#0b1124] shadow-2xl"
+            style={{
+              top: dropdownPosition.top,
+              left: dropdownPosition.left,
+              width: dropdownPosition.width,
+            }}
+          >
+            {options.map((option, idx) => (
+              <div
+                key={getValue(option)}
+                className={classNames(
+                  "cursor-pointer px-3 py-2 text-sm text-slate-100 transition",
+                  idx === focusedIndex ? "bg-[#1E3A8A]" : "hover:bg-[#1E3A8A]/60"
+                )}
+                onClick={() => selectOption(option)}
+                onMouseEnter={() => setFocusedIndex(idx)}
+              >
+                {renderOption ? renderOption(option) : getLabel(option)}
+              </div>
+            ))}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
@@ -734,11 +924,11 @@ function QuickAdd({ onAdd, projectHistory, users }) {
   return (
     <form
       onSubmit={submit}
-      className="mt-6 grid gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 shadow-[0_20px_45px_rgba(2,4,20,0.45)] backdrop-blur-xl md:grid-cols-7"
+      className="relative z-40 mt-6 grid gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 shadow-[0_20px_45px_rgba(2,4,20,0.45)] backdrop-blur-xl md:grid-cols-7"
     >
       <input
         type="text"
-        className="md:col-span-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/70"
+        className="md:col-span-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
         placeholder="Titre de la tâche"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -748,36 +938,32 @@ function QuickAdd({ onAdd, projectHistory, users }) {
         onChange={setProject}
         projectHistory={projectHistory}
         placeholder="Projet (ex: ACME-2025-001)"
-        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/70 uppercase"
+        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
       />
       <input
         type="date"
-        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/70"
+        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
         value={due}
         onChange={(e) => setDue(e.target.value)}
       />
-      <select
-        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/70"
+      <Autocomplete
         value={priority}
-        onChange={(e) => setPriority(e.target.value)}
-      >
-        {PRIORITIES.map((p) => (
-          <option key={p.id} value={p.id}>
-            Priorité {p.label}
-          </option>
-        ))}
-      </select>
-      <select
-        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/70"
+        onChange={setPriority}
+        options={PRIORITIES}
+        placeholder="Priorité"
+        className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+        getValue={(p) => p.id}
+        getLabel={(p) => `Priorité ${p.label}`}
+      />
+      <Autocomplete
         value={assignedTo}
-        onChange={(e) => setAssignedTo(e.target.value)}
-      >
-        {users.map((u) => (
-          <option key={u.id} value={u.id}>
-            {u.name}
-          </option>
-        ))}
-      </select>
+        onChange={setAssignedTo}
+        options={users}
+        placeholder="Assigné à"
+        className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+        getValue={(u) => u.id}
+        getLabel={(u) => u.name}
+      />
       <button
         type="submit"
         className="rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 px-4 py-2 font-semibold text-slate-900 transition hover:opacity-90"
@@ -811,56 +997,54 @@ function Toolbar({
   }
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_20px_45px_rgba(2,4,20,0.45)] backdrop-blur-xl">
+    <div className="relative z-20 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_20px_45px_rgba(2,4,20,0.45)] backdrop-blur-xl">
       <div className="space-y-4">
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <select
+          <Autocomplete
             value={filterProject}
-            onChange={(e) => setFilterProject(e.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/70"
-          >
-            {projects.map((p) => (
-              <option key={p} value={p}>
-                {p === "all" ? "Tous les projets" : p}
-              </option>
-            ))}
-          </select>
-          <select
+            onChange={setFilterProject}
+            options={projects.map((p) => ({ id: p, label: p === "all" ? "Tous les projets" : p }))}
+            placeholder="Projet"
+            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+            getValue={(p) => p.id}
+            getLabel={(p) => p.label}
+          />
+          <Autocomplete
             value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/70"
-          >
-            <option value="all">Toutes priorités</option>
-            {PRIORITIES.map((p) => (
-              <option key={p.id} value={p.id}>
-                Priorité {p.label}
-              </option>
-            ))}
-          </select>
-          <select
+            onChange={setFilterPriority}
+            options={[
+              { id: "all", label: "Toutes priorités" },
+              ...PRIORITIES.map((p) => ({ id: p.id, label: `Priorité ${p.label}` }))
+            ]}
+            placeholder="Priorité"
+            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+            getValue={(p) => p.id}
+            getLabel={(p) => p.label}
+          />
+          <Autocomplete
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/70"
-          >
-            <option value="all">Tous statuts</option>
-            {STATUSES.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-          <select
+            onChange={setFilterStatus}
+            options={[
+              { id: "all", label: "Tous statuts" },
+              ...STATUSES.map((s) => ({ id: s.id, label: s.label }))
+            ]}
+            placeholder="Statut"
+            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+            getValue={(s) => s.id}
+            getLabel={(s) => s.label}
+          />
+          <Autocomplete
             value={filterUser}
-            onChange={(e) => setFilterUser(e.target.value)}
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/70"
-          >
-            <option value="all">Tous les utilisateurs</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+            onChange={setFilterUser}
+            options={[
+              { id: "all", label: "Tous les utilisateurs" },
+              ...users.map((u) => ({ id: u.id, label: u.name }))
+            ]}
+            placeholder="Utilisateur"
+            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+            getValue={(u) => u.id}
+            getLabel={(u) => u.label}
+          />
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <input
@@ -868,11 +1052,11 @@ function Toolbar({
             placeholder="Recherche (titre, projet, notes)"
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
-            className="flex-1 min-w-[240px] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/70"
+            className="flex-1 min-w-[240px] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
           />
           <button
             onClick={resetAll}
-            className="rounded-2xl border border-white/20 px-4 py-2 text-slate-100 transition hover:bg-white/10"
+            className="rounded-2xl border border-white/20 px-4 py-2 text-slate-100 transition hover:bg-[#1E3A8A]/60"
           >
             Réinitialiser filtres
           </button>
@@ -883,14 +1067,6 @@ function Toolbar({
 }
 
 function TaskCard({ task, onDragStart, onUpdate, onDelete, projectDir, projectHistory, users }) {
-  const dueDays = useMemo(() => {
-    if (!task.due) return null;
-    const d = new Date(task.due + "T00:00:00");
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    return daysBetween(now, d);
-  }, [task.due]);
-
   // Calcul des jours ouvrés restants (hors weekends)
   const businessDays = useMemo(() => {
     if (!task.due) return null;
@@ -980,8 +1156,9 @@ function TaskCard({ task, onDragStart, onUpdate, onDelete, projectDir, projectHi
               </span>
             )}
             {assignedUser && assignedUser.id !== "unassigned" && (
-              <span className="rounded-full border border-blue-300/40 bg-blue-300/10 px-2 py-0.5 text-[11px] font-semibold text-blue-200">
-                👤 {assignedUser.name}
+              <span className="inline-flex items-center gap-1 rounded-full border border-blue-300/40 bg-blue-300/10 px-2 py-0.5 text-[11px] font-semibold text-blue-200">
+                <User className="h-3 w-3" />
+                {assignedUser.name}
               </span>
             )}
             {task.due && (
@@ -1093,11 +1270,11 @@ function Menu({ task, onUpdate, onDelete, projectHistory, users }) {
       <button
         ref={triggerRef}
         onClick={() => setOpen(!open)}
-        className="rounded-2xl border border-white/20 bg-white/5 px-2 py-1 text-sm text-slate-100 transition hover:bg-white/10"
+        className="rounded-2xl border border-white/20 bg-white/5 px-2 py-1 text-sm text-slate-100 transition hover:bg-[#1E3A8A]/60"
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        ⋯
+        <MoreHorizontal className="h-4 w-4" />
       </button>
       {open &&
         createPortal(
@@ -1108,24 +1285,22 @@ function Menu({ task, onUpdate, onDelete, projectHistory, users }) {
           >
             <div className="grid gap-2">
               <label className="text-xs text-slate-400">Statut</label>
-              <select
+              <Autocomplete
                 value={task.status}
-                onChange={changeStatus}
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
-              >
-                {STATUSES.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => onUpdate(task.id, { status: val })}
+                options={STATUSES}
+                placeholder="Statut"
+                className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                getValue={(s) => s.id}
+                getLabel={(s) => s.label}
+              />
 
               <label className="mt-2 text-xs text-slate-400">Titre</label>
               <input
                 type="text"
                 value={task.title}
                 onChange={(e) => onUpdate(task.id, { title: e.target.value })}
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
+                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
               />
 
               <label className="mt-2 text-xs text-slate-400">Projet</label>
@@ -1134,7 +1309,7 @@ function Menu({ task, onUpdate, onDelete, projectHistory, users }) {
                 onChange={(val) => onUpdate(task.id, { project: val })}
                 projectHistory={projectHistory}
                 placeholder="Projet"
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60 uppercase"
+                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
               />
 
               <label className="mt-2 text-xs text-slate-400">Échéance</label>
@@ -1142,40 +1317,36 @@ function Menu({ task, onUpdate, onDelete, projectHistory, users }) {
                 type="date"
                 value={task.due || ""}
                 onChange={(e) => onUpdate(task.id, { due: e.target.value })}
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
+                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
               />
 
               <label className="mt-2 text-xs text-slate-400">Priorité</label>
-              <select
+              <Autocomplete
                 value={task.priority}
-                onChange={(e) => onUpdate(task.id, { priority: e.target.value })}
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => onUpdate(task.id, { priority: val })}
+                options={PRIORITIES}
+                placeholder="Priorité"
+                className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                getValue={(p) => p.id}
+                getLabel={(p) => p.label}
+              />
 
               <label className="mt-2 text-xs text-slate-400">Assigné à</label>
-              <select
+              <Autocomplete
                 value={task.assignedTo || "unassigned"}
-                onChange={(e) => onUpdate(task.id, { assignedTo: e.target.value })}
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
-              >
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => onUpdate(task.id, { assignedTo: val })}
+                options={users}
+                placeholder="Assigné à"
+                className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                getValue={(u) => u.id}
+                getLabel={(u) => u.name}
+              />
 
               <label className="mt-2 text-xs text-slate-400">Notes</label>
               <textarea
                 value={task.notes || ""}
                 onChange={(e) => onUpdate(task.id, { notes: e.target.value })}
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
+                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                 rows={3}
               />
 
@@ -1201,7 +1372,7 @@ function ArchivePanel({ archivedProjects, onUnarchive, onDelete, onClose }) {
           <h3 className="text-lg font-semibold">Archives</h3>
           <button
             onClick={onClose}
-            className="rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-white/10"
+            className="rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-[#1E3A8A]/60"
           >
             Fermer
           </button>
@@ -1285,7 +1456,7 @@ function ProjectDirs({ projects, directories, setDirectories, onClose }) {
           <h3 className="text-lg font-semibold">Dossiers projets</h3>
           <button
             onClick={onClose}
-            className="rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-white/10"
+            className="rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-[#1E3A8A]/60"
           >
             Fermer
           </button>
@@ -1300,7 +1471,7 @@ function ProjectDirs({ projects, directories, setDirectories, onClose }) {
         <div className="mt-4 max-h-[50vh] space-y-3 overflow-auto pr-1">
           {projects.length === 0 && (
             <div className="text-sm text-slate-400">
-              Aucun projet encore. Ajoute des tâches avec un champ « Projet » pour voir la liste ici.
+              Aucun projet encore. Ajoute des tâches avec un champ Â« Projet Â» pour voir la liste ici.
             </div>
           )}
           {projects.map((p) => (
@@ -1309,7 +1480,7 @@ function ProjectDirs({ projects, directories, setDirectories, onClose }) {
                 {p}
               </div>
               <input
-                className="col-span-4 rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
+                className="col-span-4 rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                 placeholder="Chemin du dossier (file system)"
                 value={local[p] || ""}
                 onChange={(e) => setPath(p, e.target.value)}
@@ -1320,7 +1491,7 @@ function ProjectDirs({ projects, directories, setDirectories, onClose }) {
         <div className="mt-4 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-white/10"
+            className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-[#1E3A8A]/60"
           >
             Annuler
           </button>
@@ -1401,7 +1572,7 @@ function UsersPanel({ users, setUsers, onClose }) {
           <h3 className="text-lg font-semibold">Gestion des utilisateurs</h3>
           <button
             onClick={onClose}
-            className="rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-white/10"
+            className="rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-[#1E3A8A]/60"
           >
             Fermer
           </button>
@@ -1423,7 +1594,7 @@ function UsersPanel({ users, setUsers, onClose }) {
                   value={user.name}
                   onChange={(e) => updateUser(user.id, "name", e.target.value)}
                   disabled={user.id === "unassigned"}
-                  className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1 text-sm text-slate-100 disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
+                  className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1 text-sm text-slate-100 disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                   placeholder="Nom"
                 />
               </div>
@@ -1433,7 +1604,7 @@ function UsersPanel({ users, setUsers, onClose }) {
                   value={user.email}
                   onChange={(e) => updateUser(user.id, "email", e.target.value.toLowerCase())}
                   disabled={user.id === "unassigned"}
-                  className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1 text-sm text-slate-100 disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
+                  className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1 text-sm text-slate-100 disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                   placeholder="email@exemple.com"
                 />
               </div>
@@ -1459,14 +1630,14 @@ function UsersPanel({ users, setUsers, onClose }) {
               type="text"
               value={newUserName}
               onChange={(e) => setNewUserName(e.target.value)}
-              className="col-span-4 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
+              className="col-span-4 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
               placeholder="Nom complet"
             />
             <input
               type="email"
               value={newUserEmail}
               onChange={(e) => setNewUserEmail(e.target.value)}
-              className="col-span-6 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-emerald-300/60"
+              className="col-span-6 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
               placeholder="email@exemple.com"
             />
             <button
@@ -1482,7 +1653,7 @@ function UsersPanel({ users, setUsers, onClose }) {
         <div className="mt-6 flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-white/10"
+            className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-[#1E3A8A]/60"
           >
             Annuler
           </button>
@@ -1504,3 +1675,4 @@ function addDaysISO(n) {
   d.setHours(0, 0, 0, 0);
   return d.toISOString().slice(0, 10);
 }
+

@@ -6,7 +6,9 @@ function App() {
   return (
     <>
       <TitleBar />
-      <SmartTodo />
+      <div className="pt-8">
+        <SmartTodo />
+      </div>
       <UpdateNotification />
     </>
   )

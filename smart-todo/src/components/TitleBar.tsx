@@ -34,7 +34,7 @@ export function TitleBar() {
 
   return (
     <div
-      className="flex h-8 items-center justify-between bg-[#020817] border-b border-white/5 select-none"
+      className="fixed top-0 left-0 right-0 z-[9999] flex h-8 items-center justify-between bg-[#020817] border-b border-white/5 select-none"
       style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
     >
       {/* Logo et titre */}
