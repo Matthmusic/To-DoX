@@ -1,41 +1,62 @@
-# To DoX
+# To-DoX
 
 Une application Kanban minimaliste et intelligente pour la gestion de tâches avec indicateurs visuels de priorité et deadlines.
 
-![To DoX Logo](smart-todo/src/assets/To%20DoX%20(500%20x%20250%20px).svg)
+![To-DoX Logo](smart-todo/src/assets/To%20Do%20X.svg)
 
-## Fonctionnalités
+## 🚀 Téléchargement
 
-### Gestion de tâches Kanban
-- **6 colonnes de statut** : Backlog, À faire, En cours, En revue, Fait, Bloqué
+[![Download Latest Release](https://img.shields.io/github/v/release/Matthmusic/To-DoX?label=Télécharger&style=for-the-badge&logo=github)](https://github.com/Matthmusic/To-DoX/releases/latest)
+
+**Version actuelle : 1.3.0**
+- ✅ Mises à jour automatiques
+- ✅ Dark mode complet
+- ✅ Interface moderne et fluide
+
+## ✨ Fonctionnalités
+
+### 📋 Gestion de tâches Kanban
+- **4 colonnes de statut** : À faire, En cours, À réviser, Fait
 - **Drag & Drop natif** : Déplacez facilement vos tâches entre les colonnes
 - **Ajout rapide** : Formulaire intuitif pour créer des tâches avec titre, projet, échéance et priorité
 
-### Indicateurs visuels intelligents
+### 🎯 Indicateurs visuels intelligents
 - **Échéances visuelles** : Code couleur dynamique selon l'urgence (J-X, en retard)
-- **Badge "À relancer"** : Alerte automatique si une tâche est "En cours" sans mouvement depuis plus de 3 jours
+- **Badge "⚠ À relancer"** : Alerte automatique si une tâche est "En cours" sans mouvement depuis plus de 3 jours
 - **Priorités colorées** : Haute (rouge-orange), Moyenne (jaune-ambre), Basse (vert-lime)
 
-### Organisation par projet
+### 📁 Organisation par projet
 - **Statistiques par projet** : Barres de progression avec pourcentage de complétion
-- **Liens vers dossiers projets** : Configuration de chemins locaux pour ouvrir rapidement les dossiers de travail
+- **Liens vers dossiers projets** : Configuration de chemins locaux pour ouvrir rapidement les dossiers de travail via Electron
 - **Filtrage avancé** : Recherche par titre, projet, notes, avec filtres combinables (projet, priorité, statut)
 
-### Persistance et export
+### 💾 Persistance et export
 - **Stockage local** : Sauvegarde automatique dans localStorage
 - **Export/Import JSON** : Sauvegardez et partagez vos données facilement
 - **Aucune dépendance backend** : Fonctionne entièrement en local
 
-## Technologies utilisées
+### 🎨 Interface moderne
+- **Dark mode natif** : Interface complète en mode sombre (barre de titre, scrollbars, application)
+- **Barre de titre personnalisée** : Design cohérent avec contrôles Windows intégrés
+- **Design fluide** : Animations et transitions soignées
+- **Responsive** : S'adapte à toutes les tailles d'écran
 
-- **React 19** avec hooks modernes
-- **Vite** pour le build ultra-rapide
-- **TypeScript** pour la sécurité du typage
-- **Tailwind CSS** pour un design moderne et responsive
-- **Lucide React** pour les icônes
-- **localStorage API** pour la persistance
-- **Electron** pour l'application desktop multi-plateforme
-- **electron-updater** pour les mises à jour automatiques
+## 🛠️ Technologies utilisées
+
+### Frontend
+- ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=white) - Hooks modernes et React Compiler
+- ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white) - Sécurité du typage
+- ![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=flat&logo=vite&logoColor=white) - Build ultra-rapide
+- ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?style=flat&logo=tailwindcss&logoColor=white) - Design moderne et responsive
+
+### Desktop
+- ![Electron](https://img.shields.io/badge/Electron-39-47848F?style=flat&logo=electron&logoColor=white) - Application desktop multi-plateforme
+- **electron-builder** - Packaging et distribution
+- **electron-updater** - Mises à jour automatiques
+
+### DevOps
+- **GitHub Actions** - CI/CD automatisé
+- **NSIS** - Installateur Windows personnalisé
 
 ## Installation
 
@@ -173,30 +194,39 @@ Modifiez la valeur (en millisecondes) dans [smart-todo/src/SmartTodo.jsx:557](sm
 // Actuellement : 3 jours = 3 * 24 * 60 * 60 * 1000
 ```
 
-## Structure du projet
+## 📂 Structure du projet
 
 ```
 To-DoX/
+├── .github/
+│   └── workflows/
+│       └── release.yml       # CI/CD pour releases automatiques
 ├── smart-todo/
 │   ├── src/
 │   │   ├── assets/           # Images et logos
+│   │   ├── components/       # Composants React
+│   │   │   ├── TitleBar.tsx  # Barre de titre personnalisée
+│   │   │   └── UpdateNotification.tsx
+│   │   ├── hooks/            # Custom hooks
+│   │   │   └── useAutoUpdater.ts
 │   │   ├── App.tsx           # Composant racine
 │   │   ├── SmartTodo.jsx     # Composant principal (logique métier)
-│   │   ├── main.tsx          # Point d'entrée
-│   │   └── index.css         # Styles globaux
-│   ├── package.json
-│   ├── vite.config.ts
-│   ├── tsconfig.json
-│   └── tailwind.config.js
+│   │   ├── main.tsx          # Point d'entrée React
+│   │   └── index.css         # Styles globaux + dark mode
+│   ├── electron.js           # Process principal Electron
+│   ├── preload.js            # Pont sécurisé Electron/React
+│   ├── package.json          # Dépendances + config electron-builder
+│   ├── vite.config.ts        # Configuration Vite
+│   ├── tsconfig.json         # Configuration TypeScript
+│   └── tailwind.config.js    # Configuration Tailwind CSS
+├── OPTIMISATIONS.md          # Documentation des optimisations CI/CD
 └── README.md
 ```
 
-## Limitations connues
+## ⚠️ Limitations connues
 
-- **Liens `file://`** : Selon le navigateur, l'ouverture de liens `file://` peut être restreinte pour des raisons de sécurité. Pour une utilisation optimale :
-  - Utilisez un bundler en mode dev local
-  - Ou empaquetez l'application avec Electron/Tauri
-- **Stockage local** : Les données sont stockées dans le localStorage du navigateur. Pensez à exporter régulièrement vos données importantes.
+- **Stockage local** : Les données sont stockées dans le localStorage. Pensez à exporter régulièrement vos données importantes via "Export JSON"
+- **Version web** : L'ouverture de dossiers locaux n'est pas disponible dans la version web (limitation des navigateurs). Utilisez la version Electron pour cette fonctionnalité
 
 ## Contribuer
 
@@ -217,9 +247,13 @@ Ce projet est sous licence libre. Vous êtes libre de l'utiliser, le modifier et
 - GitHub: [@Matthmusic](https://github.com/Matthmusic)
 - Email: matthieu@maurelfamily.fr
 
-## Roadmap
+## 🗺️ Roadmap
 
-- [ ] Mode sombre/clair
+- [x] Mode sombre natif
+- [x] Barre de titre personnalisée (Windows)
+- [x] Mises à jour automatiques
+- [x] Nouveau branding et logo
+- [ ] Toggle mode sombre/clair
 - [ ] Notifications pour les échéances proches
 - [ ] Synchronisation cloud (optionnelle)
 - [ ] Application mobile (PWA)
