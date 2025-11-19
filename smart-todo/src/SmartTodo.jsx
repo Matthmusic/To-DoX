@@ -8,7 +8,7 @@ import {
   Loader2,
   SearchCheck,
 } from "lucide-react";
-import ToDoXLogo from "./assets/To DoX (500 x 250 px).svg";
+import ToDoXLogo from "./assets/To Do X.svg";
 
 /**
  * Smart To‑Do — single-file React component

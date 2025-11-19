@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Minus, Square, X } from 'lucide-react';
-import iconPng from '../assets/icon.png';
+import logoSvg from '../assets/To Do X.svg';
 
 export function TitleBar() {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -40,11 +40,10 @@ export function TitleBar() {
       {/* Logo et titre */}
       <div className="flex items-center gap-2 px-3">
         <img
-          src={iconPng}
+          src={logoSvg}
           alt="To-DoX"
-          className="h-4 w-4"
+          className="h-5 w-auto"
         />
-        <span className="text-xs text-slate-300 font-medium">To-DoX</span>
       </div>
 
       {/* Boutons de contrôle */}
