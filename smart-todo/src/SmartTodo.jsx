@@ -9,6 +9,7 @@ import {
   SearchCheck,
   User,
   MoreHorizontal,
+  FileText,
 } from "lucide-react";
 import ToDoXLogo from "./assets/To Do X.svg";
 
@@ -64,6 +65,44 @@ function businessDaysBetween(startDate, endDate) {
   }
 
   return count;
+}
+
+/**
+ * Calcule la plage de dates de la semaine précédente (Lundi 00:00 → Dimanche 23:59)
+ * @returns {{ start: Date, end: Date, startStr: string, endStr: string }}
+ */
+function getPreviousWeekRange() {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = dimanche, 1 = lundi, etc.
+
+  // Calculer le lundi de la semaine actuelle
+  const currentMonday = new Date(today);
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Si dimanche, c'est 6 jours après lundi
+  currentMonday.setDate(today.getDate() - daysFromMonday);
+  currentMonday.setHours(0, 0, 0, 0);
+
+  // Lundi de la semaine précédente
+  const previousMonday = new Date(currentMonday);
+  previousMonday.setDate(currentMonday.getDate() - 7);
+
+  // Dimanche de la semaine précédente
+  const previousSunday = new Date(previousMonday);
+  previousSunday.setDate(previousMonday.getDate() + 6);
+  previousSunday.setHours(23, 59, 59, 999);
+
+  // Formater en DD/MM
+  const formatDate = (date) => {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}`;
+  };
+
+  return {
+    start: previousMonday,
+    end: previousSunday,
+    startStr: formatDate(previousMonday),
+    endStr: formatDate(previousSunday),
+  };
 }
 
 function todayISO() {
@@ -192,6 +231,7 @@ export default function SmartTodo() {
   const [showArchivePanel, setShowArchivePanel] = useState(false);
   const [showUsersPanel, setShowUsersPanel] = useState(false);
   const [showStoragePanel, setShowStoragePanel] = useState(false);
+  const [showWeeklyReportPanel, setShowWeeklyReportPanel] = useState(false);
 
   const projects = useMemo(() => {
     const s = new Set(tasks.filter((t) => !t.archived).map((t) => t.project).filter(Boolean));
@@ -311,8 +351,17 @@ export default function SmartTodo() {
     if (patch.project) {
       addToProjectHistory(patch.project);
     }
+
+    // Gérer le champ completedAt quand le statut change
+    const updatedPatch = { ...patch };
+    if (patch.status === "done") {
+      updatedPatch.completedAt = Date.now();
+    } else if (patch.status && patch.status !== "done") {
+      updatedPatch.completedAt = null;
+    }
+
     setTasks((xs) =>
-      xs.map((t) => (t.id === id ? { ...t, ...patch, updatedAt: Date.now() } : t))
+      xs.map((t) => (t.id === id ? { ...t, ...updatedPatch, updatedAt: Date.now() } : t))
     );
   }
 
@@ -560,6 +609,13 @@ export default function SmartTodo() {
           </div>
           <div className="flex flex-wrap gap-2 md:justify-end">
             <button
+              onClick={() => setShowWeeklyReportPanel(true)}
+              className="rounded-2xl bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 px-4 py-2 font-semibold text-slate-900 shadow-lg shadow-blue-500/30 transition hover:brightness-110 inline-flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              CR semaine
+            </button>
+            <button
               onClick={exportJSON}
               className="rounded-2xl bg-gradient-to-r from-fuchsia-400 via-purple-400 to-indigo-500 px-4 py-2 font-semibold text-slate-900 shadow-lg shadow-fuchsia-500/30 transition hover:brightness-110"
             >
@@ -723,6 +779,13 @@ export default function SmartTodo() {
             storagePath={storagePath}
             setStoragePath={setStoragePath}
             onClose={() => setShowStoragePanel(false)}
+          />
+        )}
+
+        {showWeeklyReportPanel && (
+          <WeeklyReportModal
+            tasks={tasks}
+            onClose={() => setShowWeeklyReportPanel(false)}
           />
         )}
       </div>
@@ -1023,7 +1086,7 @@ function QuickAdd({ onAdd, projectHistory, users }) {
   return (
     <form
       onSubmit={submit}
-      className="relative z-40 mt-6 grid gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 shadow-[0_20px_45px_rgba(2,4,20,0.45)] backdrop-blur-xl md:grid-cols-7"
+      className="relative z-10 mt-6 grid gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 shadow-[0_20px_45px_rgba(2,4,20,0.45)] backdrop-blur-xl md:grid-cols-7"
     >
       <input
         type="text"
@@ -1763,6 +1826,315 @@ function UsersPanel({ users, setUsers, onClose }) {
             Enregistrer
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function WeeklyReportModal({ tasks, onClose }) {
+  const [selectedTasks, setSelectedTasks] = useState(() => {
+    // Par défaut, toutes les tâches sont sélectionnées
+    const weekRange = getPreviousWeekRange();
+    const weeklyTasks = getWeeklyTasks(tasks, weekRange);
+    const initialSelection = {};
+    [...weeklyTasks.completed, ...weeklyTasks.remaining].forEach(task => {
+      initialSelection[task.id] = true;
+    });
+    return initialSelection;
+  });
+
+  const [reportText, setReportText] = useState("");
+  const [showReport, setShowReport] = useState(false);
+
+  const weekRange = useMemo(() => getPreviousWeekRange(), []);
+  const weeklyTasks = useMemo(() => getWeeklyTasks(tasks, weekRange), [tasks, weekRange]);
+
+  // Fonction pour récupérer les tâches de la semaine
+  function getWeeklyTasks(allTasks, range) {
+    const completed = [];
+    const remaining = [];
+
+    for (const task of allTasks) {
+      if (task.archived) continue;
+
+      // Tâches terminées durant la semaine
+      if (task.status === "done" && task.completedAt) {
+        const completedDate = new Date(task.completedAt);
+        if (completedDate >= range.start && completedDate <= range.end) {
+          completed.push(task);
+        }
+      }
+
+      // Tâches restantes (créées avant la fin de la semaine et non terminées)
+      if (task.status !== "done" && task.createdAt) {
+        const createdDate = new Date(task.createdAt);
+        if (createdDate <= range.end) {
+          remaining.push(task);
+        }
+      }
+    }
+
+    return { completed, remaining };
+  }
+
+  // Toggle la sélection d'une tâche
+  function toggleTask(taskId) {
+    setSelectedTasks(prev => ({
+      ...prev,
+      [taskId]: !prev[taskId]
+    }));
+  }
+
+  // Sélectionner/désélectionner toutes les tâches
+  function toggleAll(isCompleted) {
+    const tasksToToggle = isCompleted ? weeklyTasks.completed : weeklyTasks.remaining;
+    const allSelected = tasksToToggle.every(t => selectedTasks[t.id]);
+
+    setSelectedTasks(prev => {
+      const updated = { ...prev };
+      tasksToToggle.forEach(task => {
+        updated[task.id] = !allSelected;
+      });
+      return updated;
+    });
+  }
+
+  // Générer le texte du compte rendu
+  function generateReport() {
+    const completedTasks = weeklyTasks.completed.filter(t => selectedTasks[t.id]);
+    const remainingTasks = weeklyTasks.remaining.filter(t => selectedTasks[t.id]);
+
+    let text = `Compte rendu hebdomadaire – semaine du ${weekRange.startStr} au ${weekRange.endStr}\n\n`;
+
+    // Tâches terminées
+    text += `✅ Tâches terminées\n`;
+    if (completedTasks.length === 0) {
+      text += "- Aucune tâche terminée durant cette période\n";
+    } else {
+      completedTasks.forEach(task => {
+        const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+        text += `- [${task.project}] ${task.title}${dueText}\n`;
+      });
+    }
+
+    text += `\n⏳ Tâches en cours / restantes\n`;
+    if (remainingTasks.length === 0) {
+      text += "- Aucune tâche en cours\n";
+    } else {
+      remainingTasks.forEach(task => {
+        const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+        text += `- [${task.project}] ${task.title} – statut : ${statusLabel}\n`;
+      });
+    }
+
+    setReportText(text);
+    setShowReport(true);
+  }
+
+  // Formater une date en JJ/MM/AAAA
+  function formatDateFull(dateStr) {
+    if (!dateStr) return "";
+    const date = new Date(dateStr + "T00:00:00");
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  // Copier dans le presse-papiers
+  async function copyToClipboard() {
+    try {
+      await navigator.clipboard.writeText(reportText);
+      alert("Compte rendu copié dans le presse-papiers !");
+    } catch (err) {
+      // Fallback pour les navigateurs ne supportant pas clipboard API
+      const textarea = document.createElement('textarea');
+      textarea.value = reportText;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        alert("Compte rendu copié dans le presse-papiers !");
+      } catch (e) {
+        alert("Erreur lors de la copie. Veuillez copier manuellement le texte.");
+      }
+      document.body.removeChild(textarea);
+    }
+  }
+
+  const completedCount = weeklyTasks.completed.filter(t => selectedTasks[t.id]).length;
+  const remainingCount = weeklyTasks.remaining.filter(t => selectedTasks[t.id]).length;
+
+  return (
+    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur">
+      <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-semibold flex items-center gap-2">
+              <FileText className="h-6 w-6 text-blue-400" />
+              Compte Rendu Hebdomadaire
+            </h3>
+            <p className="text-sm text-slate-400 mt-1">
+              Semaine du {weekRange.startStr} au {weekRange.endStr}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-[#1E3A8A]/60"
+          >
+            Fermer
+          </button>
+        </div>
+
+        {!showReport ? (
+          <>
+            <div className="mt-6 space-y-6">
+              {/* Section Tâches terminées */}
+              <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-lg font-semibold text-emerald-200 flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5" />
+                    Tâches terminées ({weeklyTasks.completed.length})
+                  </h4>
+                  <button
+                    onClick={() => toggleAll(true)}
+                    className="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-100 transition hover:bg-emerald-400/20"
+                  >
+                    {weeklyTasks.completed.every(t => selectedTasks[t.id]) ? "Tout désélectionner" : "Tout sélectionner"}
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {weeklyTasks.completed.length === 0 ? (
+                    <p className="text-sm text-slate-400">Aucune tâche terminée durant cette période.</p>
+                  ) : (
+                    weeklyTasks.completed.map(task => (
+                      <label
+                        key={task.id}
+                        className="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!selectedTasks[task.id]}
+                          onChange={() => toggleTask(task.id)}
+                          className="mt-1 h-4 w-4 rounded accent-emerald-400"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-slate-100">{task.title}</div>
+                          <div className="text-xs text-slate-400 mt-1">
+                            <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 mr-2">
+                              {task.project}
+                            </span>
+                            {task.due && (
+                              <span>Échéance : {formatDateFull(task.due)}</span>
+                            )}
+                          </div>
+                        </div>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Section Tâches restantes */}
+              <div className="rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-lg font-semibold text-amber-200 flex items-center gap-2">
+                    <Loader2 className="h-5 w-5" />
+                    Tâches en cours / restantes ({weeklyTasks.remaining.length})
+                  </h4>
+                  <button
+                    onClick={() => toggleAll(false)}
+                    className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs text-amber-100 transition hover:bg-amber-400/20"
+                  >
+                    {weeklyTasks.remaining.every(t => selectedTasks[t.id]) ? "Tout désélectionner" : "Tout sélectionner"}
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {weeklyTasks.remaining.length === 0 ? (
+                    <p className="text-sm text-slate-400">Aucune tâche en cours.</p>
+                  ) : (
+                    weeklyTasks.remaining.map(task => {
+                      const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+                      return (
+                        <label
+                          key={task.id}
+                          className="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!!selectedTasks[task.id]}
+                            onChange={() => toggleTask(task.id)}
+                            className="mt-1 h-4 w-4 rounded accent-amber-400"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-slate-100">{task.title}</div>
+                            <div className="text-xs text-slate-400 mt-1">
+                              <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 mr-2">
+                                {task.project}
+                              </span>
+                              <span>Statut : {statusLabel}</span>
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Boutons d'action */}
+            <div className="mt-6 flex justify-between items-center">
+              <div className="text-sm text-slate-400">
+                {completedCount + remainingCount} tâche(s) sélectionnée(s)
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={onClose}
+                  className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-[#1E3A8A]/60"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={generateReport}
+                  disabled={completedCount + remainingCount === 0}
+                  className="rounded-2xl bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-blue-500/20 transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Générer le compte rendu
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Affichage du rapport généré */}
+            <div className="mt-6">
+              <div className="rounded-2xl border border-white/10 bg-[#0b1124] p-4">
+                <pre className="text-sm text-slate-100 whitespace-pre-wrap font-mono leading-relaxed">
+                  {reportText}
+                </pre>
+              </div>
+            </div>
+
+            {/* Boutons d'action pour le rapport */}
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                onClick={() => setShowReport(false)}
+                className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-[#1E3A8A]/60"
+              >
+                Retour
+              </button>
+              <button
+                onClick={copyToClipboard}
+                className="rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-emerald-500/20 transition hover:brightness-110"
+              >
+                Copier dans le presse-papiers
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
