@@ -2377,6 +2377,15 @@ function WeeklyReportModal({ tasks, onClose }) {
     return grouped;
   }
 
+  // Calculer la progression des sous-tâches (local)
+  function getSubtaskProgress(task) {
+    if (!task.subtasks || task.subtasks.length === 0) return null;
+    const completed = task.subtasks.filter((st) => st.completed).length;
+    const total = task.subtasks.length;
+    const percentage = Math.round((completed / total) * 100);
+    return { completed, total, percentage };
+  }
+
   // Générer le texte du compte rendu
   function generateReport(period = 'both') {
     const currentCompleted = currentWeekTasks.completed.filter(t => selectedTasks[t.id]);
