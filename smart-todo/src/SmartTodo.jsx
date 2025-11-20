@@ -11,6 +11,13 @@ import {
   MoreHorizontal,
   FileText,
   FileDown,
+  ChevronDown,
+  ChevronUp,
+  CheckSquare,
+  Square,
+  Plus,
+  Trash2,
+  GripVertical,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import ToDoXLogo from "./assets/To Do X.svg";
@@ -192,10 +199,11 @@ export default function SmartTodo() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         notes: "Attente retour client pour perçages",
+        subtasks: [],
       },
       {
         id: uid(),
-        title: "Dossier DOE â€” schémas CFA",
+        title: "Dossier DOE - schemas CFA",
         project: "ACME-2025-001",
         due: addDaysISO(1),
         priority: "high",
@@ -203,6 +211,7 @@ export default function SmartTodo() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         notes: "",
+        subtasks: [],
       },
       {
         id: uid(),
@@ -214,6 +223,7 @@ export default function SmartTodo() {
         createdAt: Date.now(),
         updatedAt: Date.now(),
         notes: "",
+        subtasks: [],
       },
     ];
     return demo;
@@ -293,16 +303,33 @@ export default function SmartTodo() {
             // Charger les données depuis le fichier
             if (result.data.tasks) {
               // Migration : ajouter completedAt aux tâches "done" qui n'ont pas ce champ
+              // Migration : ajouter subtasks aux tâches qui n'ont pas ce champ
               const migratedTasks = result.data.tasks.map(task => {
+                const migrated = { ...task };
+
+                // Migration completedAt
                 if (task.status === "done" && !task.completedAt) {
-                  return { ...task, completedAt: task.updatedAt || task.createdAt || Date.now() };
+                  migrated.completedAt = task.updatedAt || task.createdAt || Date.now();
                 }
-                return task;
+
+                // Migration subtasks
+                if (!task.subtasks) {
+                  migrated.subtasks = [];
+                }
+
+                return migrated;
               });
-              const migratedCount = migratedTasks.filter((t, i) => t.completedAt !== result.data.tasks[i]?.completedAt).length;
-              if (migratedCount > 0) {
-                console.log(`✅ Migration: ${migratedCount} tâche(s) "done" ont reçu un completedAt`);
+
+              const completedAtCount = migratedTasks.filter((t, i) => t.completedAt !== result.data.tasks[i]?.completedAt).length;
+              const subtasksCount = migratedTasks.filter((t, i) => !result.data.tasks[i]?.subtasks).length;
+
+              if (completedAtCount > 0) {
+                console.log(`✅ Migration: ${completedAtCount} tâche(s) "done" ont reçu un completedAt`);
               }
+              if (subtasksCount > 0) {
+                console.log(`✅ Migration: ${subtasksCount} tâche(s) ont reçu le champ subtasks`);
+              }
+
               setTasks(migratedTasks);
             }
             if (result.data.directories) setDirectories(result.data.directories);
@@ -429,6 +456,113 @@ export default function SmartTodo() {
     updateTask(id, { status });
   }
 
+  // ============ GESTION DES SOUS-TÂCHES ============
+
+  // Ajouter une sous-tâche à une tâche
+  function addSubtask(taskId, subtaskTitle) {
+    if (!subtaskTitle.trim()) return;
+
+    setTasks((xs) =>
+      xs.map((t) => {
+        if (t.id === taskId) {
+          const newSubtask = {
+            id: uid(),
+            title: subtaskTitle.trim(),
+            completed: false,
+            createdAt: Date.now(),
+            completedAt: null,
+          };
+          return {
+            ...t,
+            subtasks: [...(t.subtasks || []), newSubtask],
+            updatedAt: Date.now(),
+          };
+        }
+        return t;
+      })
+    );
+  }
+
+  // Toggle le statut d'une sous-tâche
+  function toggleSubtask(taskId, subtaskId) {
+    setTasks((xs) =>
+      xs.map((t) => {
+        if (t.id === taskId) {
+          const updatedSubtasks = (t.subtasks || []).map((st) => {
+            if (st.id === subtaskId) {
+              const newCompleted = !st.completed;
+              return {
+                ...st,
+                completed: newCompleted,
+                completedAt: newCompleted ? Date.now() : null,
+              };
+            }
+            return st;
+          });
+          return { ...t, subtasks: updatedSubtasks, updatedAt: Date.now() };
+        }
+        return t;
+      })
+    );
+  }
+
+  // Supprimer une sous-tâche
+  function deleteSubtask(taskId, subtaskId) {
+    setTasks((xs) =>
+      xs.map((t) => {
+        if (t.id === taskId) {
+          return {
+            ...t,
+            subtasks: (t.subtasks || []).filter((st) => st.id !== subtaskId),
+            updatedAt: Date.now(),
+          };
+        }
+        return t;
+      })
+    );
+  }
+
+  // Éditer le titre d'une sous-tâche
+  function updateSubtaskTitle(taskId, subtaskId, newTitle) {
+    if (!newTitle.trim()) return;
+
+    setTasks((xs) =>
+      xs.map((t) => {
+        if (t.id === taskId) {
+          const updatedSubtasks = (t.subtasks || []).map((st) =>
+            st.id === subtaskId ? { ...st, title: newTitle.trim() } : st
+          );
+          return { ...t, subtasks: updatedSubtasks, updatedAt: Date.now() };
+        }
+        return t;
+      })
+    );
+  }
+
+  // Réorganiser les sous-tâches (drag & drop)
+  function reorderSubtasks(taskId, startIndex, endIndex) {
+    setTasks((xs) =>
+      xs.map((t) => {
+        if (t.id === taskId) {
+          const subtasks = [...(t.subtasks || [])];
+          const [removed] = subtasks.splice(startIndex, 1);
+          subtasks.splice(endIndex, 0, removed);
+          return { ...t, subtasks, updatedAt: Date.now() };
+        }
+        return t;
+      })
+    );
+  }
+
+  // Calculer la progression des sous-tâches
+  function getSubtaskProgress(task) {
+    if (!task.subtasks || task.subtasks.length === 0) return null;
+    const completed = task.subtasks.filter((st) => st.completed).length;
+    const total = task.subtasks.length;
+    const percentage = Math.round((completed / total) * 100);
+    return { completed, total, percentage };
+  }
+
   function archiveProject(projectName) {
     setTasks((xs) =>
       xs.map((t) =>
@@ -457,15 +591,19 @@ export default function SmartTodo() {
     const q = filterText.toLowerCase();
     return tasks.filter((t) => {
       if (t.archived) return false; // Exclure les tâches archivées
-      if (
-        q &&
-        !(
-          t.title.toLowerCase().includes(q) ||
-          t.project.toLowerCase().includes(q) ||
-          t.notes?.toLowerCase().includes(q)
-        )
-      )
-        return false;
+      if (q) {
+        // Recherche dans le titre, projet, notes ET sous-tâches
+        const matchTitle = t.title.toLowerCase().includes(q);
+        const matchProject = t.project.toLowerCase().includes(q);
+        const matchNotes = t.notes?.toLowerCase().includes(q);
+        const matchSubtasks = (t.subtasks || []).some(st =>
+          st.title.toLowerCase().includes(q)
+        );
+
+        if (!(matchTitle || matchProject || matchNotes || matchSubtasks)) {
+          return false;
+        }
+      }
       if (filterProject !== "all" && t.project !== filterProject) return false;
       if (filterPriority !== "all" && t.priority !== filterPriority) return false;
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
@@ -796,6 +934,12 @@ export default function SmartTodo() {
                       projectDir={directories[t.project]}
                       projectHistory={projectHistory}
                       users={users}
+                      onAddSubtask={addSubtask}
+                      onToggleSubtask={toggleSubtask}
+                      onDeleteSubtask={deleteSubtask}
+                      onUpdateSubtaskTitle={updateSubtaskTitle}
+                      onReorderSubtasks={reorderSubtasks}
+                      getSubtaskProgress={getSubtaskProgress}
                     />
                   ))}
                 </div>
@@ -1284,7 +1428,184 @@ function Toolbar({
   );
 }
 
-function TaskCard({ task, onDragStart, onUpdate, onDelete, projectDir, projectHistory, users }) {
+// ============ COMPOSANTS SOUS-TÂCHES ============
+
+function SubtaskItem({ subtask, taskId, onToggle, onDelete, onUpdateTitle, isDragging }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(subtask.title);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSave = () => {
+    if (editTitle.trim() && editTitle !== subtask.title) {
+      onUpdateTitle(taskId, subtask.id, editTitle);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSave();
+    } else if (e.key === "Escape") {
+      setEditTitle(subtask.title);
+      setIsEditing(false);
+    }
+  };
+
+  return (
+    <div
+      className={`flex items-center gap-2 rounded-lg bg-white/5 p-2 transition ${
+        isDragging ? "opacity-50" : ""
+      }`}
+    >
+      <GripVertical className="h-4 w-4 cursor-grab text-slate-400" />
+      <input
+        type="checkbox"
+        checked={subtask.completed}
+        onChange={() => onToggle(taskId, subtask.id)}
+        className="h-4 w-4 rounded accent-emerald-400"
+      />
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          className="flex-1 rounded bg-white/10 px-2 py-1 text-sm text-slate-100 outline-none focus:bg-white/20"
+        />
+      ) : (
+        <span
+          onDoubleClick={() => setIsEditing(true)}
+          className={`flex-1 text-sm ${
+            subtask.completed ? "text-slate-400 line-through" : "text-slate-200"
+          } cursor-text`}
+          title="Double-cliquer pour éditer"
+        >
+          {subtask.title}
+        </span>
+      )}
+      <button
+        onClick={() => onDelete(taskId, subtask.id)}
+        className="rounded p-1 text-slate-400 transition hover:bg-red-500/20 hover:text-red-400"
+        title="Supprimer"
+      >
+        <Trash2 className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
+
+function SubtaskList({ task, onAddSubtask, onToggleSubtask, onDeleteSubtask, onUpdateSubtaskTitle, onReorderSubtasks }) {
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [draggedIndex, setDraggedIndex] = useState(null);
+
+  const handleAdd = () => {
+    if (newSubtaskTitle.trim()) {
+      onAddSubtask(task.id, newSubtaskTitle);
+      setNewSubtaskTitle("");
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleAdd();
+    }
+  };
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    onReorderSubtasks(task.id, draggedIndex, index);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+      <div className="flex items-center gap-2">
+        <CheckSquare className="h-4 w-4 text-blue-400" />
+        <span className="text-sm font-semibold text-slate-300">Sous-tâches</span>
+      </div>
+
+      {/* Liste des sous-tâches */}
+      <div className="space-y-1">
+        {(task.subtasks || []).map((subtask, index) => (
+          <div
+            key={subtask.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, index)}
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDragEnd={handleDragEnd}
+          >
+            <SubtaskItem
+              subtask={subtask}
+              taskId={task.id}
+              onToggle={onToggleSubtask}
+              onDelete={onDeleteSubtask}
+              onUpdateTitle={onUpdateSubtaskTitle}
+              isDragging={draggedIndex === index}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Input pour ajouter une nouvelle sous-tâche */}
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={newSubtaskTitle}
+          onChange={(e) => setNewSubtaskTitle(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ajouter une sous-tâche..."
+          className="flex-1 rounded-lg bg-white/10 px-3 py-2 text-sm text-slate-100 placeholder-slate-400 outline-none focus:bg-white/20"
+        />
+        <button
+          onClick={handleAdd}
+          disabled={!newSubtaskTitle.trim()}
+          className="rounded-lg bg-blue-500 p-2 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
+          title="Ajouter"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TaskCard({
+  task,
+  onDragStart,
+  onUpdate,
+  onDelete,
+  projectDir,
+  projectHistory,
+  users,
+  onAddSubtask,
+  onToggleSubtask,
+  onDeleteSubtask,
+  onUpdateSubtaskTitle,
+  onReorderSubtasks,
+  getSubtaskProgress
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   // Calcul des jours ouvrés restants (hors weekends)
   const businessDays = useMemo(() => {
     if (!task.due) return null;
@@ -1313,6 +1634,10 @@ function TaskCard({ task, onDragStart, onUpdate, onDelete, projectDir, projectHi
   const assignedUser = useMemo(() => {
     return users.find(u => u.id === task.assignedTo) || users.find(u => u.id === "unassigned");
   }, [task.assignedTo, users]);
+
+  // Progression des sous-tâches
+  const subtaskProgress = useMemo(() => getSubtaskProgress(task), [task.subtasks]);
+  const allSubtasksCompleted = subtaskProgress && subtaskProgress.completed === subtaskProgress.total && subtaskProgress.total > 0;
 
   const priorityTone = useMemo(() => {
     if (task.priority === "high") return "bg-gradient-to-r from-rose-500 to-orange-400 text-slate-900";
@@ -1411,12 +1736,85 @@ function TaskCard({ task, onDragStart, onUpdate, onDelete, projectDir, projectHi
           ) : (
             <div className="mt-2 text-[11px] text-slate-400">Aucun dossier défini pour ce projet.</div>
           )}
+
+          {/* Bouton Sous-tâches - Toujours visible */}
+          <div className="mt-3">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center gap-2 text-sm font-medium text-slate-300 transition hover:text-slate-100"
+            >
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+              <CheckSquare className="h-4 w-4 text-blue-400" />
+              <span>
+                {subtaskProgress
+                  ? `${subtaskProgress.completed}/${subtaskProgress.total} sous-tâches`
+                  : "Sous-tâches"}
+              </span>
+            </button>
+
+            {/* Barre de progression - Seulement si des sous-tâches existent */}
+            {subtaskProgress && (
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span
+                    className={classNames(
+                      "text-xs font-semibold",
+                      subtaskProgress.percentage < 30
+                        ? "text-rose-400"
+                        : subtaskProgress.percentage < 70
+                        ? "text-amber-400"
+                        : "text-emerald-400"
+                    )}
+                  >
+                    {subtaskProgress.percentage}%
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className={classNames(
+                      "h-full transition-all duration-300",
+                      subtaskProgress.percentage < 30
+                        ? "bg-gradient-to-r from-rose-500 to-rose-400"
+                        : subtaskProgress.percentage < 70
+                        ? "bg-gradient-to-r from-amber-500 to-amber-400"
+                        : "bg-gradient-to-r from-emerald-500 to-emerald-400"
+                    )}
+                    style={{ width: `${subtaskProgress.percentage}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Badge de suggestion si toutes les sous-tâches sont complétées */}
+          {allSubtasksCompleted && task.status !== "done" && (
+            <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-2 text-xs font-medium text-emerald-200">
+              <CheckCircle2 className="h-4 w-4" />
+              Toutes les sous-tâches sont terminées ! Vous pouvez passer cette tâche en "Fait".
+            </div>
+          )}
         </div>
         <Menu task={task} onUpdate={onUpdate} onDelete={onDelete} projectHistory={projectHistory} users={users} />
       </div>
 
       {task.notes && (
         <p className="mt-3 text-sm text-slate-200/90 whitespace-pre-wrap">{task.notes}</p>
+      )}
+
+      {/* Liste des sous-tâches (expansion inline) */}
+      {isExpanded && (
+        <SubtaskList
+          task={task}
+          onAddSubtask={onAddSubtask}
+          onToggleSubtask={onToggleSubtask}
+          onDeleteSubtask={onDeleteSubtask}
+          onUpdateSubtaskTitle={onUpdateSubtaskTitle}
+          onReorderSubtasks={onReorderSubtasks}
+        />
       )}
     </div>
   );
@@ -2001,7 +2399,17 @@ function WeeklyReportModal({ tasks, onClose }) {
           text += `\n  [${project}]\n`;
           groupedCompleted[project].forEach(task => {
             const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-            text += `  - ${task.title}${dueText}\n`;
+            const progress = getSubtaskProgress(task);
+            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
+            text += `  - ${task.title}${dueText}${progressText}\n`;
+
+            // Afficher les sous-tâches
+            if (task.subtasks && task.subtasks.length > 0) {
+              task.subtasks.forEach(subtask => {
+                const checkmark = subtask.completed ? "✓" : "○";
+                text += `      ${checkmark} ${subtask.title}\n`;
+              });
+            }
           });
         });
       }
@@ -2016,7 +2424,17 @@ function WeeklyReportModal({ tasks, onClose }) {
           groupedRemaining[project].forEach(task => {
             const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
             const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-            text += `  - ${task.title} – statut : ${statusLabel}${dueText}\n`;
+            const progress = getSubtaskProgress(task);
+            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
+            text += `  - ${task.title} – statut : ${statusLabel}${dueText}${progressText}\n`;
+
+            // Afficher les sous-tâches
+            if (task.subtasks && task.subtasks.length > 0) {
+              task.subtasks.forEach(subtask => {
+                const checkmark = subtask.completed ? "✓" : "○";
+                text += `      ${checkmark} ${subtask.title}\n`;
+              });
+            }
           });
         });
       }
@@ -2037,7 +2455,17 @@ function WeeklyReportModal({ tasks, onClose }) {
           text += `\n  [${project}]\n`;
           groupedCompleted[project].forEach(task => {
             const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-            text += `  - ${task.title}${dueText}\n`;
+            const progress = getSubtaskProgress(task);
+            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
+            text += `  - ${task.title}${dueText}${progressText}\n`;
+
+            // Afficher les sous-tâches
+            if (task.subtasks && task.subtasks.length > 0) {
+              task.subtasks.forEach(subtask => {
+                const checkmark = subtask.completed ? "✓" : "○";
+                text += `      ${checkmark} ${subtask.title}\n`;
+              });
+            }
           });
         });
       }
@@ -2052,7 +2480,17 @@ function WeeklyReportModal({ tasks, onClose }) {
           groupedRemaining[project].forEach(task => {
             const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
             const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-            text += `  - ${task.title} – statut : ${statusLabel}${dueText}\n`;
+            const progress = getSubtaskProgress(task);
+            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
+            text += `  - ${task.title} – statut : ${statusLabel}${dueText}${progressText}\n`;
+
+            // Afficher les sous-tâches
+            if (task.subtasks && task.subtasks.length > 0) {
+              task.subtasks.forEach(subtask => {
+                const checkmark = subtask.completed ? "✓" : "○";
+                text += `      ${checkmark} ${subtask.title}\n`;
+              });
+            }
           });
         });
       }
@@ -2121,18 +2559,27 @@ function WeeklyReportModal({ tasks, onClose }) {
       return false;
     }
 
-    // Titre principal
+    // Ajouter le logo To-DoX en haut à gauche
+    try {
+      const logoImg = new Image();
+      logoImg.src = './src/assets/To Do X.png';
+      doc.addImage(logoImg, 'PNG', margin, y, 15, 15);
+    } catch (e) {
+      console.warn('Logo non chargé:', e);
+    }
+
+    // Titre principal (décalé pour laisser place au logo)
     doc.setFontSize(20);
     doc.setTextColor(30, 58, 138); // Bleu foncé
-    doc.text("Compte Rendu Hebdomadaire", margin, y);
-    y += 15;
+    doc.text("Compte Rendu Hebdomadaire", margin + 20, y + 10);
+    y += 20;
 
     // Date de génération
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     const today = new Date();
     const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
-    doc.text(`Généré le ${dateStr}`, margin, y);
+    doc.text(`Genere le ${dateStr}`, margin, y);
     y += 15;
 
     // ===== SEMAINE EN COURS =====
@@ -2140,20 +2587,20 @@ function WeeklyReportModal({ tasks, onClose }) {
       checkAddPage(20);
       doc.setFontSize(16);
       doc.setTextColor(59, 130, 246); // Bleu
-      doc.text(`📅 Semaine en cours (${currentWeekRange.startStr} au ${currentWeekRange.endStr})`, margin, y);
+      doc.text(`SEMAINE EN COURS (${currentWeekRange.startStr} au ${currentWeekRange.endStr})`, margin, y);
       y += 10;
 
     // Tâches terminées - Semaine en cours
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(16, 185, 129); // Vert
-    doc.text("✅ Tâches terminées", margin, y);
+    doc.text("Taches terminees", margin, y);
     y += 7;
 
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     if (currentCompleted.length === 0) {
-      doc.text("• Aucune tâche terminée cette semaine", margin + 5, y);
+      doc.text("Aucune tache terminee cette semaine", margin + 5, y);
       y += 7;
     } else {
       const groupedCompleted = groupByProject(currentCompleted);
@@ -2168,14 +2615,35 @@ function WeeklyReportModal({ tasks, onClose }) {
         doc.setTextColor(0, 0, 0);
         groupedCompleted[project].forEach(task => {
           checkAddPage(10);
-          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-          const text = `  • ${task.title}${dueText}`;
+          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const progress = getSubtaskProgress(task);
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const text = `  - ${task.title}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
             checkAddPage(7);
             doc.text(line, margin + 5, y);
             y += 7;
           });
+
+          // Afficher les sous-tâches
+          if (task.subtasks && task.subtasks.length > 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            task.subtasks.forEach(subtask => {
+              checkAddPage(6);
+              const checkmark = subtask.completed ? "[X]" : "[ ]";
+              const subtaskText = `      ${checkmark} ${subtask.title}`;
+              const subtaskLines = doc.splitTextToSize(subtaskText, maxWidth - 15);
+              subtaskLines.forEach(line => {
+                checkAddPage(6);
+                doc.text(line, margin + 5, y);
+                y += 6;
+              });
+            });
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+          }
         });
         y += 3;
       });
@@ -2186,13 +2654,13 @@ function WeeklyReportModal({ tasks, onClose }) {
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(251, 191, 36); // Amber
-    doc.text("⏳ Tâches en cours / restantes", margin, y);
+    doc.text("Taches en cours / restantes", margin, y);
     y += 7;
 
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     if (currentRemaining.length === 0) {
-      doc.text("• Aucune tâche en cours", margin + 5, y);
+      doc.text("Aucune tache en cours", margin + 5, y);
       y += 7;
     } else {
       const groupedRemaining = groupByProject(currentRemaining);
@@ -2208,14 +2676,35 @@ function WeeklyReportModal({ tasks, onClose }) {
         groupedRemaining[project].forEach(task => {
           checkAddPage(10);
           const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-          const text = `  • ${task.title} – statut : ${statusLabel}${dueText}`;
+          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const progress = getSubtaskProgress(task);
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const text = `  - ${task.title} - statut : ${statusLabel}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
             checkAddPage(7);
             doc.text(line, margin + 5, y);
             y += 7;
           });
+
+          // Afficher les sous-tâches
+          if (task.subtasks && task.subtasks.length > 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            task.subtasks.forEach(subtask => {
+              checkAddPage(6);
+              const checkmark = subtask.completed ? "[X]" : "[ ]";
+              const subtaskText = `      ${checkmark} ${subtask.title}`;
+              const subtaskLines = doc.splitTextToSize(subtaskText, maxWidth - 15);
+              subtaskLines.forEach(line => {
+                checkAddPage(6);
+                doc.text(line, margin + 5, y);
+                y += 6;
+              });
+            });
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+          }
         });
         y += 3;
       });
@@ -2228,20 +2717,20 @@ function WeeklyReportModal({ tasks, onClose }) {
       checkAddPage(20);
       doc.setFontSize(16);
       doc.setTextColor(147, 51, 234); // Violet
-      doc.text(`📅 Semaine précédente (${previousWeekRange.startStr} au ${previousWeekRange.endStr})`, margin, y);
+      doc.text(`SEMAINE PRECEDENTE (${previousWeekRange.startStr} au ${previousWeekRange.endStr})`, margin, y);
       y += 10;
 
     // Tâches terminées - Semaine précédente
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(16, 185, 129); // Vert
-    doc.text("✅ Tâches terminées", margin, y);
+    doc.text("Taches terminees", margin, y);
     y += 7;
 
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     if (previousCompleted.length === 0) {
-      doc.text("• Aucune tâche terminée durant cette période", margin + 5, y);
+      doc.text("Aucune tache terminee durant cette periode", margin + 5, y);
       y += 7;
     } else {
       const groupedCompleted = groupByProject(previousCompleted);
@@ -2256,14 +2745,35 @@ function WeeklyReportModal({ tasks, onClose }) {
         doc.setTextColor(0, 0, 0);
         groupedCompleted[project].forEach(task => {
           checkAddPage(10);
-          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-          const text = `  • ${task.title}${dueText}`;
+          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const progress = getSubtaskProgress(task);
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const text = `  - ${task.title}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
             checkAddPage(7);
             doc.text(line, margin + 5, y);
             y += 7;
           });
+
+          // Afficher les sous-tâches
+          if (task.subtasks && task.subtasks.length > 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            task.subtasks.forEach(subtask => {
+              checkAddPage(6);
+              const checkmark = subtask.completed ? "[X]" : "[ ]";
+              const subtaskText = `      ${checkmark} ${subtask.title}`;
+              const subtaskLines = doc.splitTextToSize(subtaskText, maxWidth - 15);
+              subtaskLines.forEach(line => {
+                checkAddPage(6);
+                doc.text(line, margin + 5, y);
+                y += 6;
+              });
+            });
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+          }
         });
         y += 3;
       });
@@ -2274,13 +2784,13 @@ function WeeklyReportModal({ tasks, onClose }) {
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(251, 191, 36); // Amber
-    doc.text("⏳ Tâches en cours / restantes", margin, y);
+    doc.text("Taches en cours / restantes", margin, y);
     y += 7;
 
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     if (previousRemaining.length === 0) {
-      doc.text("• Aucune tâche en cours", margin + 5, y);
+      doc.text("Aucune tache en cours", margin + 5, y);
       y += 7;
     } else {
       const groupedRemaining = groupByProject(previousRemaining);
@@ -2296,14 +2806,35 @@ function WeeklyReportModal({ tasks, onClose }) {
         groupedRemaining[project].forEach(task => {
           checkAddPage(10);
           const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-          const text = `  • ${task.title} – statut : ${statusLabel}${dueText}`;
+          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const progress = getSubtaskProgress(task);
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const text = `  - ${task.title} - statut : ${statusLabel}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
             checkAddPage(7);
             doc.text(line, margin + 5, y);
             y += 7;
           });
+
+          // Afficher les sous-tâches
+          if (task.subtasks && task.subtasks.length > 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            task.subtasks.forEach(subtask => {
+              checkAddPage(6);
+              const checkmark = subtask.completed ? "[X]" : "[ ]";
+              const subtaskText = `      ${checkmark} ${subtask.title}`;
+              const subtaskLines = doc.splitTextToSize(subtaskText, maxWidth - 15);
+              subtaskLines.forEach(line => {
+                checkAddPage(6);
+                doc.text(line, margin + 5, y);
+                y += 6;
+              });
+            });
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+          }
         });
         y += 3;
       });
@@ -2317,7 +2848,7 @@ function WeeklyReportModal({ tasks, onClose }) {
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
       doc.text(`Page ${i} / ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
-      doc.text("Généré avec To-DoX", pageWidth - margin, pageHeight - 10, { align: 'right' });
+      doc.text("Genere avec To-DoX", pageWidth - margin, pageHeight - 10, { align: 'right' });
     }
 
     // Télécharger le PDF
