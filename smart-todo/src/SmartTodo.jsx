@@ -10,7 +10,9 @@ import {
   User,
   MoreHorizontal,
   FileText,
+  FileDown,
 } from "lucide-react";
+import { jsPDF } from "jspdf";
 import ToDoXLogo from "./assets/To Do X.svg";
 
 /**
@@ -68,6 +70,41 @@ function businessDaysBetween(startDate, endDate) {
 }
 
 /**
+ * Formater une date en DD/MM
+ */
+function formatDateShort(date) {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${day}/${month}`;
+}
+
+/**
+ * Calcule la plage de dates de la semaine en cours (Lundi 00:00 → Aujourd'hui)
+ * @returns {{ start: Date, end: Date, startStr: string, endStr: string }}
+ */
+function getCurrentWeekRange() {
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = dimanche, 1 = lundi, etc.
+
+  // Calculer le lundi de la semaine actuelle
+  const currentMonday = new Date(today);
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  currentMonday.setDate(today.getDate() - daysFromMonday);
+  currentMonday.setHours(0, 0, 0, 0);
+
+  // Aujourd'hui à 23:59:59
+  const now = new Date();
+  now.setHours(23, 59, 59, 999);
+
+  return {
+    start: currentMonday,
+    end: now,
+    startStr: formatDateShort(currentMonday),
+    endStr: formatDateShort(now),
+  };
+}
+
+/**
  * Calcule la plage de dates de la semaine précédente (Lundi 00:00 → Dimanche 23:59)
  * @returns {{ start: Date, end: Date, startStr: string, endStr: string }}
  */
@@ -77,7 +114,7 @@ function getPreviousWeekRange() {
 
   // Calculer le lundi de la semaine actuelle
   const currentMonday = new Date(today);
-  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Si dimanche, c'est 6 jours après lundi
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   currentMonday.setDate(today.getDate() - daysFromMonday);
   currentMonday.setHours(0, 0, 0, 0);
 
@@ -90,18 +127,11 @@ function getPreviousWeekRange() {
   previousSunday.setDate(previousMonday.getDate() + 6);
   previousSunday.setHours(23, 59, 59, 999);
 
-  // Formater en DD/MM
-  const formatDate = (date) => {
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    return `${day}/${month}`;
-  };
-
   return {
     start: previousMonday,
     end: previousSunday,
-    startStr: formatDate(previousMonday),
-    endStr: formatDate(previousSunday),
+    startStr: formatDateShort(previousMonday),
+    endStr: formatDateShort(previousSunday),
   };
 }
 
@@ -261,7 +291,20 @@ export default function SmartTodo() {
 
           if (result.success && result.data) {
             // Charger les données depuis le fichier
-            if (result.data.tasks) setTasks(result.data.tasks);
+            if (result.data.tasks) {
+              // Migration : ajouter completedAt aux tâches "done" qui n'ont pas ce champ
+              const migratedTasks = result.data.tasks.map(task => {
+                if (task.status === "done" && !task.completedAt) {
+                  return { ...task, completedAt: task.updatedAt || task.createdAt || Date.now() };
+                }
+                return task;
+              });
+              const migratedCount = migratedTasks.filter((t, i) => t.completedAt !== result.data.tasks[i]?.completedAt).length;
+              if (migratedCount > 0) {
+                console.log(`✅ Migration: ${migratedCount} tâche(s) "done" ont reçu un completedAt`);
+              }
+              setTasks(migratedTasks);
+            }
             if (result.data.directories) setDirectories(result.data.directories);
             if (result.data.projectHistory) setProjectHistory(result.data.projectHistory);
             if (result.data.users) setUsers(result.data.users);
@@ -271,7 +314,20 @@ export default function SmartTodo() {
             if (localData) {
               try {
                 const parsed = JSON.parse(localData);
-                if (parsed.tasks) setTasks(parsed.tasks);
+                if (parsed.tasks) {
+                  // Migration : ajouter completedAt aux tâches "done" qui n'ont pas ce champ
+                  const migratedTasks = parsed.tasks.map(task => {
+                    if (task.status === "done" && !task.completedAt) {
+                      return { ...task, completedAt: task.updatedAt || task.createdAt || Date.now() };
+                    }
+                    return task;
+                  });
+                  const migratedCount = migratedTasks.filter((t, i) => t.completedAt !== parsed.tasks[i]?.completedAt).length;
+                  if (migratedCount > 0) {
+                    console.log(`✅ Migration: ${migratedCount} tâche(s) "done" ont reçu un completedAt`);
+                  }
+                  setTasks(migratedTasks);
+                }
                 if (parsed.directories) setDirectories(parsed.directories);
                 if (parsed.projectHistory) setProjectHistory(parsed.projectHistory);
                 if (parsed.users) setUsers(parsed.users);
@@ -1834,10 +1890,13 @@ function UsersPanel({ users, setUsers, onClose }) {
 function WeeklyReportModal({ tasks, onClose }) {
   const [selectedTasks, setSelectedTasks] = useState(() => {
     // Par défaut, toutes les tâches sont sélectionnées
-    const weekRange = getPreviousWeekRange();
-    const weeklyTasks = getWeeklyTasks(tasks, weekRange);
+    const currentRange = getCurrentWeekRange();
+    const previousRange = getPreviousWeekRange();
+    const currentTasks = getWeeklyTasks(tasks, currentRange);
+    const previousTasks = getWeeklyTasks(tasks, previousRange);
+
     const initialSelection = {};
-    [...weeklyTasks.completed, ...weeklyTasks.remaining].forEach(task => {
+    [...currentTasks.completed, ...currentTasks.remaining, ...previousTasks.completed, ...previousTasks.remaining].forEach(task => {
       initialSelection[task.id] = true;
     });
     return initialSelection;
@@ -1845,17 +1904,24 @@ function WeeklyReportModal({ tasks, onClose }) {
 
   const [reportText, setReportText] = useState("");
   const [showReport, setShowReport] = useState(false);
+  const [reportPeriod, setReportPeriod] = useState(null); // 'current', 'previous', ou 'both'
 
-  const weekRange = useMemo(() => getPreviousWeekRange(), []);
-  const weeklyTasks = useMemo(() => getWeeklyTasks(tasks, weekRange), [tasks, weekRange]);
+  const currentWeekRange = useMemo(() => getCurrentWeekRange(), []);
+  const previousWeekRange = useMemo(() => getPreviousWeekRange(), []);
+  const currentWeekTasks = useMemo(() => getWeeklyTasks(tasks, currentWeekRange), [tasks, currentWeekRange]);
+  const previousWeekTasks = useMemo(() => getWeeklyTasks(tasks, previousWeekRange), [tasks, previousWeekRange]);
 
   // Fonction pour récupérer les tâches de la semaine
   function getWeeklyTasks(allTasks, range) {
     const completed = [];
     const remaining = [];
+    const excludedProjects = ["DEV", "PERSO"];
 
     for (const task of allTasks) {
       if (task.archived) continue;
+
+      // Filtrer les projets exclus
+      if (excludedProjects.includes(task.project?.toUpperCase())) continue;
 
       // Tâches terminées durant la semaine
       if (task.status === "done" && task.completedAt) {
@@ -1885,9 +1951,10 @@ function WeeklyReportModal({ tasks, onClose }) {
     }));
   }
 
-  // Sélectionner/désélectionner toutes les tâches
-  function toggleAll(isCompleted) {
-    const tasksToToggle = isCompleted ? weeklyTasks.completed : weeklyTasks.remaining;
+  // Sélectionner/désélectionner toutes les tâches d'une période
+  function toggleAll(period, isCompleted) {
+    const weekTasks = period === 'current' ? currentWeekTasks : previousWeekTasks;
+    const tasksToToggle = isCompleted ? weekTasks.completed : weekTasks.remaining;
     const allSelected = tasksToToggle.every(t => selectedTasks[t.id]);
 
     setSelectedTasks(prev => {
@@ -1899,35 +1966,100 @@ function WeeklyReportModal({ tasks, onClose }) {
     });
   }
 
+  // Fonction pour grouper les tâches par projet
+  function groupByProject(tasks) {
+    const grouped = {};
+    tasks.forEach(task => {
+      const project = task.project || "Sans projet";
+      if (!grouped[project]) {
+        grouped[project] = [];
+      }
+      grouped[project].push(task);
+    });
+    return grouped;
+  }
+
   // Générer le texte du compte rendu
-  function generateReport() {
-    const completedTasks = weeklyTasks.completed.filter(t => selectedTasks[t.id]);
-    const remainingTasks = weeklyTasks.remaining.filter(t => selectedTasks[t.id]);
+  function generateReport(period = 'both') {
+    const currentCompleted = currentWeekTasks.completed.filter(t => selectedTasks[t.id]);
+    const currentRemaining = currentWeekTasks.remaining.filter(t => selectedTasks[t.id]);
+    const previousCompleted = previousWeekTasks.completed.filter(t => selectedTasks[t.id]);
+    const previousRemaining = previousWeekTasks.remaining.filter(t => selectedTasks[t.id]);
 
-    let text = `Compte rendu hebdomadaire – semaine du ${weekRange.startStr} au ${weekRange.endStr}\n\n`;
+    let text = `Compte rendu hebdomadaire\n\n`;
 
-    // Tâches terminées
-    text += `✅ Tâches terminées\n`;
-    if (completedTasks.length === 0) {
-      text += "- Aucune tâche terminée durant cette période\n";
-    } else {
-      completedTasks.forEach(task => {
-        const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-        text += `- [${task.project}] ${task.title}${dueText}\n`;
-      });
+    // ===== SEMAINE EN COURS =====
+    if (period === 'current' || period === 'both') {
+      text += `📅 SEMAINE EN COURS (${currentWeekRange.startStr} au ${currentWeekRange.endStr})\n\n`;
+
+      text += `✅ Tâches terminées\n`;
+      if (currentCompleted.length === 0) {
+        text += "- Aucune tâche terminée cette semaine\n";
+      } else {
+        const groupedCompleted = groupByProject(currentCompleted);
+        Object.keys(groupedCompleted).sort().forEach(project => {
+          text += `\n  [${project}]\n`;
+          groupedCompleted[project].forEach(task => {
+            const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+            text += `  - ${task.title}${dueText}\n`;
+          });
+        });
+      }
+
+      text += `\n⏳ Tâches en cours / restantes\n`;
+      if (currentRemaining.length === 0) {
+        text += "- Aucune tâche en cours\n";
+      } else {
+        const groupedRemaining = groupByProject(currentRemaining);
+        Object.keys(groupedRemaining).sort().forEach(project => {
+          text += `\n  [${project}]\n`;
+          groupedRemaining[project].forEach(task => {
+            const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+            const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+            text += `  - ${task.title} – statut : ${statusLabel}${dueText}\n`;
+          });
+        });
+      }
     }
 
-    text += `\n⏳ Tâches en cours / restantes\n`;
-    if (remainingTasks.length === 0) {
-      text += "- Aucune tâche en cours\n";
-    } else {
-      remainingTasks.forEach(task => {
-        const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-        text += `- [${task.project}] ${task.title} – statut : ${statusLabel}\n`;
-      });
+    // ===== SEMAINE PRÉCÉDENTE =====
+    if (period === 'previous' || period === 'both') {
+      if (period === 'both') text += `\n\n`;
+
+      text += `📅 SEMAINE PRÉCÉDENTE (${previousWeekRange.startStr} au ${previousWeekRange.endStr})\n\n`;
+
+      text += `✅ Tâches terminées\n`;
+      if (previousCompleted.length === 0) {
+        text += "- Aucune tâche terminée durant cette période\n";
+      } else {
+        const groupedCompleted = groupByProject(previousCompleted);
+        Object.keys(groupedCompleted).sort().forEach(project => {
+          text += `\n  [${project}]\n`;
+          groupedCompleted[project].forEach(task => {
+            const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+            text += `  - ${task.title}${dueText}\n`;
+          });
+        });
+      }
+
+      text += `\n⏳ Tâches en cours / restantes\n`;
+      if (previousRemaining.length === 0) {
+        text += "- Aucune tâche en cours\n";
+      } else {
+        const groupedRemaining = groupByProject(previousRemaining);
+        Object.keys(groupedRemaining).sort().forEach(project => {
+          text += `\n  [${project}]\n`;
+          groupedRemaining[project].forEach(task => {
+            const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+            const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+            text += `  - ${task.title} – statut : ${statusLabel}${dueText}\n`;
+          });
+        });
+      }
     }
 
     setReportText(text);
+    setReportPeriod(period);
     setShowReport(true);
   }
 
@@ -1964,8 +2096,248 @@ function WeeklyReportModal({ tasks, onClose }) {
     }
   }
 
-  const completedCount = weeklyTasks.completed.filter(t => selectedTasks[t.id]).length;
-  const remainingCount = weeklyTasks.remaining.filter(t => selectedTasks[t.id]).length;
+  // Exporter en PDF
+  function exportToPDF() {
+    const period = reportPeriod || 'both';
+    const currentCompleted = currentWeekTasks.completed.filter(t => selectedTasks[t.id]);
+    const currentRemaining = currentWeekTasks.remaining.filter(t => selectedTasks[t.id]);
+    const previousCompleted = previousWeekTasks.completed.filter(t => selectedTasks[t.id]);
+    const previousRemaining = previousWeekTasks.remaining.filter(t => selectedTasks[t.id]);
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const maxWidth = pageWidth - (margin * 2);
+    let y = margin;
+
+    // Fonction pour vérifier et ajouter une nouvelle page si nécessaire
+    function checkAddPage(neededSpace = 15) {
+      if (y + neededSpace > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+        return true;
+      }
+      return false;
+    }
+
+    // Titre principal
+    doc.setFontSize(20);
+    doc.setTextColor(30, 58, 138); // Bleu foncé
+    doc.text("Compte Rendu Hebdomadaire", margin, y);
+    y += 15;
+
+    // Date de génération
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    const today = new Date();
+    const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+    doc.text(`Généré le ${dateStr}`, margin, y);
+    y += 15;
+
+    // ===== SEMAINE EN COURS =====
+    if (period === 'current' || period === 'both') {
+      checkAddPage(20);
+      doc.setFontSize(16);
+      doc.setTextColor(59, 130, 246); // Bleu
+      doc.text(`📅 Semaine en cours (${currentWeekRange.startStr} au ${currentWeekRange.endStr})`, margin, y);
+      y += 10;
+
+    // Tâches terminées - Semaine en cours
+    checkAddPage(15);
+    doc.setFontSize(12);
+    doc.setTextColor(16, 185, 129); // Vert
+    doc.text("✅ Tâches terminées", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    if (currentCompleted.length === 0) {
+      doc.text("• Aucune tâche terminée cette semaine", margin + 5, y);
+      y += 7;
+    } else {
+      const groupedCompleted = groupByProject(currentCompleted);
+      Object.keys(groupedCompleted).sort().forEach(project => {
+        checkAddPage(10);
+        doc.setFontSize(11);
+        doc.setTextColor(30, 58, 138);
+        doc.text(`[${project}]`, margin + 5, y);
+        y += 7;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        groupedCompleted[project].forEach(task => {
+          checkAddPage(10);
+          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+          const text = `  • ${task.title}${dueText}`;
+          const lines = doc.splitTextToSize(text, maxWidth - 10);
+          lines.forEach(line => {
+            checkAddPage(7);
+            doc.text(line, margin + 5, y);
+            y += 7;
+          });
+        });
+        y += 3;
+      });
+    }
+    y += 5;
+
+    // Tâches en cours - Semaine en cours
+    checkAddPage(15);
+    doc.setFontSize(12);
+    doc.setTextColor(251, 191, 36); // Amber
+    doc.text("⏳ Tâches en cours / restantes", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    if (currentRemaining.length === 0) {
+      doc.text("• Aucune tâche en cours", margin + 5, y);
+      y += 7;
+    } else {
+      const groupedRemaining = groupByProject(currentRemaining);
+      Object.keys(groupedRemaining).sort().forEach(project => {
+        checkAddPage(10);
+        doc.setFontSize(11);
+        doc.setTextColor(30, 58, 138);
+        doc.text(`[${project}]`, margin + 5, y);
+        y += 7;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        groupedRemaining[project].forEach(task => {
+          checkAddPage(10);
+          const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+          const text = `  • ${task.title} – statut : ${statusLabel}${dueText}`;
+          const lines = doc.splitTextToSize(text, maxWidth - 10);
+          lines.forEach(line => {
+            checkAddPage(7);
+            doc.text(line, margin + 5, y);
+            y += 7;
+          });
+        });
+        y += 3;
+      });
+    }
+      y += 10;
+    }
+
+    // ===== SEMAINE PRÉCÉDENTE =====
+    if (period === 'previous' || period === 'both') {
+      checkAddPage(20);
+      doc.setFontSize(16);
+      doc.setTextColor(147, 51, 234); // Violet
+      doc.text(`📅 Semaine précédente (${previousWeekRange.startStr} au ${previousWeekRange.endStr})`, margin, y);
+      y += 10;
+
+    // Tâches terminées - Semaine précédente
+    checkAddPage(15);
+    doc.setFontSize(12);
+    doc.setTextColor(16, 185, 129); // Vert
+    doc.text("✅ Tâches terminées", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    if (previousCompleted.length === 0) {
+      doc.text("• Aucune tâche terminée durant cette période", margin + 5, y);
+      y += 7;
+    } else {
+      const groupedCompleted = groupByProject(previousCompleted);
+      Object.keys(groupedCompleted).sort().forEach(project => {
+        checkAddPage(10);
+        doc.setFontSize(11);
+        doc.setTextColor(30, 58, 138);
+        doc.text(`[${project}]`, margin + 5, y);
+        y += 7;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        groupedCompleted[project].forEach(task => {
+          checkAddPage(10);
+          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+          const text = `  • ${task.title}${dueText}`;
+          const lines = doc.splitTextToSize(text, maxWidth - 10);
+          lines.forEach(line => {
+            checkAddPage(7);
+            doc.text(line, margin + 5, y);
+            y += 7;
+          });
+        });
+        y += 3;
+      });
+    }
+    y += 5;
+
+    // Tâches en cours - Semaine précédente
+    checkAddPage(15);
+    doc.setFontSize(12);
+    doc.setTextColor(251, 191, 36); // Amber
+    doc.text("⏳ Tâches en cours / restantes", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    if (previousRemaining.length === 0) {
+      doc.text("• Aucune tâche en cours", margin + 5, y);
+      y += 7;
+    } else {
+      const groupedRemaining = groupByProject(previousRemaining);
+      Object.keys(groupedRemaining).sort().forEach(project => {
+        checkAddPage(10);
+        doc.setFontSize(11);
+        doc.setTextColor(30, 58, 138);
+        doc.text(`[${project}]`, margin + 5, y);
+        y += 7;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        groupedRemaining[project].forEach(task => {
+          checkAddPage(10);
+          const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+          const text = `  • ${task.title} – statut : ${statusLabel}${dueText}`;
+          const lines = doc.splitTextToSize(text, maxWidth - 10);
+          lines.forEach(line => {
+            checkAddPage(7);
+            doc.text(line, margin + 5, y);
+            y += 7;
+          });
+        });
+        y += 3;
+      });
+    }
+    }
+
+    // Footer sur chaque page
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Page ${i} / ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.text("Généré avec To-DoX", pageWidth - margin, pageHeight - 10, { align: 'right' });
+    }
+
+    // Télécharger le PDF
+    let filename;
+    if (period === 'current') {
+      filename = `CR_Semaine_en_cours_${currentWeekRange.startStr.replace(/\//g, '-')}_${currentWeekRange.endStr.replace(/\//g, '-')}.pdf`;
+    } else if (period === 'previous') {
+      filename = `CR_Semaine_precedente_${previousWeekRange.startStr.replace(/\//g, '-')}_${previousWeekRange.endStr.replace(/\//g, '-')}.pdf`;
+    } else {
+      filename = `CR_Complet_${previousWeekRange.startStr.replace(/\//g, '-')}_${currentWeekRange.endStr.replace(/\//g, '-')}.pdf`;
+    }
+    doc.save(filename);
+
+    alert("PDF généré avec succès !");
+  }
+
+  const currentCompletedCount = currentWeekTasks.completed.filter(t => selectedTasks[t.id]).length;
+  const currentRemainingCount = currentWeekTasks.remaining.filter(t => selectedTasks[t.id]).length;
+  const previousCompletedCount = previousWeekTasks.completed.filter(t => selectedTasks[t.id]).length;
+  const previousRemainingCount = previousWeekTasks.remaining.filter(t => selectedTasks[t.id]).length;
 
   return (
     <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur">
@@ -1977,7 +2349,7 @@ function WeeklyReportModal({ tasks, onClose }) {
               Compte Rendu Hebdomadaire
             </h3>
             <p className="text-sm text-slate-400 mt-1">
-              Semaine du {weekRange.startStr} au {weekRange.endStr}
+              Semaine en cours et semaine précédente
             </p>
           </div>
           <button
@@ -1990,97 +2362,232 @@ function WeeklyReportModal({ tasks, onClose }) {
 
         {!showReport ? (
           <>
-            <div className="mt-6 space-y-6">
-              {/* Section Tâches terminées */}
-              <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-lg font-semibold text-emerald-200 flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5" />
-                    Tâches terminées ({weeklyTasks.completed.length})
-                  </h4>
-                  <button
-                    onClick={() => toggleAll(true)}
-                    className="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-100 transition hover:bg-emerald-400/20"
-                  >
-                    {weeklyTasks.completed.every(t => selectedTasks[t.id]) ? "Tout désélectionner" : "Tout sélectionner"}
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {weeklyTasks.completed.length === 0 ? (
-                    <p className="text-sm text-slate-400">Aucune tâche terminée durant cette période.</p>
-                  ) : (
-                    weeklyTasks.completed.map(task => (
-                      <label
-                        key={task.id}
-                        className="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={!!selectedTasks[task.id]}
-                          onChange={() => toggleTask(task.id)}
-                          className="mt-1 h-4 w-4 rounded accent-emerald-400"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-slate-100">{task.title}</div>
-                          <div className="text-xs text-slate-400 mt-1">
-                            <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 mr-2">
-                              {task.project}
-                            </span>
-                            {task.due && (
-                              <span>Échéance : {formatDateFull(task.due)}</span>
-                            )}
+            <div className="mt-6 space-y-8">
+              {/* ===== SEMAINE EN COURS ===== */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-blue-200 border-b border-blue-400/30 pb-2">
+                  📅 Semaine en cours ({currentWeekRange.startStr} au {currentWeekRange.endStr})
+                </h3>
+
+                {/* Tâches terminées - Semaine en cours */}
+                <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-md font-semibold text-emerald-200 flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5" />
+                      Tâches terminées ({currentWeekTasks.completed.length})
+                    </h4>
+                    <button
+                      onClick={() => toggleAll('current', true)}
+                      className="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-100 transition hover:bg-emerald-400/20"
+                    >
+                      {currentWeekTasks.completed.every(t => selectedTasks[t.id]) ? "Tout désélectionner" : "Tout sélectionner"}
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {currentWeekTasks.completed.length === 0 ? (
+                      <p className="text-sm text-slate-400">Aucune tâche terminée cette semaine.</p>
+                    ) : (
+                      (() => {
+                        const grouped = groupByProject(currentWeekTasks.completed);
+                        return Object.keys(grouped).sort().map(project => (
+                          <div key={project} className="space-y-2">
+                            <div className="text-xs font-semibold text-blue-300 uppercase tracking-wide px-2">
+                              {project}
+                            </div>
+                            {grouped[project].map(task => (
+                              <label
+                                key={task.id}
+                                className="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition ml-2"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={!!selectedTasks[task.id]}
+                                  onChange={() => toggleTask(task.id)}
+                                  className="mt-1 h-4 w-4 rounded accent-emerald-400"
+                                />
+                                <div className="flex-1">
+                                  <div className="font-medium text-slate-100">{task.title}</div>
+                                  <div className="text-xs text-slate-400 mt-1">
+                                    {task.due && (
+                                      <span>Échéance : {formatDateFull(task.due)}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </label>
+                            ))}
                           </div>
-                        </div>
-                      </label>
-                    ))
-                  )}
+                        ));
+                      })()
+                    )}
+                  </div>
+                </div>
+
+                {/* Tâches restantes - Semaine en cours */}
+                <div className="rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-md font-semibold text-amber-200 flex items-center gap-2">
+                      <Loader2 className="h-5 w-5" />
+                      Tâches en cours / restantes ({currentWeekTasks.remaining.length})
+                    </h4>
+                    <button
+                      onClick={() => toggleAll('current', false)}
+                      className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs text-amber-100 transition hover:bg-amber-400/20"
+                    >
+                      {currentWeekTasks.remaining.every(t => selectedTasks[t.id]) ? "Tout désélectionner" : "Tout sélectionner"}
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {currentWeekTasks.remaining.length === 0 ? (
+                      <p className="text-sm text-slate-400">Aucune tâche en cours.</p>
+                    ) : (
+                      (() => {
+                        const grouped = groupByProject(currentWeekTasks.remaining);
+                        return Object.keys(grouped).sort().map(project => (
+                          <div key={project} className="space-y-2">
+                            <div className="text-xs font-semibold text-blue-300 uppercase tracking-wide px-2">
+                              {project}
+                            </div>
+                            {grouped[project].map(task => {
+                              const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+                              return (
+                                <label
+                                  key={task.id}
+                                  className="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition ml-2"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={!!selectedTasks[task.id]}
+                                    onChange={() => toggleTask(task.id)}
+                                    className="mt-1 h-4 w-4 rounded accent-amber-400"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="font-medium text-slate-100">{task.title}</div>
+                                    <div className="text-xs text-slate-400 mt-1">
+                                      <span>Statut : {statusLabel}</span>
+                                    </div>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ));
+                      })()
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Section Tâches restantes */}
-              <div className="rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-lg font-semibold text-amber-200 flex items-center gap-2">
-                    <Loader2 className="h-5 w-5" />
-                    Tâches en cours / restantes ({weeklyTasks.remaining.length})
-                  </h4>
-                  <button
-                    onClick={() => toggleAll(false)}
-                    className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs text-amber-100 transition hover:bg-amber-400/20"
-                  >
-                    {weeklyTasks.remaining.every(t => selectedTasks[t.id]) ? "Tout désélectionner" : "Tout sélectionner"}
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {weeklyTasks.remaining.length === 0 ? (
-                    <p className="text-sm text-slate-400">Aucune tâche en cours.</p>
-                  ) : (
-                    weeklyTasks.remaining.map(task => {
-                      const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-                      return (
-                        <label
-                          key={task.id}
-                          className="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={!!selectedTasks[task.id]}
-                            onChange={() => toggleTask(task.id)}
-                            className="mt-1 h-4 w-4 rounded accent-amber-400"
-                          />
-                          <div className="flex-1">
-                            <div className="font-medium text-slate-100">{task.title}</div>
-                            <div className="text-xs text-slate-400 mt-1">
-                              <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 mr-2">
-                                {task.project}
-                              </span>
-                              <span>Statut : {statusLabel}</span>
+              {/* ===== SEMAINE PRÉCÉDENTE ===== */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-purple-200 border-b border-purple-400/30 pb-2">
+                  📅 Semaine précédente ({previousWeekRange.startStr} au {previousWeekRange.endStr})
+                </h3>
+
+                {/* Tâches terminées - Semaine précédente */}
+                <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-md font-semibold text-emerald-200 flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5" />
+                      Tâches terminées ({previousWeekTasks.completed.length})
+                    </h4>
+                    <button
+                      onClick={() => toggleAll('previous', true)}
+                      className="rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-100 transition hover:bg-emerald-400/20"
+                    >
+                      {previousWeekTasks.completed.every(t => selectedTasks[t.id]) ? "Tout désélectionner" : "Tout sélectionner"}
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {previousWeekTasks.completed.length === 0 ? (
+                      <p className="text-sm text-slate-400">Aucune tâche terminée durant cette période.</p>
+                    ) : (
+                      (() => {
+                        const grouped = groupByProject(previousWeekTasks.completed);
+                        return Object.keys(grouped).sort().map(project => (
+                          <div key={project} className="space-y-2">
+                            <div className="text-xs font-semibold text-purple-300 uppercase tracking-wide px-2">
+                              {project}
                             </div>
+                            {grouped[project].map(task => (
+                              <label
+                                key={task.id}
+                                className="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition ml-2"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={!!selectedTasks[task.id]}
+                                  onChange={() => toggleTask(task.id)}
+                                  className="mt-1 h-4 w-4 rounded accent-emerald-400"
+                                />
+                                <div className="flex-1">
+                                  <div className="font-medium text-slate-100">{task.title}</div>
+                                  <div className="text-xs text-slate-400 mt-1">
+                                    {task.due && (
+                                      <span>Échéance : {formatDateFull(task.due)}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </label>
+                            ))}
                           </div>
-                        </label>
-                      );
-                    })
-                  )}
+                        ));
+                      })()
+                    )}
+                  </div>
+                </div>
+
+                {/* Tâches restantes - Semaine précédente */}
+                <div className="rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-md font-semibold text-amber-200 flex items-center gap-2">
+                      <Loader2 className="h-5 w-5" />
+                      Tâches en cours / restantes ({previousWeekTasks.remaining.length})
+                    </h4>
+                    <button
+                      onClick={() => toggleAll('previous', false)}
+                      className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs text-amber-100 transition hover:bg-amber-400/20"
+                    >
+                      {previousWeekTasks.remaining.every(t => selectedTasks[t.id]) ? "Tout désélectionner" : "Tout sélectionner"}
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    {previousWeekTasks.remaining.length === 0 ? (
+                      <p className="text-sm text-slate-400">Aucune tâche en cours.</p>
+                    ) : (
+                      (() => {
+                        const grouped = groupByProject(previousWeekTasks.remaining);
+                        return Object.keys(grouped).sort().map(project => (
+                          <div key={project} className="space-y-2">
+                            <div className="text-xs font-semibold text-purple-300 uppercase tracking-wide px-2">
+                              {project}
+                            </div>
+                            {grouped[project].map(task => {
+                              const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+                              return (
+                                <label
+                                  key={task.id}
+                                  className="flex items-start gap-3 p-3 rounded-xl border border-white/10 bg-white/5 cursor-pointer hover:bg-white/10 transition ml-2"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={!!selectedTasks[task.id]}
+                                    onChange={() => toggleTask(task.id)}
+                                    className="mt-1 h-4 w-4 rounded accent-amber-400"
+                                  />
+                                  <div className="flex-1">
+                                    <div className="font-medium text-slate-100">{task.title}</div>
+                                    <div className="text-xs text-slate-400 mt-1">
+                                      <span>Statut : {statusLabel}</span>
+                                    </div>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ));
+                      })()
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -2088,7 +2595,7 @@ function WeeklyReportModal({ tasks, onClose }) {
             {/* Boutons d'action */}
             <div className="mt-6 flex justify-between items-center">
               <div className="text-sm text-slate-400">
-                {completedCount + remainingCount} tâche(s) sélectionnée(s)
+                {currentCompletedCount + currentRemainingCount + previousCompletedCount + previousRemainingCount} tâche(s) sélectionnée(s)
               </div>
               <div className="flex gap-2">
                 <button
@@ -2098,11 +2605,25 @@ function WeeklyReportModal({ tasks, onClose }) {
                   Annuler
                 </button>
                 <button
-                  onClick={generateReport}
-                  disabled={completedCount + remainingCount === 0}
-                  className="rounded-2xl bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-blue-500/20 transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => generateReport('current')}
+                  disabled={currentCompletedCount + currentRemainingCount === 0}
+                  className="rounded-2xl bg-gradient-to-r from-blue-400 via-cyan-400 to-indigo-400 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-blue-500/20 transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Générer le compte rendu
+                  CR Semaine en cours
+                </button>
+                <button
+                  onClick={() => generateReport('previous')}
+                  disabled={previousCompletedCount + previousRemainingCount === 0}
+                  className="rounded-2xl bg-gradient-to-r from-purple-400 via-pink-400 to-rose-400 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-purple-500/20 transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  CR Semaine précédente
+                </button>
+                <button
+                  onClick={() => generateReport('both')}
+                  disabled={currentCompletedCount + currentRemainingCount + previousCompletedCount + previousRemainingCount === 0}
+                  className="rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-500 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-emerald-500/20 transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  CR Complet (2 semaines)
                 </button>
               </div>
             </div>
@@ -2128,9 +2649,16 @@ function WeeklyReportModal({ tasks, onClose }) {
               </button>
               <button
                 onClick={copyToClipboard}
-                className="rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-emerald-500/20 transition hover:brightness-110"
+                className="rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-emerald-500/20 transition hover:brightness-110 inline-flex items-center gap-2"
               >
                 Copier dans le presse-papiers
+              </button>
+              <button
+                onClick={exportToPDF}
+                className="rounded-2xl bg-gradient-to-r from-rose-400 via-pink-400 to-purple-500 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-pink-500/20 transition hover:brightness-110 inline-flex items-center gap-2"
+              >
+                <FileDown className="h-4 w-4" />
+                Exporter en PDF
               </button>
             </div>
           </>

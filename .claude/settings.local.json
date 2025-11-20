@@ -12,7 +12,18 @@
       "Bash(npm uninstall:*)",
       "Bash(dir:*)",
       "Bash(nul)",
-      "Bash(node create-icon.js:*)"
+      "Bash(node create-icon.js:*)",
+      "Bash(node fix-encoding.js:*)",
+      "Bash(node fix.js:*)",
+      "Bash(npm run dev:*)",
+      "Bash(del fix.js fix-encoding.js fix_encoding.py 2)",
+      "Bash(gh release create v1.3.1 --title \"v1.3.1\" --notes \"$(cat <<''EOF''\n## Corrections et améliorations\n\n### Corrections\n- ✅ Correction de l''encodage UTF-8 pour tous les caractères français accentués\n- ✅ Correction du z-index des dropdowns dans les menus contextuels\n- ✅ Correction de l''export/import JSON pour inclure l''historique des projets\n\n### Améliorations\n- 🎨 Remplacement des émojis par des icônes Lucide React (User, MoreHorizontal)\n- 🎨 Remplacement de tous les select par des composants Autocomplete avec meilleure UX\n- 🧹 Suppression du code inutilisé\n- 📐 Ajustement du padding pour la barre de titre\n\n### Technique\n- Amélioration de la cohérence visuelle avec les icônes Lucide\n- Meilleure gestion de l''état avec export/import complet\nEOF\n)\")",
+      "Bash(gh release create:*)",
+      "Bash(git remote:*)",
+      "Bash(where:*)",
+      "Bash(npm run:*)",
+      "Bash(electron-builder:*)",
+      "Bash(npx electron-builder --win)"
     ],
     "deny": [],
     "ask": []
