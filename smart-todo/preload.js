@@ -31,6 +31,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   windowClose: () => ipcRenderer.invoke('window-close'),
   windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
 
+  // Gestion du stockage de fichiers
+  getStoragePath: () => ipcRenderer.invoke('get-storage-path'),
+  readData: (filePath) => ipcRenderer.invoke('read-data', filePath),
+  saveData: (filePath, data) => ipcRenderer.invoke('save-data', filePath, data),
+  chooseStorageFolder: () => ipcRenderer.invoke('choose-storage-folder'),
+
   // Vérifier si on est dans Electron
   isElectron: true
 });

@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain, shell, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const fs = require('fs').promises;
 const isDev = process.env.NODE_ENV === 'development';
 
 let mainWindow;
@@ -191,4 +192,95 @@ ipcMain.handle('window-close', () => {
 
 ipcMain.handle('window-is-maximized', () => {
   return mainWindow ? mainWindow.isMaximized() : false;
+});
+
+// Gestion du stockage de fichiers
+const os = require('os');
+
+// Obtenir le chemin OneDrive par défaut
+function getDefaultOneDrivePath() {
+  const userProfile = os.homedir();
+  const oneDrivePath = path.join(userProfile, 'OneDrive - CEA', 'DATA', 'To-Do-X');
+  return oneDrivePath;
+}
+
+// Créer le dossier s'il n'existe pas
+async function ensureDirectory(dirPath) {
+  try {
+    await fs.mkdir(dirPath, { recursive: true });
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de la création du dossier:', error);
+    return false;
+  }
+}
+
+// Handler pour obtenir le chemin de stockage par défaut
+ipcMain.handle('get-storage-path', () => {
+  return getDefaultOneDrivePath();
+});
+
+// Handler pour lire les données
+ipcMain.handle('read-data', async (event, filePath) => {
+  try {
+    const data = await fs.readFile(filePath, 'utf-8');
+    return { success: true, data: JSON.parse(data) };
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      // Fichier n'existe pas encore, c'est normal
+      return { success: true, data: null };
+    }
+    console.error('Erreur lors de la lecture:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handler pour sauvegarder les données
+ipcMain.handle('save-data', async (event, filePath, data) => {
+  try {
+    const dirPath = path.dirname(filePath);
+    await ensureDirectory(dirPath);
+
+    // Sauvegarder le fichier principal
+    await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
+
+    // Créer une sauvegarde horodatée (conserver les 5 dernières)
+    const backupDir = path.join(dirPath, 'backups');
+    await ensureDirectory(backupDir);
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const backupPath = path.join(backupDir, `backup-${timestamp}.json`);
+    await fs.writeFile(backupPath, JSON.stringify(data, null, 2), 'utf-8');
+
+    // Nettoyer les anciennes sauvegardes (garder les 5 plus récentes)
+    const backups = await fs.readdir(backupDir);
+    const sortedBackups = backups
+      .filter(f => f.startsWith('backup-'))
+      .sort()
+      .reverse();
+
+    for (let i = 5; i < sortedBackups.length; i++) {
+      await fs.unlink(path.join(backupDir, sortedBackups[i]));
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handler pour choisir un dossier personnalisé
+ipcMain.handle('choose-storage-folder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory', 'createDirectory'],
+    title: 'Choisir le dossier de stockage',
+    defaultPath: getDefaultOneDrivePath()
+  });
+
+  if (result.canceled) {
+    return { success: false, canceled: true };
+  }
+
+  return { success: true, path: result.filePaths[0] };
 });
