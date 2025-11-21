@@ -55,6 +55,32 @@ function uid() {
 }
 
 /**
+ * Génère une couleur de badge pour un projet basée sur son nom
+ */
+function getProjectColor(projectName) {
+  const colors = [
+    { border: "border-blue-400/40", bg: "bg-blue-400/15", text: "text-blue-200" },
+    { border: "border-purple-400/40", bg: "bg-purple-400/15", text: "text-purple-200" },
+    { border: "border-pink-400/40", bg: "bg-pink-400/15", text: "text-pink-200" },
+    { border: "border-cyan-400/40", bg: "bg-cyan-400/15", text: "text-cyan-200" },
+    { border: "border-emerald-400/40", bg: "bg-emerald-400/15", text: "text-emerald-200" },
+    { border: "border-amber-400/40", bg: "bg-amber-400/15", text: "text-amber-200" },
+    { border: "border-orange-400/40", bg: "bg-orange-400/15", text: "text-orange-200" },
+    { border: "border-rose-400/40", bg: "bg-rose-400/15", text: "text-rose-200" },
+    { border: "border-indigo-400/40", bg: "bg-indigo-400/15", text: "text-indigo-200" },
+    { border: "border-teal-400/40", bg: "bg-teal-400/15", text: "text-teal-200" },
+  ];
+
+  // Hash simple du nom du projet
+  let hash = 0;
+  for (let i = 0; i < projectName.length; i++) {
+    hash = projectName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+}
+
+/**
  * Calcule le nombre de jours ouvrés entre deux dates (exclut samedi et dimanche)
  * @param {Date} startDate - Date de début
  * @param {Date} endDate - Date de fin
@@ -268,7 +294,6 @@ export default function SmartTodo() {
     return DEFAULT_USERS;
   });
 
-  const [filterText, setFilterText] = useState("");
   const [filterProject, setFilterProject] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -646,29 +671,15 @@ export default function SmartTodo() {
   }
 
   const filteredTasks = useMemo(() => {
-    const q = filterText.toLowerCase();
     return tasks.filter((t) => {
       if (t.archived) return false; // Exclure les tâches archivées
-      if (q) {
-        // Recherche dans le titre, projet, notes ET sous-tâches
-        const matchTitle = t.title.toLowerCase().includes(q);
-        const matchProject = t.project.toLowerCase().includes(q);
-        const matchNotes = t.notes?.toLowerCase().includes(q);
-        const matchSubtasks = (t.subtasks || []).some(st =>
-          st.title.toLowerCase().includes(q)
-        );
-
-        if (!(matchTitle || matchProject || matchNotes || matchSubtasks)) {
-          return false;
-        }
-      }
       if (filterProject !== "all" && t.project !== filterProject) return false;
       if (filterPriority !== "all" && t.priority !== filterPriority) return false;
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       if (filterUser !== "all" && t.assignedTo !== filterUser) return false;
       return true;
     });
-  }, [tasks, filterText, filterProject, filterPriority, filterStatus, filterUser]);
+  }, [tasks, filterProject, filterPriority, filterStatus, filterUser]);
 
   const grouped = useMemo(() => {
     const by = Object.fromEntries(STATUSES.map((s) => [s.id, []]));
@@ -861,9 +872,6 @@ export default function SmartTodo() {
               alt="To DoX"
               className="h-20 w-auto drop-shadow-[0_12px_40px_rgba(16,185,129,0.35)]"
             />
-            <p className="text-sm text-gray-600 mt-1">
-              Kanban minimaliste • deadlines visuelles • autoâ€‘flags d'inactivité (3j)
-            </p>
           </div>
           <div className="flex flex-wrap gap-2 md:justify-end">
             <button
@@ -919,56 +927,55 @@ export default function SmartTodo() {
         </div>
 
         {/* Stats par projet */}
-        <div className="mt-6 grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="mt-4 grid gap-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
           {projectStats.map((p) => (
             <div
               key={p.project}
-              className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_20px_45px_rgba(2,4,20,0.45)] backdrop-blur-xl"
+              onClick={() => {
+                if (filterProject === p.project) {
+                  setFilterProject("all"); // Désélectionner si déjà sélectionné
+                } else {
+                  setFilterProject(p.project); // Sélectionner ce projet
+                }
+              }}
+              className={classNames(
+                "rounded-xl border px-2 py-2 shadow-lg backdrop-blur-xl transition-all cursor-pointer",
+                filterProject === p.project
+                  ? "border-blue-400 bg-blue-400/20 ring-2 ring-blue-400/50"
+                  : "border-white/10 bg-white/5",
+                p.pct === 100 ? "hover:border-emerald-400/40 hover:shadow-emerald-400/20" :
+                p.pct >= 70 ? "hover:border-cyan-400/40 hover:shadow-cyan-400/20" :
+                p.pct >= 40 ? "hover:border-amber-400/40 hover:shadow-amber-400/20" :
+                "hover:border-rose-400/40 hover:shadow-rose-400/20"
+              )}
             >
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-slate-100">{p.project}</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-400">
-                    {p.done}/{p.total} ({p.pct}%)
-                  </span>
-                  {p.pct === 100 && (
-                    <button
-                      onClick={() => archiveProject(p.project)}
-                      className="rounded-xl border border-amber-400/40 bg-amber-400/10 px-2 py-1 text-xs text-amber-100 transition hover:bg-amber-400/20"
-                      title="Archiver ce projet"
-                    >
-                      Archiver
-                    </button>
-                  )}
-                </div>
+              <div className="flex items-center justify-center gap-1.5 mb-1.5 relative">
+                <span className="font-semibold text-xs text-slate-100 truncate text-center flex-1">{p.project}</span>
+                {p.pct === 100 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      archiveProject(p.project);
+                    }}
+                    className="absolute right-0 rounded-lg border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 text-[10px] text-amber-100 transition hover:bg-amber-400/20"
+                    title="Archiver ce projet"
+                  >
+                    Archiver
+                  </button>
+                )}
               </div>
-              <div className="mt-3 h-2 rounded-full bg-white/10 overflow-hidden">
+              <div className="relative h-4 rounded-full bg-white/10 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-300 to-indigo-400 transition-all"
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-cyan-300 to-indigo-400 transition-all flex items-center justify-center"
                   style={{ width: `${p.pct}%` }}
                   aria-label={`${p.pct}%`}
                 />
+                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                  {p.done}/{p.total} • {p.pct}%
+                </span>
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Zone filtres & actions */}
-        <div className="mt-6">
-          <Toolbar
-            filterText={filterText}
-            setFilterText={setFilterText}
-            filterProject={filterProject}
-            setFilterProject={setFilterProject}
-            filterPriority={filterPriority}
-            setFilterPriority={setFilterPriority}
-            filterStatus={filterStatus}
-            setFilterStatus={setFilterStatus}
-            filterUser={filterUser}
-            setFilterUser={setFilterUser}
-            projects={projects}
-            users={users}
-          />
         </div>
 
         {/* Formulaire d'ajout rapide */}
@@ -1158,14 +1165,8 @@ function ProjectAutocomplete({ value, onChange, projectHistory, placeholder, cla
     setFocusedIndex(-1);
   }
 
-  function clearField() {
-    onChange("");
-    setShowSuggestions(false);
-    setFocusedIndex(-1);
-  }
-
   return (
-    <div ref={wrapperRef} className="relative flex gap-1">
+    <div ref={wrapperRef} className="relative">
       <input
         ref={inputRef}
         type="text"
@@ -1176,14 +1177,6 @@ function ProjectAutocomplete({ value, onChange, projectHistory, placeholder, cla
         onFocus={() => setShowSuggestions(true)}
         onKeyDown={handleKeyDown}
       />
-      <button
-        type="button"
-        onClick={clearField}
-        className="rounded-xl border border-white/20 bg-white/5 px-2 text-slate-100 transition hover:bg-[#1E3A8A]/60"
-        title="Nouveau projet"
-      >
-        +
-      </button>
       {showSuggestions &&
         suggestions.length > 0 &&
         dropdownPosition &&
@@ -1366,11 +1359,11 @@ function QuickAdd({ onAdd, projectHistory, users }) {
   return (
     <form
       onSubmit={submit}
-      className="relative z-10 mt-6 grid gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 shadow-[0_20px_45px_rgba(2,4,20,0.45)] backdrop-blur-xl md:grid-cols-7"
+      className="relative z-10 mt-4 grid gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 shadow-lg backdrop-blur-xl md:grid-cols-7"
     >
       <input
         type="text"
-        className="md:col-span-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+        className="md:col-span-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
         placeholder="Titre de la tâche"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
@@ -1379,12 +1372,12 @@ function QuickAdd({ onAdd, projectHistory, users }) {
         value={project}
         onChange={setProject}
         projectHistory={projectHistory}
-        placeholder="Projet (ex: ACME-2025-001)"
-        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
+        placeholder="Projet"
+        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
       />
       <input
         type="date"
-        className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+        className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
         value={due}
         onChange={(e) => setDue(e.target.value)}
       />
@@ -1393,118 +1386,26 @@ function QuickAdd({ onAdd, projectHistory, users }) {
         onChange={setPriority}
         options={PRIORITIES}
         placeholder="Priorité"
-        className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-left text-sm text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
         getValue={(p) => p.id}
-        getLabel={(p) => `Priorité ${p.label}`}
+        getLabel={(p) => p.label}
       />
       <Autocomplete
         value={assignedTo}
         onChange={setAssignedTo}
         options={users}
         placeholder="Assigné à"
-        className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-left text-sm text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
         getValue={(u) => u.id}
         getLabel={(u) => u.name}
       />
       <button
         type="submit"
-        className="rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 px-4 py-2 font-semibold text-slate-900 transition hover:opacity-90"
+        className="rounded-xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 px-4 py-1.5 text-sm font-semibold text-slate-900 transition hover:opacity-90"
       >
         Ajouter
       </button>
     </form>
-  );
-}
-
-function Toolbar({
-  filterText,
-  setFilterText,
-  filterProject,
-  setFilterProject,
-  filterPriority,
-  setFilterPriority,
-  filterStatus,
-  setFilterStatus,
-  filterUser,
-  setFilterUser,
-  projects,
-  users,
-}) {
-  function resetAll() {
-    setFilterText("");
-    setFilterProject("all");
-    setFilterPriority("all");
-    setFilterStatus("all");
-    setFilterUser("all");
-  }
-
-  return (
-    <div className="relative z-20 rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_20px_45px_rgba(2,4,20,0.45)] backdrop-blur-xl">
-      <div className="space-y-4">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Autocomplete
-            value={filterProject}
-            onChange={setFilterProject}
-            options={projects.map((p) => ({ id: p, label: p === "all" ? "Tous les projets" : p }))}
-            placeholder="Projet"
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-            getValue={(p) => p.id}
-            getLabel={(p) => p.label}
-          />
-          <Autocomplete
-            value={filterPriority}
-            onChange={setFilterPriority}
-            options={[
-              { id: "all", label: "Toutes priorités" },
-              ...PRIORITIES.map((p) => ({ id: p.id, label: `Priorité ${p.label}` }))
-            ]}
-            placeholder="Priorité"
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-            getValue={(p) => p.id}
-            getLabel={(p) => p.label}
-          />
-          <Autocomplete
-            value={filterStatus}
-            onChange={setFilterStatus}
-            options={[
-              { id: "all", label: "Tous statuts" },
-              ...STATUSES.map((s) => ({ id: s.id, label: s.label }))
-            ]}
-            placeholder="Statut"
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-            getValue={(s) => s.id}
-            getLabel={(s) => s.label}
-          />
-          <Autocomplete
-            value={filterUser}
-            onChange={setFilterUser}
-            options={[
-              { id: "all", label: "Tous les utilisateurs" },
-              ...users.map((u) => ({ id: u.id, label: u.name }))
-            ]}
-            placeholder="Utilisateur"
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-            getValue={(u) => u.id}
-            getLabel={(u) => u.label}
-          />
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="text"
-            placeholder="Recherche (titre, projet, notes)"
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-            className="flex-1 min-w-[240px] rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-          />
-          <button
-            onClick={resetAll}
-            className="rounded-2xl border border-white/20 px-4 py-2 text-slate-100 transition hover:bg-[#1E3A8A]/60"
-          >
-            Réinitialiser filtres
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -1742,13 +1643,22 @@ function TaskCard({
     return "from-emerald-400/30 via-emerald-400/10 to-transparent";
   }, [businessDays]);
 
+  const hoverTone = useMemo(() => {
+    if (businessDays === null) return "hover:border-slate-300/40 hover:shadow-slate-400/20";
+    if (businessDays < 0) return "hover:border-rose-400/60 hover:shadow-rose-500/30";
+    if (businessDays < 3) return "hover:border-rose-400/60 hover:shadow-rose-500/30";
+    if (businessDays <= 7) return "hover:border-amber-300/40 hover:shadow-amber-400/20";
+    return "hover:border-emerald-200/40 hover:shadow-emerald-400/20";
+  }, [businessDays]);
+
   return (
     <div
       className={classNames(
         "relative z-10 overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-4 text-slate-100 shadow-[0_15px_35px_rgba(2,4,20,0.45)] backdrop-blur-xl transition",
         businessDays !== null && businessDays < 3
           ? "border-rose-400/60 shadow-rose-500/20"
-          : "hover:border-emerald-200/40 hover:shadow-emerald-400/20"
+          : "",
+        hoverTone
       )}
       draggable
       onDragStart={(e) => onDragStart(e, task.id)}
@@ -1766,7 +1676,12 @@ function TaskCard({
             )}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300">
-            <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-200">
+            <span className={classNames(
+              "rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+              getProjectColor(task.project).border,
+              getProjectColor(task.project).bg,
+              getProjectColor(task.project).text
+            )}>
               {task.project}
             </span>
             {task.priority && (
@@ -2006,7 +1921,7 @@ function Menu({ task, onUpdate, onDelete, onArchive, projectHistory, users }) {
                 onChange={(val) => onUpdate(task.id, { project: val })}
                 projectHistory={projectHistory}
                 placeholder="Projet"
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
+                className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
               />
 
               <label className="mt-2 text-xs text-slate-400">Échéance</label>
