@@ -200,6 +200,8 @@ export default function SmartTodo() {
         updatedAt: Date.now(),
         notes: "Attente retour client pour perçages",
         subtasks: [],
+        archived: false,
+        archivedAt: null,
       },
       {
         id: uid(),
@@ -212,6 +214,8 @@ export default function SmartTodo() {
         updatedAt: Date.now(),
         notes: "",
         subtasks: [],
+        archived: false,
+        archivedAt: null,
       },
       {
         id: uid(),
@@ -224,6 +228,8 @@ export default function SmartTodo() {
         updatedAt: Date.now(),
         notes: "",
         subtasks: [],
+        archived: false,
+        archivedAt: null,
       },
     ];
     return demo;
@@ -269,6 +275,7 @@ export default function SmartTodo() {
   const [filterUser, setFilterUser] = useState("all");
   const [showDirPanel, setShowDirPanel] = useState(false);
   const [showArchivePanel, setShowArchivePanel] = useState(false);
+  const [showTaskArchivePanel, setShowTaskArchivePanel] = useState(false);
   const [showUsersPanel, setShowUsersPanel] = useState(false);
   const [showStoragePanel, setShowStoragePanel] = useState(false);
   const [showWeeklyReportPanel, setShowWeeklyReportPanel] = useState(false);
@@ -304,6 +311,7 @@ export default function SmartTodo() {
             if (result.data.tasks) {
               // Migration : ajouter completedAt aux tâches "done" qui n'ont pas ce champ
               // Migration : ajouter subtasks aux tâches qui n'ont pas ce champ
+              // Migration : ajouter archived aux tâches qui n'ont pas ce champ
               const migratedTasks = result.data.tasks.map(task => {
                 const migrated = { ...task };
 
@@ -315,6 +323,12 @@ export default function SmartTodo() {
                 // Migration subtasks
                 if (!task.subtasks) {
                   migrated.subtasks = [];
+                }
+
+                // Migration archived
+                if (task.archived === undefined) {
+                  migrated.archived = false;
+                  migrated.archivedAt = null;
                 }
 
                 return migrated;
@@ -404,6 +418,36 @@ export default function SmartTodo() {
     saveData();
   }, [tasks, directories, projectHistory, users, storagePath, isLoadingData]);
 
+  // Archivage automatique des tâches terminées à minuit
+  useEffect(() => {
+    function autoArchive() {
+      const now = new Date();
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0); // Minuit suivant
+
+      const msUntilMidnight = midnight.getTime() - now.getTime();
+
+      const timeoutId = setTimeout(() => {
+        // Archiver toutes les tâches "done" non archivées
+        setTasks((xs) =>
+          xs.map((t) =>
+            t.status === "done" && !t.archived
+              ? { ...t, archived: true, archivedAt: Date.now() }
+              : t
+          )
+        );
+
+        // Replanifier pour le prochain minuit
+        autoArchive();
+      }, msUntilMidnight);
+
+      return () => clearTimeout(timeoutId);
+    }
+
+    const cleanup = autoArchive();
+    return cleanup;
+  }, []);
+
   function addToProjectHistory(projectName) {
     if (!projectName || projectName === "DIVERS") return;
     setProjectHistory((history) => {
@@ -425,6 +469,8 @@ export default function SmartTodo() {
       createdAt: Date.now(),
       updatedAt: Date.now(),
       notes: data.notes || "",
+      archived: false,
+      archivedAt: null,
     };
     addToProjectHistory(projectName);
     setTasks((xs) => [t, ...xs]);
@@ -454,6 +500,18 @@ export default function SmartTodo() {
 
   function moveTask(id, status) {
     updateTask(id, { status });
+  }
+
+  function archiveTask(id) {
+    setTasks((xs) =>
+      xs.map((t) => (t.id === id ? { ...t, archived: true, archivedAt: Date.now() } : t))
+    );
+  }
+
+  function unarchiveTask(id) {
+    setTasks((xs) =>
+      xs.map((t) => (t.id === id ? { ...t, archived: false, archivedAt: null } : t))
+    );
   }
 
   // ============ GESTION DES SOUS-TÂCHES ============
@@ -689,6 +747,12 @@ export default function SmartTodo() {
     }));
   }, [tasks]);
 
+  const archivedTasks = useMemo(() => {
+    return tasks
+      .filter((t) => t.archived)
+      .sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0)); // Plus récentes en premier
+  }, [tasks]);
+
   // Archivage automatique après 2 jours pour les projets à 100%
   useEffect(() => {
     const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
@@ -835,7 +899,13 @@ export default function SmartTodo() {
               onClick={() => setShowArchivePanel(true)}
               className="rounded-2xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-amber-100 transition hover:bg-amber-400/20"
             >
-              Archives
+              Archives des projets
+            </button>
+            <button
+              onClick={() => setShowTaskArchivePanel(true)}
+              className="rounded-2xl border border-purple-400/40 bg-purple-400/10 px-4 py-2 text-purple-100 transition hover:bg-purple-400/20"
+            >
+              Archives des tâches
             </button>
             {window.electronAPI?.isElectron && (
               <button
@@ -931,6 +1001,7 @@ export default function SmartTodo() {
                       onDragStart={onDragStart}
                       onUpdate={updateTask}
                       onDelete={removeTask}
+                      onArchive={archiveTask}
                       projectDir={directories[t.project]}
                       projectHistory={projectHistory}
                       users={users}
@@ -963,6 +1034,15 @@ export default function SmartTodo() {
             onUnarchive={unarchiveProject}
             onDelete={deleteArchivedProject}
             onClose={() => setShowArchivePanel(false)}
+          />
+        )}
+
+        {showTaskArchivePanel && (
+          <TaskArchivePanel
+            archivedTasks={archivedTasks}
+            onUnarchive={unarchiveTask}
+            onDelete={removeTask}
+            onClose={() => setShowTaskArchivePanel(false)}
           />
         )}
 
@@ -1594,6 +1674,7 @@ function TaskCard({
   onDragStart,
   onUpdate,
   onDelete,
+  onArchive,
   projectDir,
   projectHistory,
   users,
@@ -1798,7 +1879,7 @@ function TaskCard({
             </div>
           )}
         </div>
-        <Menu task={task} onUpdate={onUpdate} onDelete={onDelete} projectHistory={projectHistory} users={users} />
+        <Menu task={task} onUpdate={onUpdate} onDelete={onDelete} onArchive={onArchive} projectHistory={projectHistory} users={users} />
       </div>
 
       {task.notes && (
@@ -1820,7 +1901,7 @@ function TaskCard({
   );
 }
 
-function Menu({ task, onUpdate, onDelete, projectHistory, users }) {
+function Menu({ task, onUpdate, onDelete, onArchive, projectHistory, users }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
@@ -1966,6 +2047,18 @@ function Menu({ task, onUpdate, onDelete, projectHistory, users }) {
                 rows={3}
               />
 
+              {task.status === "done" && (
+                <button
+                  onClick={() => {
+                    onArchive(task.id);
+                    setOpen(false);
+                  }}
+                  className="mt-2 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-2 py-1 text-emerald-100 transition hover:bg-emerald-400/20"
+                >
+                  Archiver
+                </button>
+              )}
+
               <button
                 onClick={() => onDelete(task.id)}
                 className="mt-2 rounded-2xl border border-rose-400/40 bg-rose-400/10 px-2 py-1 text-rose-100 transition hover:bg-rose-400/20"
@@ -2044,6 +2137,92 @@ function ArchivePanel({ archivedProjects, onUnarchive, onDelete, onClose }) {
                   style={{ width: `${p.pct}%` }}
                   aria-label={`${p.pct}%`}
                 />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskArchivePanel({ archivedTasks, onUnarchive, onDelete, onClose }) {
+  return (
+    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur">
+      <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Archives des tâches</h3>
+          <button
+            onClick={onClose}
+            className="rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-[#1E3A8A]/60"
+          >
+            Fermer
+          </button>
+        </div>
+        <p className="mt-2 text-sm text-slate-400">
+          Tâches archivées. Vous pouvez les désarchiver pour les remettre actives ou les supprimer définitivement.
+        </p>
+        <div className="mt-4 max-h-[70vh] space-y-3 overflow-auto pr-1">
+          {archivedTasks.length === 0 && (
+            <div className="text-sm text-slate-400">
+              Aucune tâche archivée.
+            </div>
+          )}
+          {archivedTasks.map((task) => (
+            <div
+              key={task.id}
+              className="rounded-2xl border border-white/10 bg-white/5 p-4"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-100">{task.title}</h4>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-200">
+                      {task.project}
+                    </span>
+                    {task.priority && (
+                      <span className={classNames(
+                        "rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide shadow-inner",
+                        task.priority === "high" ? "bg-gradient-to-r from-rose-500 to-orange-400 text-slate-900" :
+                        task.priority === "med" ? "bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-900" :
+                        "bg-gradient-to-r from-emerald-400 to-lime-300 text-slate-900"
+                      )}>
+                        {task.priority === "high" ? "Haute" : task.priority === "med" ? "Moyenne" : "Basse"}
+                      </span>
+                    )}
+                    {task.archivedAt && (
+                      <span className="text-xs text-slate-500">
+                        Archivé le {new Date(task.archivedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                    {task.completedAt && (
+                      <span className="text-xs text-emerald-400">
+                        Terminé le {new Date(task.completedAt).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                  {task.notes && (
+                    <p className="mt-2 text-sm text-slate-300 whitespace-pre-wrap">{task.notes}</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onUnarchive(task.id)}
+                    className="rounded-xl border border-cyan-400/40 bg-cyan-400/10 px-3 py-1 text-sm text-cyan-100 transition hover:bg-cyan-400/20"
+                  >
+                    Désarchiver
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Supprimer définitivement la tâche "${task.title}" ?`)) {
+                        onDelete(task.id);
+                      }
+                    }}
+                    className="rounded-xl border border-rose-400/40 bg-rose-400/10 px-3 py-1 text-sm text-rose-100 transition hover:bg-rose-400/20"
+                  >
+                    Supprimer
+                  </button>
+                </div>
               </div>
             </div>
           ))}
