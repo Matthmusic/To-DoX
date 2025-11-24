@@ -502,6 +502,7 @@ export default function SmartTodo() {
   }
 
   function updateTask(id, patch) {
+    console.log('[updateTask] Called with id:', id, 'patch:', patch);
     if (patch.project) {
       addToProjectHistory(patch.project);
     }
@@ -514,9 +515,11 @@ export default function SmartTodo() {
       updatedPatch.completedAt = null;
     }
 
-    setTasks((xs) =>
-      xs.map((t) => (t.id === id ? { ...t, ...updatedPatch, updatedAt: Date.now() } : t))
-    );
+    setTasks((xs) => {
+      const updated = xs.map((t) => (t.id === id ? { ...t, ...updatedPatch, updatedAt: Date.now() } : t));
+      console.log('[updateTask] Updated tasks:', updated.find(t => t.id === id));
+      return updated;
+    });
   }
 
   function removeTask(id) {
@@ -1211,7 +1214,7 @@ function ProjectAutocomplete({ value, onChange, projectHistory, placeholder, cla
 }
 
 // Composant générique d'autocomplete/dropdown
-function Autocomplete({ value, onChange, options, placeholder, className, renderOption, getValue, getLabel }) {
+function Autocomplete({ value, onChange, options, placeholder, className, renderOption, getValue = (x) => x, getLabel = (x) => x }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const wrapperRef = useRef(null);
@@ -1291,7 +1294,10 @@ function Autocomplete({ value, onChange, options, placeholder, className, render
   }
 
   function selectOption(option) {
-    onChange(getValue(option));
+    console.log('[Autocomplete] selectOption called with:', option);
+    const val = getValue(option);
+    console.log('[Autocomplete] Calling onChange with value:', val);
+    onChange(val);
     setShowDropdown(false);
     setFocusedIndex(-1);
   }
@@ -1329,7 +1335,11 @@ function Autocomplete({ value, onChange, options, placeholder, className, render
                   "cursor-pointer px-3 py-2 text-sm text-slate-100 transition",
                   idx === focusedIndex ? "bg-[#1E3A8A]" : "hover:bg-[#1E3A8A]/60"
                 )}
-                onClick={() => selectOption(option)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  selectOption(option);
+                }}
                 onMouseEnter={() => setFocusedIndex(idx)}
               >
                 {renderOption ? renderOption(option) : getLabel(option)}
