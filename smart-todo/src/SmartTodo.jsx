@@ -502,7 +502,6 @@ export default function SmartTodo() {
   }
 
   function updateTask(id, patch) {
-    console.log('[updateTask] Called with id:', id, 'patch:', patch);
     if (patch.project) {
       addToProjectHistory(patch.project);
     }
@@ -515,11 +514,9 @@ export default function SmartTodo() {
       updatedPatch.completedAt = null;
     }
 
-    setTasks((xs) => {
-      const updated = xs.map((t) => (t.id === id ? { ...t, ...updatedPatch, updatedAt: Date.now() } : t));
-      console.log('[updateTask] Updated tasks:', updated.find(t => t.id === id));
-      return updated;
-    });
+    setTasks((xs) =>
+      xs.map((t) => (t.id === id ? { ...t, ...updatedPatch, updatedAt: Date.now() } : t))
+    );
   }
 
   function removeTask(id) {
@@ -1294,10 +1291,7 @@ function Autocomplete({ value, onChange, options, placeholder, className, render
   }
 
   function selectOption(option) {
-    console.log('[Autocomplete] selectOption called with:', option);
-    const val = getValue(option);
-    console.log('[Autocomplete] Calling onChange with value:', val);
-    onChange(val);
+    onChange(getValue(option));
     setShowDropdown(false);
     setFocusedIndex(-1);
   }
@@ -2420,18 +2414,20 @@ function WeeklyReportModal({ tasks, onClose }) {
     const excludedProjects = ["DEV", "PERSO"];
 
     for (const task of allTasks) {
-      if (task.archived) continue;
-
       // Filtrer les projets exclus
       if (excludedProjects.includes(task.project?.toUpperCase())) continue;
 
-      // Tâches terminées durant la semaine
+      // Tâches terminées durant la semaine (inclure les tâches archivées si elles ont été complétées pendant la période)
       if (task.status === "done" && task.completedAt) {
         const completedDate = new Date(task.completedAt);
         if (completedDate >= range.start && completedDate <= range.end) {
           completed.push(task);
         }
+        continue; // Passer à la tâche suivante après avoir vérifié les tâches complétées
       }
+
+      // Pour les tâches restantes, exclure celles qui sont archivées
+      if (task.archived) continue;
 
       // Tâches restantes (créées avant la fin de la semaine et non terminées)
       if (task.status !== "done" && task.createdAt) {
