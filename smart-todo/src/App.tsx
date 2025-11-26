@@ -1,4 +1,4 @@
-import SmartTodo from './SmartTodo.jsx'
+import ToDoX from './ToDoX.jsx'
 import { UpdateNotification } from './components/UpdateNotification'
 import { TitleBar } from './components/TitleBar'
 
@@ -7,7 +7,7 @@ function App() {
     <>
       <TitleBar />
       <div className="pt-8">
-        <SmartTodo />
+        <ToDoX />
       </div>
       <UpdateNotification />
     </>

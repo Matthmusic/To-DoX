@@ -6,7 +6,7 @@ import {
   SearchCheck,
 } from "lucide-react";
 
-// Clé de stockage localStorage
+// Clé de stockage localStorage (conservée pour compatibilité avec anciennes données)
 export const STORAGE_KEY = "smart_todo_v1";
 
 // Statuts des tâches

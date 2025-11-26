@@ -23,7 +23,12 @@
       "Bash(where:*)",
       "Bash(npm run:*)",
       "Bash(electron-builder:*)",
-      "Bash(npx electron-builder --win)"
+      "Bash(npx electron-builder --win)",
+      "Bash(findstr:*)",
+      "Bash(del nul 2)",
+      "Bash(git checkout:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

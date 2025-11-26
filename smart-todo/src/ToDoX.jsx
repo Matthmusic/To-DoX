@@ -69,7 +69,7 @@ import {
 
 
 
-export default function SmartTodo() {
+export default function ToDoX() {
   const [storagePath, setStoragePath] = useState(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -637,7 +637,7 @@ export default function SmartTodo() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `smart_todo_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `todox_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
