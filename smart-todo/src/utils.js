@@ -137,3 +137,24 @@ export function getPreviousWeekRange() {
     endStr: formatDateShort(previousSunday.toISOString().split("T")[0]),
   };
 }
+
+/**
+ * Retourne la date du jour au format ISO (YYYY-MM-DD)
+ */
+export function todayISO() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Ajoute n jours à la date actuelle et retourne au format ISO (YYYY-MM-DD)
+ * @param {number} n - Nombre de jours à ajouter
+ * @returns {string} Date au format YYYY-MM-DD
+ */
+export function addDaysISO(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}

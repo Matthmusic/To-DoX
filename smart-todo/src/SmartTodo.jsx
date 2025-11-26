@@ -21,8 +21,37 @@ import {
 import { jsPDF } from "jspdf";
 import ToDoXLogo from "./assets/To Do X.svg";
 
+// Import des constantes et utilitaires
+import {
+  STORAGE_KEY,
+  STATUSES,
+  PRIORITIES,
+  KANBAN_COLUMNS,
+  PROJECT_COLORS,
+  EXCLUDED_PROJECTS,
+  DEFAULT_USERS,
+  DEMO_TASKS,
+} from "./constants";
+import {
+  isDev,
+  devLog,
+  devError,
+  devWarn,
+  uid,
+  getProjectColor,
+  businessDaysBetween,
+  toFileURL,
+  classNames,
+  formatDateFull,
+  formatDateShort,
+  getCurrentWeekRange,
+  getPreviousWeekRange,
+  todayISO,
+  addDaysISO,
+} from "./utils";
+
 /**
- * Smart Toâ€‘Do â€” single-file React component
+ * To Do X — Application Kanban minimaliste et intelligente
  * - Kanban colonnes: À faire, En cours, À réviser, ✅ Fait
  * - Ajout rapide (titre, projet, échéance, priorité)
  * - Indicateurs visuels: J- / En retard, badge "âš  À relancer" si >3j sans mouvement en "En cours"
@@ -36,187 +65,9 @@ import ToDoXLogo from "./assets/To Do X.svg";
  * - Aucune dépendance externe; Tailwind pour le style (fourni par l'environnement)
  */
 
-const STATUSES = [
-  { id: "todo", label: "À faire", Icon: ClipboardList },
-  { id: "doing", label: "En cours", Icon: Loader2 },
-  { id: "review", label: "À réviser", Icon: SearchCheck },
-  { id: "done", label: "Fait", Icon: CheckCircle2 },
-];
 
-const PRIORITIES = [
-  { id: "low", label: "Basse" },
-  { id: "med", label: "Moyenne" },
-  { id: "high", label: "Haute" },
-];
 
-// Helper pour les logs conditionnels (développement uniquement)
-const isDev = process.env.NODE_ENV === 'development';
-const devLog = (...args) => isDev && console.log(...args);
-const devError = (...args) => isDev && console.error(...args);
-const devWarn = (...args) => isDev && console.warn(...args);
 
-function uid() {
-  return Math.random().toString(36).slice(2, 10);
-}
-
-/**
- * Génère une couleur de badge pour un projet basée sur son nom
- * Cache les résultats pour éviter les recalculs
- */
-const projectColorCache = new Map();
-
-function getProjectColor(projectName) {
-  // Vérifier le cache d'abord
-  if (projectColorCache.has(projectName)) {
-    return projectColorCache.get(projectName);
-  }
-
-  const colors = [
-    { border: "border-blue-400/40", bg: "bg-blue-400/15", text: "text-blue-200" },
-    { border: "border-purple-400/40", bg: "bg-purple-400/15", text: "text-purple-200" },
-    { border: "border-pink-400/40", bg: "bg-pink-400/15", text: "text-pink-200" },
-    { border: "border-cyan-400/40", bg: "bg-cyan-400/15", text: "text-cyan-200" },
-    { border: "border-emerald-400/40", bg: "bg-emerald-400/15", text: "text-emerald-200" },
-    { border: "border-amber-400/40", bg: "bg-amber-400/15", text: "text-amber-200" },
-    { border: "border-orange-400/40", bg: "bg-orange-400/15", text: "text-orange-200" },
-    { border: "border-rose-400/40", bg: "bg-rose-400/15", text: "text-rose-200" },
-    { border: "border-indigo-400/40", bg: "bg-indigo-400/15", text: "text-indigo-200" },
-    { border: "border-teal-400/40", bg: "bg-teal-400/15", text: "text-teal-200" },
-  ];
-
-  // Hash simple du nom du projet
-  let hash = 0;
-  for (let i = 0; i < projectName.length; i++) {
-    hash = projectName.charCodeAt(i) + ((hash << 5) - hash);
-  }
-
-  const color = colors[Math.abs(hash) % colors.length];
-
-  // Mettre en cache le résultat
-  projectColorCache.set(projectName, color);
-
-  return color;
-}
-
-/**
- * Calcule le nombre de jours ouvrés entre deux dates (exclut samedi et dimanche)
- * @param {Date} startDate - Date de début
- * @param {Date} endDate - Date de fin
- * @returns {number} Nombre de jours ouvrés
- */
-function businessDaysBetween(startDate, endDate) {
-  let count = 0;
-  const current = new Date(startDate);
-
-  while (current <= endDate) {
-    const dayOfWeek = current.getDay();
-    // 0 = dimanche, 6 = samedi
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      count++;
-    }
-    current.setDate(current.getDate() + 1);
-  }
-
-  return count;
-}
-
-/**
- * Formater une date en DD/MM
- */
-function formatDateShort(date) {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${day}/${month}`;
-}
-
-/**
- * Calcule la plage de dates de la semaine en cours (Lundi 00:00 → Aujourd'hui)
- * @returns {{ start: Date, end: Date, startStr: string, endStr: string }}
- */
-function getCurrentWeekRange() {
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = dimanche, 1 = lundi, etc.
-
-  // Calculer le lundi de la semaine actuelle
-  const currentMonday = new Date(today);
-  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  currentMonday.setDate(today.getDate() - daysFromMonday);
-  currentMonday.setHours(0, 0, 0, 0);
-
-  // Aujourd'hui à 23:59:59
-  const now = new Date();
-  now.setHours(23, 59, 59, 999);
-
-  return {
-    start: currentMonday,
-    end: now,
-    startStr: formatDateShort(currentMonday),
-    endStr: formatDateShort(now),
-  };
-}
-
-/**
- * Calcule la plage de dates de la semaine précédente (Lundi 00:00 → Dimanche 23:59)
- * @returns {{ start: Date, end: Date, startStr: string, endStr: string }}
- */
-function getPreviousWeekRange() {
-  const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = dimanche, 1 = lundi, etc.
-
-  // Calculer le lundi de la semaine actuelle
-  const currentMonday = new Date(today);
-  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  currentMonday.setDate(today.getDate() - daysFromMonday);
-  currentMonday.setHours(0, 0, 0, 0);
-
-  // Lundi de la semaine précédente
-  const previousMonday = new Date(currentMonday);
-  previousMonday.setDate(currentMonday.getDate() - 7);
-
-  // Dimanche de la semaine précédente
-  const previousSunday = new Date(previousMonday);
-  previousSunday.setDate(previousMonday.getDate() + 6);
-  previousSunday.setHours(23, 59, 59, 999);
-
-  return {
-    start: previousMonday,
-    end: previousSunday,
-    startStr: formatDateShort(previousMonday),
-    endStr: formatDateShort(previousSunday),
-  };
-}
-
-function todayISO() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-}
-
-function classNames(...xs) {
-  return xs.filter(Boolean).join(" ");
-}
-
-function toFileURL(path) {
-  if (!path) return null;
-  // Normaliser : Windows C:\Projets\AGDV -> file:///C:/Projets/AGDV
-  let p = path.trim();
-  if (/^[a-zA-Z]:\\/.test(p)) {
-    p = p.replace(/\\/g, "/");
-    return "file:///" + encodeURI(p);
-  }
-  // Déjà un chemin Unix absolu
-  if (p.startsWith("/")) return "file://" + encodeURI(p);
-  // Si l'utilisateur colle déjà un file://
-  if (p.startsWith("file://")) return p;
-  return null;
-}
-
-const STORAGE_KEY = "smart_todo_v1";
-
-// Utilisateurs par défaut
-const DEFAULT_USERS = [
-  { id: "unassigned", name: "Non assigné", email: "" },
-];
 
 export default function SmartTodo() {
   const [storagePath, setStoragePath] = useState(null);
@@ -231,52 +82,8 @@ export default function SmartTodo() {
         return parsed?.tasks ?? [];
       } catch {}
     }
-    // Demo de départ
-    const demo = [
-      {
-        id: uid(),
-        title: "Préparer plan CFO niveau -1",
-        project: "ACME-2025-001",
-        due: addDaysISO(3),
-        priority: "med",
-        status: "doing",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        notes: "Attente retour client pour perçages",
-        subtasks: [],
-        archived: false,
-        archivedAt: null,
-      },
-      {
-        id: uid(),
-        title: "Dossier DOE - schemas CFA",
-        project: "ACME-2025-001",
-        due: addDaysISO(1),
-        priority: "high",
-        status: "review",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        notes: "",
-        subtasks: [],
-        archived: false,
-        archivedAt: null,
-      },
-      {
-        id: uid(),
-        title: "Création gabarits DWG",
-        project: "INTERNE",
-        due: addDaysISO(10),
-        priority: "low",
-        status: "todo",
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        notes: "",
-        subtasks: [],
-        archived: false,
-        archivedAt: null,
-      },
-    ];
-    return demo;
+    // Tâches de démo importées depuis constants.js
+    return DEMO_TASKS;
   });
 
   const [directories, setDirectories] = useState(() => {
@@ -3398,10 +3205,4 @@ function StoragePanel({ storagePath, setStoragePath, onClose }) {
   );
 }
 
-function addDaysISO(n) {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
-}
 
