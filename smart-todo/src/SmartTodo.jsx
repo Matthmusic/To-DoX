@@ -2644,19 +2644,11 @@ function WeeklyReportModal({ tasks, onClose }) {
       return false;
     }
 
-    // Ajouter le logo To-DoX en haut à gauche
-    try {
-      // Utiliser le logo SVG importé
-      doc.addImage(ToDoXLogo, 'SVG', margin, y, 15, 15);
-    } catch (e) {
-      devWarn('Logo non chargé:', e);
-    }
-
-    // Titre principal (décalé pour laisser place au logo)
+    // Titre principal
     doc.setFontSize(20);
     doc.setTextColor(30, 58, 138); // Bleu foncé
-    doc.text("Compte Rendu Hebdomadaire", margin + 20, y + 10);
-    y += 20;
+    doc.text("Compte Rendu Hebdomadaire", margin, y);
+    y += 15;
 
     // Date de génération
     doc.setFontSize(10);
