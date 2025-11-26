@@ -14,7 +14,6 @@ import {
   ChevronDown,
   ChevronUp,
   CheckSquare,
-  Square,
   Plus,
   Trash2,
   GripVertical,
@@ -50,14 +49,28 @@ const PRIORITIES = [
   { id: "high", label: "Haute" },
 ];
 
+// Helper pour les logs conditionnels (développement uniquement)
+const isDev = process.env.NODE_ENV === 'development';
+const devLog = (...args) => isDev && console.log(...args);
+const devError = (...args) => isDev && console.error(...args);
+const devWarn = (...args) => isDev && console.warn(...args);
+
 function uid() {
   return Math.random().toString(36).slice(2, 10);
 }
 
 /**
  * Génère une couleur de badge pour un projet basée sur son nom
+ * Cache les résultats pour éviter les recalculs
  */
+const projectColorCache = new Map();
+
 function getProjectColor(projectName) {
+  // Vérifier le cache d'abord
+  if (projectColorCache.has(projectName)) {
+    return projectColorCache.get(projectName);
+  }
+
   const colors = [
     { border: "border-blue-400/40", bg: "bg-blue-400/15", text: "text-blue-200" },
     { border: "border-purple-400/40", bg: "bg-purple-400/15", text: "text-purple-200" },
@@ -77,7 +90,12 @@ function getProjectColor(projectName) {
     hash = projectName.charCodeAt(i) + ((hash << 5) - hash);
   }
 
-  return colors[Math.abs(hash) % colors.length];
+  const color = colors[Math.abs(hash) % colors.length];
+
+  // Mettre en cache le résultat
+  projectColorCache.set(projectName, color);
+
+  return color;
 }
 
 /**
@@ -363,10 +381,10 @@ export default function SmartTodo() {
               const subtasksCount = migratedTasks.filter((t, i) => !result.data.tasks[i]?.subtasks).length;
 
               if (completedAtCount > 0) {
-                console.log(`✅ Migration: ${completedAtCount} tâche(s) "done" ont reçu un completedAt`);
+                devLog(`✅ Migration: ${completedAtCount} tâche(s) "done" ont reçu un completedAt`);
               }
               if (subtasksCount > 0) {
-                console.log(`✅ Migration: ${subtasksCount} tâche(s) ont reçu le champ subtasks`);
+                devLog(`✅ Migration: ${subtasksCount} tâche(s) ont reçu le champ subtasks`);
               }
 
               setTasks(migratedTasks);
@@ -390,7 +408,7 @@ export default function SmartTodo() {
                   });
                   const migratedCount = migratedTasks.filter((t, i) => t.completedAt !== parsed.tasks[i]?.completedAt).length;
                   if (migratedCount > 0) {
-                    console.log(`✅ Migration: ${migratedCount} tâche(s) "done" ont reçu un completedAt`);
+                    devLog(`✅ Migration: ${migratedCount} tâche(s) "done" ont reçu un completedAt`);
                   }
                   setTasks(migratedTasks);
                 }
@@ -400,14 +418,14 @@ export default function SmartTodo() {
 
                 // Sauvegarder immédiatement dans le fichier
                 await window.electronAPI.saveData(filePath, parsed);
-                console.log('✅ Données migrées depuis localStorage vers OneDrive');
+                devLog('✅ Données migrées depuis localStorage vers OneDrive');
               } catch (err) {
-                console.error('Erreur lors de la migration:', err);
+                devError('Erreur lors de la migration:', err);
               }
             }
           }
         } catch (error) {
-          console.error('Erreur lors du chargement:', error);
+          devError('Erreur lors du chargement:', error);
         }
       }
       setIsLoadingData(false);
@@ -432,10 +450,10 @@ export default function SmartTodo() {
           const filePath = storagePath + '/data.json';
           const result = await window.electronAPI.saveData(filePath, payload);
           if (!result.success) {
-            console.error('Erreur lors de la sauvegarde:', result.error);
+            devError('Erreur lors de la sauvegarde:', result.error);
           }
         } catch (error) {
-          console.error('Erreur lors de la sauvegarde:', error);
+          devError('Erreur lors de la sauvegarde:', error);
         }
       }
     };
@@ -685,24 +703,26 @@ export default function SmartTodo() {
     const by = Object.fromEntries(STATUSES.map((s) => [s.id, []]));
     for (const t of filteredTasks) by[t.status]?.push(t);
 
+    // Fonction de calcul des jours ouvrés (hors de la boucle de tri)
+    const calcBusinessDays = (task) => {
+      if (!task.due) return Infinity;
+      const dueDate = new Date(task.due + "T00:00:00");
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      if (dueDate < now) {
+        return -businessDaysBetween(dueDate, now);
+      } else {
+        return businessDaysBetween(now, dueDate);
+      }
+    };
+
     // Tri des tâches par jours ouvrés restants (ordre croissant = plus urgent en haut)
     for (const status in by) {
       by[status].sort((a, b) => {
         if (!a.due && !b.due) return 0;
         if (!a.due) return 1; // Sans échéance en bas
         if (!b.due) return -1;
-
-        const calcBusinessDays = (task) => {
-          const dueDate = new Date(task.due + "T00:00:00");
-          const now = new Date();
-          now.setHours(0, 0, 0, 0);
-
-          if (dueDate < now) {
-            return -businessDaysBetween(dueDate, now);
-          } else {
-            return businessDaysBetween(now, dueDate);
-          }
-        };
 
         const daysA = calcBusinessDays(a);
         const daysB = calcBusinessDays(b);
@@ -1877,10 +1897,6 @@ function Menu({ task, onUpdate, onDelete, onArchive, projectHistory, users }) {
     };
   }, [open]);
 
-  function changeStatus(e) {
-    onUpdate(task.id, { status: e.target.value });
-  }
-
   return (
     <>
       <button
@@ -2486,6 +2502,65 @@ function WeeklyReportModal({ tasks, onClose }) {
     return { completed, total, percentage };
   }
 
+  // Helper pour générer une section de rapport (réduit la duplication)
+  function generateWeekSection(completed, remaining, weekRange, isCurrentWeek) {
+    const periodLabel = isCurrentWeek ? 'EN COURS' : 'PRÉCÉDENTE';
+    let text = `📅 SEMAINE ${periodLabel} (${weekRange.startStr} au ${weekRange.endStr})\n\n`;
+
+    // Tâches terminées
+    text += `✅ Tâches terminées\n`;
+    if (completed.length === 0) {
+      text += isCurrentWeek ? "- Aucune tâche terminée cette semaine\n" : "- Aucune tâche terminée durant cette période\n";
+    } else {
+      const groupedCompleted = groupByProject(completed);
+      Object.keys(groupedCompleted).sort().forEach(project => {
+        text += `\n  [${project}]\n`;
+        groupedCompleted[project].forEach(task => {
+          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+          const progress = getSubtaskProgress(task);
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
+          text += `  - ${task.title}${dueText}${progressText}\n`;
+
+          // Afficher les sous-tâches
+          if (task.subtasks && task.subtasks.length > 0) {
+            task.subtasks.forEach(subtask => {
+              const checkmark = subtask.completed ? "✓" : "○";
+              text += `      ${checkmark} ${subtask.title}\n`;
+            });
+          }
+        });
+      });
+    }
+
+    // Tâches en cours / restantes
+    text += `\n⏳ Tâches en cours / restantes\n`;
+    if (remaining.length === 0) {
+      text += "- Aucune tâche en cours\n";
+    } else {
+      const groupedRemaining = groupByProject(remaining);
+      Object.keys(groupedRemaining).sort().forEach(project => {
+        text += `\n  [${project}]\n`;
+        groupedRemaining[project].forEach(task => {
+          const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+          const progress = getSubtaskProgress(task);
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
+          text += `  - ${task.title} – statut : ${statusLabel}${dueText}${progressText}\n`;
+
+          // Afficher les sous-tâches
+          if (task.subtasks && task.subtasks.length > 0) {
+            task.subtasks.forEach(subtask => {
+              const checkmark = subtask.completed ? "✓" : "○";
+              text += `      ${checkmark} ${subtask.title}\n`;
+            });
+          }
+        });
+      });
+    }
+
+    return text;
+  }
+
   // Générer le texte du compte rendu
   function generateReport(period = 'both') {
     const currentCompleted = currentWeekTasks.completed.filter(t => selectedTasks[t.id]);
@@ -2495,114 +2570,15 @@ function WeeklyReportModal({ tasks, onClose }) {
 
     let text = `Compte rendu hebdomadaire\n\n`;
 
-    // ===== SEMAINE EN COURS =====
+    // Semaine en cours
     if (period === 'current' || period === 'both') {
-      text += `📅 SEMAINE EN COURS (${currentWeekRange.startStr} au ${currentWeekRange.endStr})\n\n`;
-
-      text += `✅ Tâches terminées\n`;
-      if (currentCompleted.length === 0) {
-        text += "- Aucune tâche terminée cette semaine\n";
-      } else {
-        const groupedCompleted = groupByProject(currentCompleted);
-        Object.keys(groupedCompleted).sort().forEach(project => {
-          text += `\n  [${project}]\n`;
-          groupedCompleted[project].forEach(task => {
-            const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-            const progress = getSubtaskProgress(task);
-            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
-            text += `  - ${task.title}${dueText}${progressText}\n`;
-
-            // Afficher les sous-tâches
-            if (task.subtasks && task.subtasks.length > 0) {
-              task.subtasks.forEach(subtask => {
-                const checkmark = subtask.completed ? "✓" : "○";
-                text += `      ${checkmark} ${subtask.title}\n`;
-              });
-            }
-          });
-        });
-      }
-
-      text += `\n⏳ Tâches en cours / restantes\n`;
-      if (currentRemaining.length === 0) {
-        text += "- Aucune tâche en cours\n";
-      } else {
-        const groupedRemaining = groupByProject(currentRemaining);
-        Object.keys(groupedRemaining).sort().forEach(project => {
-          text += `\n  [${project}]\n`;
-          groupedRemaining[project].forEach(task => {
-            const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-            const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-            const progress = getSubtaskProgress(task);
-            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
-            text += `  - ${task.title} – statut : ${statusLabel}${dueText}${progressText}\n`;
-
-            // Afficher les sous-tâches
-            if (task.subtasks && task.subtasks.length > 0) {
-              task.subtasks.forEach(subtask => {
-                const checkmark = subtask.completed ? "✓" : "○";
-                text += `      ${checkmark} ${subtask.title}\n`;
-              });
-            }
-          });
-        });
-      }
+      text += generateWeekSection(currentCompleted, currentRemaining, currentWeekRange, true);
     }
 
-    // ===== SEMAINE PRÉCÉDENTE =====
+    // Semaine précédente
     if (period === 'previous' || period === 'both') {
       if (period === 'both') text += `\n\n`;
-
-      text += `📅 SEMAINE PRÉCÉDENTE (${previousWeekRange.startStr} au ${previousWeekRange.endStr})\n\n`;
-
-      text += `✅ Tâches terminées\n`;
-      if (previousCompleted.length === 0) {
-        text += "- Aucune tâche terminée durant cette période\n";
-      } else {
-        const groupedCompleted = groupByProject(previousCompleted);
-        Object.keys(groupedCompleted).sort().forEach(project => {
-          text += `\n  [${project}]\n`;
-          groupedCompleted[project].forEach(task => {
-            const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-            const progress = getSubtaskProgress(task);
-            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
-            text += `  - ${task.title}${dueText}${progressText}\n`;
-
-            // Afficher les sous-tâches
-            if (task.subtasks && task.subtasks.length > 0) {
-              task.subtasks.forEach(subtask => {
-                const checkmark = subtask.completed ? "✓" : "○";
-                text += `      ${checkmark} ${subtask.title}\n`;
-              });
-            }
-          });
-        });
-      }
-
-      text += `\n⏳ Tâches en cours / restantes\n`;
-      if (previousRemaining.length === 0) {
-        text += "- Aucune tâche en cours\n";
-      } else {
-        const groupedRemaining = groupByProject(previousRemaining);
-        Object.keys(groupedRemaining).sort().forEach(project => {
-          text += `\n  [${project}]\n`;
-          groupedRemaining[project].forEach(task => {
-            const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-            const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
-            const progress = getSubtaskProgress(task);
-            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
-            text += `  - ${task.title} – statut : ${statusLabel}${dueText}${progressText}\n`;
-
-            // Afficher les sous-tâches
-            if (task.subtasks && task.subtasks.length > 0) {
-              task.subtasks.forEach(subtask => {
-                const checkmark = subtask.completed ? "✓" : "○";
-                text += `      ${checkmark} ${subtask.title}\n`;
-              });
-            }
-          });
-        });
-      }
+      text += generateWeekSection(previousCompleted, previousRemaining, previousWeekRange, false);
     }
 
     setReportText(text);
@@ -2670,11 +2646,10 @@ function WeeklyReportModal({ tasks, onClose }) {
 
     // Ajouter le logo To-DoX en haut à gauche
     try {
-      const logoImg = new Image();
-      logoImg.src = './src/assets/To Do X.png';
-      doc.addImage(logoImg, 'PNG', margin, y, 15, 15);
+      // Utiliser le logo SVG importé
+      doc.addImage(ToDoXLogo, 'SVG', margin, y, 15, 15);
     } catch (e) {
-      console.warn('Logo non chargé:', e);
+      devWarn('Logo non chargé:', e);
     }
 
     // Titre principal (décalé pour laisser place au logo)
