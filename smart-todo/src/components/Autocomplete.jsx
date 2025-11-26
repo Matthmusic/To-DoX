@@ -13,18 +13,18 @@ export function Autocomplete({
   placeholder,
   className,
   renderOption,
-  getValue = (x) => x,
-  getLabel = (x) => x,
+  getValue = (option) => option,
+  getLabel = (option) => option,
 }) {
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [focusedOptionIndex, setFocusedOptionIndex] = useState(-1);
   const wrapperRef = useRef(null);
-  const buttonRef = useRef(null);
+  const triggerButtonRef = useRef(null);
   const dropdownRef = useRef(null);
   const [dropdownPosition, setDropdownPosition] = useState(null);
 
   useEffect(() => {
-    if (!showDropdown) return;
+    if (!isDropdownOpen) return;
 
     function handleClickOutside(event) {
       if (
@@ -33,88 +33,92 @@ export function Autocomplete({
       ) {
         return;
       }
-      setShowDropdown(false);
-      setFocusedIndex(-1);
+      setIsDropdownOpen(false);
+      setFocusedOptionIndex(-1);
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showDropdown]);
+  }, [isDropdownOpen]);
 
   useEffect(() => {
-    if (!showDropdown) {
+    if (!isDropdownOpen) {
       setDropdownPosition(null);
     }
-  }, [showDropdown]);
+  }, [isDropdownOpen]);
 
   useLayoutEffect(() => {
-    if (!showDropdown) return;
+    if (!isDropdownOpen) return;
 
-    function updatePosition() {
-      if (!buttonRef.current) return;
-      const rect = buttonRef.current.getBoundingClientRect();
+    function updateDropdownPosition() {
+      if (!triggerButtonRef.current) return;
+      const buttonRect = triggerButtonRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
+        top: buttonRect.bottom + 4,
+        left: buttonRect.left,
+        width: buttonRect.width,
       });
     }
 
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
+    updateDropdownPosition();
+    window.addEventListener("resize", updateDropdownPosition);
+    window.addEventListener("scroll", updateDropdownPosition, true);
     return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updateDropdownPosition);
+      window.removeEventListener("scroll", updateDropdownPosition, true);
     };
-  }, [showDropdown]);
+  }, [isDropdownOpen]);
 
-  function handleKeyDown(e) {
-    if (!showDropdown) {
-      if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
-        e.preventDefault();
-        setShowDropdown(true);
+  function handleKeyDown(event) {
+    if (!isDropdownOpen) {
+      if (event.key === "Enter" || event.key === " " || event.key === "ArrowDown") {
+        event.preventDefault();
+        setIsDropdownOpen(true);
       }
       return;
     }
 
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setFocusedIndex((i) => (i < options.length - 1 ? i + 1 : i));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setFocusedIndex((i) => (i > 0 ? i - 1 : 0));
-    } else if (e.key === "Enter" && focusedIndex >= 0) {
-      e.preventDefault();
-      onChange(getValue(options[focusedIndex]));
-      setShowDropdown(false);
-      setFocusedIndex(-1);
-    } else if (e.key === "Escape") {
-      setShowDropdown(false);
-      setFocusedIndex(-1);
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setFocusedOptionIndex((index) => (index < options.length - 1 ? index + 1 : index));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setFocusedOptionIndex((index) => (index > 0 ? index - 1 : 0));
+    } else if (event.key === "Enter" && focusedOptionIndex >= 0) {
+      event.preventDefault();
+      onChange(getValue(options[focusedOptionIndex]));
+      setIsDropdownOpen(false);
+      setFocusedOptionIndex(-1);
+    } else if (event.key === "Escape") {
+      setIsDropdownOpen(false);
+      setFocusedOptionIndex(-1);
     }
   }
 
-  function selectOption(option) {
+  function handleOptionSelect(option) {
     onChange(getValue(option));
-    setShowDropdown(false);
-    setFocusedIndex(-1);
+    setIsDropdownOpen(false);
+    setFocusedOptionIndex(-1);
   }
 
-  const selectedOption = options.find((opt) => getValue(opt) === value);
-  const displayValue = selectedOption ? getLabel(selectedOption) : placeholder;
+  function toggleDropdown() {
+    setIsDropdownOpen(!isDropdownOpen);
+  }
+
+  const selectedOption = options.find((option) => getValue(option) === value);
+  const displayLabel = selectedOption ? getLabel(selectedOption) : placeholder;
 
   return (
     <div ref={wrapperRef} className="relative">
       <button
-        ref={buttonRef}
+        ref={triggerButtonRef}
         type="button"
         className={className}
-        onClick={() => setShowDropdown(!showDropdown)}
+        onClick={toggleDropdown}
         onKeyDown={handleKeyDown}
       >
-        {displayValue}
+        {displayLabel}
       </button>
-      {showDropdown &&
+      {isDropdownOpen &&
         dropdownPosition &&
         createPortal(
           <div
@@ -126,19 +130,19 @@ export function Autocomplete({
               width: dropdownPosition.width,
             }}
           >
-            {options.map((option, idx) => (
+            {options.map((option, optionIndex) => (
               <div
                 key={getValue(option)}
                 className={classNames(
                   "cursor-pointer px-3 py-2 text-sm text-slate-100 transition",
-                  idx === focusedIndex ? "bg-[#1E3A8A]" : "hover:bg-[#1E3A8A]/60"
+                  optionIndex === focusedOptionIndex ? "bg-[#1E3A8A]" : "hover:bg-[#1E3A8A]/60"
                 )}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  selectOption(option);
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleOptionSelect(option);
                 }}
-                onMouseEnter={() => setFocusedIndex(idx)}
+                onMouseEnter={() => setFocusedOptionIndex(optionIndex)}
               >
                 {renderOption ? renderOption(option) : getLabel(option)}
               </div>
