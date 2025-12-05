@@ -2,7 +2,7 @@
   "name": "to-dox",
   "productName": "To-DoX",
   "description": "Application Kanban minimaliste et intelligente pour la gestion de tâches",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "author": "Matthmusic <matthieu@maurelfamily.fr>",
   "homepage": "https://github.com/Matthmusic/To-DoX",
   "repository": {

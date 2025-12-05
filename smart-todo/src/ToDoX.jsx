@@ -1037,66 +1037,6 @@ export default function ToDoX() {
 }
 
 
-// ============ COMPOSANT CONTEXT MENU (CLIC DROIT) ============
-
-function ContextMenu({ x, y, items, onClose }) {
-  const menuRef = useRef(null);
-
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
-        onClose();
-      }
-    }
-
-    function handleContextMenu(e) {
-      e.preventDefault();
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('contextmenu', handleContextMenu);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('contextmenu', handleContextMenu);
-    };
-  }, [onClose]);
-
-  return createPortal(
-    <div
-      ref={menuRef}
-      className="fixed z-[9999] min-w-[200px] rounded-2xl border border-white/10 bg-[#0b1124] p-2 text-slate-100 shadow-2xl backdrop-blur"
-      style={{ top: y, left: x }}
-    >
-      {items.map((item, idx) => {
-        if (item.separator) {
-          return <div key={idx} className="my-1 h-px bg-white/10" />;
-        }
-
-        return (
-          <button
-            key={idx}
-            onClick={() => {
-              item.onClick();
-              onClose();
-            }}
-            className={classNames(
-              "w-full rounded-xl px-3 py-2 text-left text-sm transition flex items-center gap-2",
-              item.danger
-                ? "text-rose-300 hover:bg-rose-500/20"
-                : "text-slate-200 hover:bg-white/10"
-            )}
-          >
-            {item.icon && <item.icon className="h-4 w-4" />}
-            <span>{item.label}</span>
-          </button>
-        );
-      })}
-    </div>,
-    document.body
-  );
-}
-
 // ============ COMPOSANT PROJECT CARD ============
 
 function ProjectCard({
@@ -1120,70 +1060,8 @@ function ProjectCard({
   onReorderSubtasks,
   getSubtaskProgress,
 }) {
-  const [contextMenu, setContextMenu] = useState(null);
-
   const completedTasks = tasks.filter(t => t.status === "done").length;
   const totalTasks = tasks.length;
-  const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-  const handleProjectContextMenu = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setContextMenu({ x: e.clientX, y: e.clientY, type: 'project' });
-  };
-
-  const projectContextMenuItems = [
-    {
-      label: isCollapsed ? 'Déplier' : 'Replier',
-      icon: isCollapsed ? ChevronDown : ChevronUp,
-      onClick: onToggleCollapse,
-    },
-    { separator: true },
-    {
-      label: 'Déplacer toutes vers À faire',
-      onClick: () => {
-        tasks.forEach(t => onUpdate(t.id, { status: 'todo' }));
-      },
-    },
-    {
-      label: 'Déplacer toutes vers En cours',
-      onClick: () => {
-        tasks.forEach(t => onUpdate(t.id, { status: 'doing' }));
-      },
-    },
-    {
-      label: 'Déplacer toutes vers À réviser',
-      onClick: () => {
-        tasks.forEach(t => onUpdate(t.id, { status: 'review' }));
-      },
-    },
-    {
-      label: 'Déplacer toutes vers Fait',
-      onClick: () => {
-        tasks.forEach(t => onUpdate(t.id, { status: 'done' }));
-      },
-    },
-    { separator: true },
-    {
-      label: 'Archiver toutes les tâches',
-      icon: FileDown,
-      onClick: () => {
-        if (window.confirm(`Archiver toutes les ${totalTasks} tâche(s) de "${project}" ?`)) {
-          tasks.forEach(t => onArchive(t.id));
-        }
-      },
-    },
-    {
-      label: 'Supprimer toutes les tâches',
-      icon: Trash2,
-      danger: true,
-      onClick: () => {
-        if (window.confirm(`Supprimer définitivement toutes les ${totalTasks} tâche(s) de "${project}" ?`)) {
-          tasks.forEach(t => onDelete(t.id));
-        }
-      },
-    },
-  ];
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
@@ -1195,7 +1073,6 @@ function ProjectCard({
           onDragStartProject(e, project, status);
           e.stopPropagation();
         }}
-        onContextMenu={handleProjectContextMenu}
       >
         <div className="flex items-center gap-2">
           <button
@@ -1249,16 +1126,6 @@ function ProjectCard({
             />
           ))}
         </div>
-      )}
-
-      {/* Context menu */}
-      {contextMenu && (
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          items={projectContextMenuItems}
-          onClose={() => setContextMenu(null)}
-        />
       )}
     </div>
   );
@@ -1736,8 +1603,12 @@ function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose,
   return createPortal(
     <div
       ref={menuRef}
-      className="fixed z-[9999] w-64 max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/10 bg-[#0b1124] p-3 text-slate-100 shadow-2xl backdrop-blur"
-      style={{ top: adjustedPosition.top, left: adjustedPosition.left }}
+      className="fixed z-[99999] w-64 max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/10 bg-[#0b1124] p-3 text-slate-100 shadow-2xl backdrop-blur"
+      style={{
+        top: adjustedPosition.top,
+        left: adjustedPosition.left,
+        animation: 'contextMenuSlideIn 0.15s ease-out'
+      }}
     >
       <div className="grid gap-2">
         <label className="text-xs text-slate-400">Statut</label>
