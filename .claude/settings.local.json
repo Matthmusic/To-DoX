@@ -28,7 +28,13 @@
       "Bash(del nul 2)",
       "Bash(git checkout:*)",
       "Bash(git mv:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(timeout:*)",
+      "Bash(taskkill:*)",
+      "Bash(robocopy:*)",
+      "Bash(netstat:*)",
+      "Bash(cmd /c \"move smart-todo src\")",
+      "Bash(del nul)"
     ],
     "deny": [],
     "ask": []

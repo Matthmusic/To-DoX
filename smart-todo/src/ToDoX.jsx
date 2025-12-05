@@ -122,6 +122,35 @@ export default function ToDoX() {
     return DEFAULT_USERS;
   });
 
+  // État de repliement des projets (par statut et par projet)
+  const [collapsedProjects, setCollapsedProjects] = useState(() => {
+    const raw = localStorage.getItem('todox_collapsed_projects');
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch {}
+    }
+    return {};
+  });
+
+  // Sauvegarder l'état de repliement dans localStorage
+  useEffect(() => {
+    localStorage.setItem('todox_collapsed_projects', JSON.stringify(collapsedProjects));
+  }, [collapsedProjects]);
+
+  function toggleProjectCollapse(status, project) {
+    const key = `${status}_${project}`;
+    setCollapsedProjects(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  }
+
+  function isProjectCollapsed(status, project) {
+    const key = `${status}_${project}`;
+    return collapsedProjects[key] || false;
+  }
+
   const [filterProject, setFilterProject] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -510,8 +539,13 @@ export default function ToDoX() {
   }, [tasks, filterProject, filterPriority, filterStatus, filterUser]);
 
   const grouped = useMemo(() => {
-    const by = Object.fromEntries(STATUSES.map((s) => [s.id, []]));
-    for (const t of filteredTasks) by[t.status]?.push(t);
+    // Regroupement par statut, puis par projet
+    const byStatusAndProject = {};
+
+    // Initialiser la structure
+    STATUSES.forEach((s) => {
+      byStatusAndProject[s.id] = {};
+    });
 
     // Fonction de calcul des jours ouvrés (hors de la boucle de tri)
     const calcBusinessDays = (task) => {
@@ -527,21 +561,68 @@ export default function ToDoX() {
       }
     };
 
-    // Tri des tâches par jours ouvrés restants (ordre croissant = plus urgent en haut)
-    for (const status in by) {
-      by[status].sort((a, b) => {
-        if (!a.due && !b.due) return 0;
-        if (!a.due) return 1; // Sans échéance en bas
-        if (!b.due) return -1;
-
-        const daysA = calcBusinessDays(a);
-        const daysB = calcBusinessDays(b);
-
-        return daysA - daysB; // Ordre croissant : les plus urgents en premier
-      });
+    // Regrouper les tâches par statut et projet
+    for (const t of filteredTasks) {
+      const projectName = t.project || "Sans projet";
+      if (!byStatusAndProject[t.status][projectName]) {
+        byStatusAndProject[t.status][projectName] = [];
+      }
+      byStatusAndProject[t.status][projectName].push(t);
     }
 
-    return by;
+    // Trier les tâches dans chaque projet par urgence
+    for (const status in byStatusAndProject) {
+      for (const project in byStatusAndProject[status]) {
+        byStatusAndProject[status][project].sort((a, b) => {
+          if (!a.due && !b.due) return 0;
+          if (!a.due) return 1; // Sans échéance en bas
+          if (!b.due) return -1;
+
+          const daysA = calcBusinessDays(a);
+          const daysB = calcBusinessDays(b);
+
+          return daysA - daysB; // Ordre croissant : les plus urgents en premier
+        });
+      }
+    }
+
+    // Trier les projets par date de rendu moyenne (plus proche en premier), avec "Sans projet" en dernier
+    for (const status in byStatusAndProject) {
+      const projects = Object.keys(byStatusAndProject[status]).sort((a, b) => {
+        if (a === "Sans projet") return 1;
+        if (b === "Sans projet") return -1;
+
+        // Calculer la date moyenne pour chaque projet
+        const tasksA = byStatusAndProject[status][a];
+        const tasksB = byStatusAndProject[status][b];
+
+        // Calculer la moyenne des dates de rendu (en timestamp)
+        const avgDateA = tasksA.reduce((sum, t) => {
+          if (!t.due) return sum;
+          return sum + new Date(t.due).getTime();
+        }, 0) / tasksA.filter(t => t.due).length;
+
+        const avgDateB = tasksB.reduce((sum, t) => {
+          if (!t.due) return sum;
+          return sum + new Date(t.due).getTime();
+        }, 0) / tasksB.filter(t => t.due).length;
+
+        // Si un projet n'a pas de dates, le mettre en dernier
+        if (isNaN(avgDateA)) return 1;
+        if (isNaN(avgDateB)) return -1;
+
+        // Trier par date moyenne (plus proche = plus petit timestamp = en premier)
+        return avgDateA - avgDateB;
+      });
+
+      const sorted = {};
+      projects.forEach(project => {
+        sorted[project] = byStatusAndProject[status][project];
+      });
+      byStatusAndProject[status] = sorted;
+    }
+
+    return byStatusAndProject;
   }, [filteredTasks]);
 
   const projectStats = useMemo(() => {
@@ -619,14 +700,45 @@ export default function ToDoX() {
 
   // Drag & drop (HTML5)
   const dragData = useRef(null);
-  function onDragStart(e, taskId) {
-    dragData.current = { taskId };
+
+  // Drag d'une tâche individuelle
+  function onDragStartTask(e, taskId) {
+    dragData.current = { type: 'task', taskId };
     e.dataTransfer.effectAllowed = "move";
   }
+
+  // Drag d'une carte projet entière
+  function onDragStartProject(e, project, currentStatus) {
+    dragData.current = { type: 'project', project, currentStatus };
+    e.dataTransfer.effectAllowed = "move";
+  }
+
   function onDrop(e, status) {
     e.preventDefault();
     const d = dragData.current;
-    if (d?.taskId) moveTask(d.taskId, status);
+
+    if (d?.type === 'task' && d.taskId) {
+      // Déplacer une seule tâche
+      moveTask(d.taskId, status);
+    } else if (d?.type === 'project' && d.project) {
+      // Déplacer toutes les tâches du projet
+      setTasks((xs) =>
+        xs.map((t) => {
+          if (t.project === d.project && t.status === d.currentStatus) {
+            const updatedPatch = { status };
+            // Gérer le champ completedAt
+            if (status === "done") {
+              updatedPatch.completedAt = Date.now();
+            } else {
+              updatedPatch.completedAt = null;
+            }
+            return { ...t, ...updatedPatch, updatedAt: Date.now() };
+          }
+          return t;
+        })
+      );
+    }
+
     dragData.current = null;
   }
 
@@ -815,6 +927,12 @@ export default function ToDoX() {
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {STATUSES.map((col) => {
             const StatusIcon = col.Icon;
+            const projectsInColumn = Object.keys(grouped[col.id] || {});
+            const totalTasksInColumn = projectsInColumn.reduce(
+              (sum, project) => sum + (grouped[col.id][project]?.length || 0),
+              0
+            );
+
             return (
               <div
                 key={col.id}
@@ -826,30 +944,38 @@ export default function ToDoX() {
                   <StatusIcon className="h-4 w-4 text-slate-200" />
                   <h2 className="font-semibold tracking-tight text-slate-100">{col.label}</h2>
                   <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-xs text-slate-300">
-                    {grouped[col.id]?.length || 0}
+                    {totalTasksInColumn}
                   </span>
                 </div>
 
                 <div className="flex-1 space-y-3">
-                  {(grouped[col.id] || []).map((t) => (
-                    <TaskCard
-                      key={t.id}
-                      task={t}
-                      onDragStart={onDragStart}
-                      onUpdate={updateTask}
-                      onDelete={removeTask}
-                      onArchive={archiveTask}
-                      projectDir={directories[t.project]}
-                      projectHistory={projectHistory}
-                      users={users}
-                      onAddSubtask={addSubtask}
-                      onToggleSubtask={toggleSubtask}
-                      onDeleteSubtask={deleteSubtask}
-                      onUpdateSubtaskTitle={updateSubtaskTitle}
-                      onReorderSubtasks={reorderSubtasks}
-                      getSubtaskProgress={getSubtaskProgress}
-                    />
-                  ))}
+                  {projectsInColumn.map((project) => {
+                    const projectTasks = grouped[col.id][project] || [];
+                    return (
+                      <ProjectCard
+                        key={`${col.id}_${project}`}
+                        project={project}
+                        status={col.id}
+                        tasks={projectTasks}
+                        isCollapsed={isProjectCollapsed(col.id, project)}
+                        onToggleCollapse={() => toggleProjectCollapse(col.id, project)}
+                        onDragStartProject={onDragStartProject}
+                        onDragStartTask={onDragStartTask}
+                        onUpdate={updateTask}
+                        onDelete={removeTask}
+                        onArchive={archiveTask}
+                        directories={directories}
+                        projectHistory={projectHistory}
+                        users={users}
+                        onAddSubtask={addSubtask}
+                        onToggleSubtask={toggleSubtask}
+                        onDeleteSubtask={deleteSubtask}
+                        onUpdateSubtaskTitle={updateSubtaskTitle}
+                        onReorderSubtasks={reorderSubtasks}
+                        getSubtaskProgress={getSubtaskProgress}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -910,6 +1036,233 @@ export default function ToDoX() {
   );
 }
 
+
+// ============ COMPOSANT CONTEXT MENU (CLIC DROIT) ============
+
+function ContextMenu({ x, y, items, onClose }) {
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        onClose();
+      }
+    }
+
+    function handleContextMenu(e) {
+      e.preventDefault();
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      className="fixed z-[9999] min-w-[200px] rounded-2xl border border-white/10 bg-[#0b1124] p-2 text-slate-100 shadow-2xl backdrop-blur"
+      style={{ top: y, left: x }}
+    >
+      {items.map((item, idx) => {
+        if (item.separator) {
+          return <div key={idx} className="my-1 h-px bg-white/10" />;
+        }
+
+        return (
+          <button
+            key={idx}
+            onClick={() => {
+              item.onClick();
+              onClose();
+            }}
+            className={classNames(
+              "w-full rounded-xl px-3 py-2 text-left text-sm transition flex items-center gap-2",
+              item.danger
+                ? "text-rose-300 hover:bg-rose-500/20"
+                : "text-slate-200 hover:bg-white/10"
+            )}
+          >
+            {item.icon && <item.icon className="h-4 w-4" />}
+            <span>{item.label}</span>
+          </button>
+        );
+      })}
+    </div>,
+    document.body
+  );
+}
+
+// ============ COMPOSANT PROJECT CARD ============
+
+function ProjectCard({
+  project,
+  status,
+  tasks,
+  isCollapsed,
+  onToggleCollapse,
+  onDragStartProject,
+  onDragStartTask,
+  onUpdate,
+  onDelete,
+  onArchive,
+  directories,
+  projectHistory,
+  users,
+  onAddSubtask,
+  onToggleSubtask,
+  onDeleteSubtask,
+  onUpdateSubtaskTitle,
+  onReorderSubtasks,
+  getSubtaskProgress,
+}) {
+  const [contextMenu, setContextMenu] = useState(null);
+
+  const completedTasks = tasks.filter(t => t.status === "done").length;
+  const totalTasks = tasks.length;
+  const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  const handleProjectContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY, type: 'project' });
+  };
+
+  const projectContextMenuItems = [
+    {
+      label: isCollapsed ? 'Déplier' : 'Replier',
+      icon: isCollapsed ? ChevronDown : ChevronUp,
+      onClick: onToggleCollapse,
+    },
+    { separator: true },
+    {
+      label: 'Déplacer toutes vers À faire',
+      onClick: () => {
+        tasks.forEach(t => onUpdate(t.id, { status: 'todo' }));
+      },
+    },
+    {
+      label: 'Déplacer toutes vers En cours',
+      onClick: () => {
+        tasks.forEach(t => onUpdate(t.id, { status: 'doing' }));
+      },
+    },
+    {
+      label: 'Déplacer toutes vers À réviser',
+      onClick: () => {
+        tasks.forEach(t => onUpdate(t.id, { status: 'review' }));
+      },
+    },
+    {
+      label: 'Déplacer toutes vers Fait',
+      onClick: () => {
+        tasks.forEach(t => onUpdate(t.id, { status: 'done' }));
+      },
+    },
+    { separator: true },
+    {
+      label: 'Archiver toutes les tâches',
+      icon: FileDown,
+      onClick: () => {
+        if (window.confirm(`Archiver toutes les ${totalTasks} tâche(s) de "${project}" ?`)) {
+          tasks.forEach(t => onArchive(t.id));
+        }
+      },
+    },
+    {
+      label: 'Supprimer toutes les tâches',
+      icon: Trash2,
+      danger: true,
+      onClick: () => {
+        if (window.confirm(`Supprimer définitivement toutes les ${totalTasks} tâche(s) de "${project}" ?`)) {
+          tasks.forEach(t => onDelete(t.id));
+        }
+      },
+    },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+      {/* Header de la carte projet - draggable */}
+      <div
+        className="relative group cursor-move p-3 bg-gradient-to-r from-white/5 to-transparent hover:from-white/10 transition-all"
+        draggable
+        onDragStart={(e) => {
+          onDragStartProject(e, project, status);
+          e.stopPropagation();
+        }}
+        onContextMenu={handleProjectContextMenu}
+      >
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleCollapse();
+            }}
+            className="text-slate-300 hover:text-slate-100 transition"
+          >
+            {isCollapsed ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronUp className="h-4 w-4" />
+            )}
+          </button>
+          <GripVertical className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition" />
+          <span
+            className={classNames(
+              "font-semibold text-sm flex-1 truncate",
+              getProjectColor(project).text
+            )}
+          >
+            {project}
+          </span>
+          <span className="text-xs text-slate-400">
+            {completedTasks}/{totalTasks}
+          </span>
+        </div>
+      </div>
+
+      {/* Liste des tâches */}
+      {!isCollapsed && (
+        <div className="p-2 space-y-2">
+          {tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onDragStart={onDragStartTask}
+              onUpdate={onUpdate}
+              onDelete={onDelete}
+              onArchive={onArchive}
+              projectDir={directories[task.project]}
+              projectHistory={projectHistory}
+              users={users}
+              onAddSubtask={onAddSubtask}
+              onToggleSubtask={onToggleSubtask}
+              onDeleteSubtask={onDeleteSubtask}
+              onUpdateSubtaskTitle={onUpdateSubtaskTitle}
+              onReorderSubtasks={onReorderSubtasks}
+              getSubtaskProgress={getSubtaskProgress}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Context menu */}
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          items={projectContextMenuItems}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
+    </div>
+  );
+}
 
 // ============ COMPOSANTS SOUS-TÂCHES ============
 
@@ -1089,6 +1442,7 @@ function TaskCard({
   getSubtaskProgress
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
 
   // Calcul des jours ouvrés restants (hors weekends)
   const businessDays = useMemo(() => {
@@ -1153,6 +1507,12 @@ function TaskCard({
     return "hover:border-emerald-200/40 hover:shadow-emerald-400/20";
   }, [businessDays]);
 
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
+
   return (
     <div
       className={classNames(
@@ -1164,6 +1524,7 @@ function TaskCard({
       )}
       draggable
       onDragStart={(e) => onDragStart(e, task.id)}
+      onContextMenu={handleContextMenu}
     >
       <div className={classNames("absolute inset-0 pointer-events-none opacity-80 bg-gradient-to-br", urgencyTone)} />
       <div className="relative z-10 flex items-start gap-2">
@@ -1296,7 +1657,6 @@ function TaskCard({
             </div>
           )}
         </div>
-        <Menu task={task} onUpdate={onUpdate} onDelete={onDelete} onArchive={onArchive} projectHistory={projectHistory} users={users} />
       </div>
 
       {task.notes && (
@@ -1314,175 +1674,254 @@ function TaskCard({
           onReorderSubtasks={onReorderSubtasks}
         />
       )}
+
+      {/* Panneau d'édition au clic droit */}
+      {contextMenu && (
+        <TaskEditPanel
+          task={task}
+          position={contextMenu}
+          onUpdate={onUpdate}
+          onDelete={onDelete}
+          onArchive={onArchive}
+          onClose={() => setContextMenu(null)}
+          projectHistory={projectHistory}
+          users={users}
+        />
+      )}
     </div>
   );
 }
 
-function Menu({ task, onUpdate, onDelete, onArchive, projectHistory, users }) {
-  const [open, setOpen] = useState(false);
-  const triggerRef = useRef(null);
+// Panneau d'édition pour clic droit (identique à l'ancien menu "...")
+function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose, projectHistory, users }) {
   const menuRef = useRef(null);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     function closeOnClick(e) {
-      if (!open) return;
-      if (
-        triggerRef.current?.contains(e.target) ||
-        menuRef.current?.contains(e.target)
-      )
-        return;
-      setOpen(false);
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        onClose();
+      }
     }
     document.addEventListener("mousedown", closeOnClick);
     return () => document.removeEventListener("mousedown", closeOnClick);
-  }, [open]);
+  }, [onClose]);
 
-  useEffect(() => {
-    function updateCoords() {
-      if (!open || !triggerRef.current) return;
-      const rect = triggerRef.current.getBoundingClientRect();
-      const menuWidth = menuRef.current?.offsetWidth || 256;
-      const menuHeight = menuRef.current?.offsetHeight || 400;
-      const padding = 16;
+  return createPortal(
+    <div
+      ref={menuRef}
+      className="fixed z-[9999] w-64 max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/10 bg-[#0b1124] p-3 text-slate-100 shadow-2xl backdrop-blur"
+      style={{ top: position.y, left: position.x }}
+    >
+      <div className="grid gap-2">
+        <label className="text-xs text-slate-400">Statut</label>
+        <Autocomplete
+          value={task.status}
+          onChange={(val) => onUpdate(task.id, { status: val })}
+          options={STATUSES}
+          placeholder="Statut"
+          className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+          getValue={(s) => s.id}
+          getLabel={(s) => s.label}
+        />
 
-      // Position horizontale : aligné à droite du bouton, mais reste dans l'écran
-      let left = rect.right - menuWidth;
-      left = Math.max(padding, Math.min(left, window.innerWidth - menuWidth - padding));
+        <label className="mt-2 text-xs text-slate-400">Titre</label>
+        <input
+          type="text"
+          value={task.title}
+          onChange={(e) => onUpdate(task.id, { title: e.target.value })}
+          className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+        />
 
-      // Position verticale : sous le bouton par défaut, au-dessus si pas assez de place
-      let top = rect.bottom + 8;
+        <label className="mt-2 text-xs text-slate-400">Projet</label>
+        <ProjectAutocomplete
+          value={task.project}
+          onChange={(val) => onUpdate(task.id, { project: val })}
+          projectHistory={projectHistory}
+          placeholder="Projet"
+          className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
+        />
 
-      // Si le menu déborde en bas de l'écran, l'afficher au-dessus du bouton
-      if (top + menuHeight + padding > window.innerHeight) {
-        top = rect.top - menuHeight - 8;
+        <label className="mt-2 text-xs text-slate-400">Échéance</label>
+        <input
+          type="date"
+          value={task.due || ""}
+          onChange={(e) => onUpdate(task.id, { due: e.target.value })}
+          className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+        />
 
-        // Si même au-dessus ça déborde, le coller en haut de l'écran
-        if (top < padding) {
-          top = padding;
-        }
-      }
+        <label className="mt-2 text-xs text-slate-400">Priorité</label>
+        <Autocomplete
+          value={task.priority}
+          onChange={(val) => onUpdate(task.id, { priority: val })}
+          options={PRIORITIES}
+          placeholder="Priorité"
+          className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+          getValue={(p) => p.id}
+          getLabel={(p) => p.label}
+        />
 
-      setPosition({ top, left });
-    }
-    updateCoords();
-    if (!open) return;
-    window.addEventListener("resize", updateCoords);
-    window.addEventListener("scroll", updateCoords, true);
-    return () => {
-      window.removeEventListener("resize", updateCoords);
-      window.removeEventListener("scroll", updateCoords, true);
-    };
-  }, [open]);
+        <label className="mt-2 text-xs text-slate-400">Assigné à</label>
+        <Autocomplete
+          value={task.assignedTo || "unassigned"}
+          onChange={(val) => onUpdate(task.id, { assignedTo: val })}
+          options={users}
+          placeholder="Assigné à"
+          className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+          getValue={(u) => u.id}
+          getLabel={(u) => u.name}
+        />
 
-  return (
-    <>
-      <button
-        ref={triggerRef}
-        onClick={() => setOpen(!open)}
-        className="rounded-2xl border border-white/20 bg-white/5 px-2 py-1 text-sm text-slate-100 transition hover:bg-[#1E3A8A]/60"
-        aria-haspopup="menu"
-        aria-expanded={open}
-      >
-        <MoreHorizontal className="h-4 w-4" />
-      </button>
-      {open &&
-        createPortal(
-          <div
-            ref={menuRef}
-            className="fixed z-[9999] w-64 max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/10 bg-[#0b1124] p-3 text-slate-100 shadow-2xl backdrop-blur"
-            style={{ top: position.top, left: position.left }}
+        <label className="mt-2 text-xs text-slate-400">Notes</label>
+        <textarea
+          value={task.notes || ""}
+          onChange={(e) => onUpdate(task.id, { notes: e.target.value })}
+          className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+          rows={3}
+        />
+
+        {task.status === "done" && (
+          <button
+            onClick={() => {
+              onArchive(task.id);
+              onClose();
+            }}
+            className="mt-2 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-2 py-1 text-emerald-100 transition hover:bg-emerald-400/20"
           >
-            <div className="grid gap-2">
-              <label className="text-xs text-slate-400">Statut</label>
-              <Autocomplete
-                value={task.status}
-                onChange={(val) => onUpdate(task.id, { status: val })}
-                options={STATUSES}
-                placeholder="Statut"
-                className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-                getValue={(s) => s.id}
-                getLabel={(s) => s.label}
-              />
-
-              <label className="mt-2 text-xs text-slate-400">Titre</label>
-              <input
-                type="text"
-                value={task.title}
-                onChange={(e) => onUpdate(task.id, { title: e.target.value })}
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-              />
-
-              <label className="mt-2 text-xs text-slate-400">Projet</label>
-              <ProjectAutocomplete
-                value={task.project}
-                onChange={(val) => onUpdate(task.id, { project: val })}
-                projectHistory={projectHistory}
-                placeholder="Projet"
-                className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
-              />
-
-              <label className="mt-2 text-xs text-slate-400">Échéance</label>
-              <input
-                type="date"
-                value={task.due || ""}
-                onChange={(e) => onUpdate(task.id, { due: e.target.value })}
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-              />
-
-              <label className="mt-2 text-xs text-slate-400">Priorité</label>
-              <Autocomplete
-                value={task.priority}
-                onChange={(val) => onUpdate(task.id, { priority: val })}
-                options={PRIORITIES}
-                placeholder="Priorité"
-                className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-                getValue={(p) => p.id}
-                getLabel={(p) => p.label}
-              />
-
-              <label className="mt-2 text-xs text-slate-400">Assigné à</label>
-              <Autocomplete
-                value={task.assignedTo || "unassigned"}
-                onChange={(val) => onUpdate(task.id, { assignedTo: val })}
-                options={users}
-                placeholder="Assigné à"
-                className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-                getValue={(u) => u.id}
-                getLabel={(u) => u.name}
-              />
-
-              <label className="mt-2 text-xs text-slate-400">Notes</label>
-              <textarea
-                value={task.notes || ""}
-                onChange={(e) => onUpdate(task.id, { notes: e.target.value })}
-                className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-                rows={3}
-              />
-
-              {task.status === "done" && (
-                <button
-                  onClick={() => {
-                    onArchive(task.id);
-                    setOpen(false);
-                  }}
-                  className="mt-2 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-2 py-1 text-emerald-100 transition hover:bg-emerald-400/20"
-                >
-                  Archiver
-                </button>
-              )}
-
-              <button
-                onClick={() => onDelete(task.id)}
-                className="mt-2 rounded-2xl border border-rose-400/40 bg-rose-400/10 px-2 py-1 text-rose-100 transition hover:bg-rose-400/20"
-              >
-                Supprimer
-              </button>
-            </div>
-          </div>,
-          document.body
+            Archiver
+          </button>
         )}
-    </>
+
+        <button
+          onClick={() => {
+            if (window.confirm(`Supprimer la tâche "${task.title}" ?`)) {
+              onDelete(task.id);
+              onClose();
+            }
+          }}
+          className="mt-2 rounded-2xl border border-rose-400/40 bg-rose-400/10 px-2 py-1 text-rose-100 transition hover:bg-rose-400/20"
+        >
+          Supprimer
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+// Modal d'édition de tâche
+function TaskEditModal({ task, onUpdate, onClose, projectHistory, users, onArchive, onDelete }) {
+  return (
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0b1124] p-6 text-slate-100 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Modifier la tâche</h3>
+          <button
+            onClick={onClose}
+            className="rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-[#1E3A8A]/60"
+          >
+            Fermer
+          </button>
+        </div>
+
+        <div className="grid gap-3 max-h-[70vh] overflow-y-auto pr-2">
+          <label className="text-xs text-slate-400">Statut</label>
+          <Autocomplete
+            value={task.status}
+            onChange={(val) => onUpdate(task.id, { status: val })}
+            options={STATUSES}
+            placeholder="Statut"
+            className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+            getValue={(s) => s.id}
+            getLabel={(s) => s.label}
+          />
+
+          <label className="mt-2 text-xs text-slate-400">Titre</label>
+          <input
+            type="text"
+            value={task.title}
+            onChange={(e) => onUpdate(task.id, { title: e.target.value })}
+            className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+          />
+
+          <label className="mt-2 text-xs text-slate-400">Projet</label>
+          <ProjectAutocomplete
+            value={task.project}
+            onChange={(val) => onUpdate(task.id, { project: val })}
+            projectHistory={projectHistory}
+            placeholder="Projet"
+            className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
+          />
+
+          <label className="mt-2 text-xs text-slate-400">Échéance</label>
+          <input
+            type="date"
+            value={task.due || ""}
+            onChange={(e) => onUpdate(task.id, { due: e.target.value })}
+            className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+          />
+
+          <label className="mt-2 text-xs text-slate-400">Priorité</label>
+          <Autocomplete
+            value={task.priority}
+            onChange={(val) => onUpdate(task.id, { priority: val })}
+            options={PRIORITIES}
+            placeholder="Priorité"
+            className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+            getValue={(p) => p.id}
+            getLabel={(p) => p.label}
+          />
+
+          <label className="mt-2 text-xs text-slate-400">Assigné à</label>
+          <Autocomplete
+            value={task.assignedTo || "unassigned"}
+            onChange={(val) => onUpdate(task.id, { assignedTo: val })}
+            options={users}
+            placeholder="Assigné à"
+            className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+            getValue={(u) => u.id}
+            getLabel={(u) => u.name}
+          />
+
+          <label className="mt-2 text-xs text-slate-400">Notes</label>
+          <textarea
+            value={task.notes || ""}
+            onChange={(e) => onUpdate(task.id, { notes: e.target.value })}
+            className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+            rows={3}
+          />
+
+          {task.status === "done" && (
+            <button
+              onClick={() => {
+                onArchive(task.id);
+                onClose();
+              }}
+              className="mt-2 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-2 py-1 text-emerald-100 transition hover:bg-emerald-400/20"
+            >
+              Archiver
+            </button>
+          )}
+
+          <button
+            onClick={() => {
+              if (window.confirm(`Supprimer la tâche "${task.title}" ?`)) {
+                onDelete(task.id);
+                onClose();
+              }
+            }}
+            className="mt-2 rounded-2xl border border-rose-400/40 bg-rose-400/10 px-2 py-1 text-rose-100 transition hover:bg-rose-400/20"
+          >
+            Supprimer
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
