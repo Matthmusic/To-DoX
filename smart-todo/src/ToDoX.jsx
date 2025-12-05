@@ -1695,6 +1695,7 @@ function TaskCard({
 // Panneau d'édition pour clic droit (identique à l'ancien menu "...")
 function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose, projectHistory, users }) {
   const menuRef = useRef(null);
+  const [adjustedPosition, setAdjustedPosition] = useState({ top: position.y, left: position.x });
 
   useEffect(() => {
     function closeOnClick(e) {
@@ -1706,11 +1707,37 @@ function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose,
     return () => document.removeEventListener("mousedown", closeOnClick);
   }, [onClose]);
 
+  useEffect(() => {
+    if (!menuRef.current) return;
+
+    const menuWidth = menuRef.current.offsetWidth || 256;
+    const menuHeight = menuRef.current.offsetHeight || 400;
+    const padding = 16;
+
+    // Position horizontale : à droite du clic, mais reste dans l'écran
+    let left = position.x;
+    if (left + menuWidth + padding > window.innerWidth) {
+      left = window.innerWidth - menuWidth - padding;
+    }
+    left = Math.max(padding, left);
+
+    // Position verticale : sous le clic par défaut, au-dessus si pas assez de place
+    let top = position.y;
+    if (top + menuHeight + padding > window.innerHeight) {
+      top = position.y - menuHeight;
+      if (top < padding) {
+        top = padding;
+      }
+    }
+
+    setAdjustedPosition({ top, left });
+  }, [position.x, position.y]);
+
   return createPortal(
     <div
       ref={menuRef}
       className="fixed z-[9999] w-64 max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/10 bg-[#0b1124] p-3 text-slate-100 shadow-2xl backdrop-blur"
-      style={{ top: position.y, left: position.x }}
+      style={{ top: adjustedPosition.top, left: adjustedPosition.left }}
     >
       <div className="grid gap-2">
         <label className="text-xs text-slate-400">Statut</label>
