@@ -24,7 +24,7 @@ export function UpdateNotification() {
   // Notification de mise à jour téléchargée
   if (updateDownloaded) {
     return (
-      <div className="fixed top-4 right-4 z-50 bg-green-500 text-white rounded-lg shadow-lg p-4 max-w-md animate-slide-in">
+      <div className="fixed top-12 right-4 z-50 bg-green-500 text-white rounded-lg shadow-lg p-4 max-w-md animate-slide-in">
         <div className="flex items-start gap-3">
           <CheckCircle className="w-6 h-6 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
@@ -61,7 +61,7 @@ export function UpdateNotification() {
   // Notification de téléchargement en cours
   if (downloadProgress > 0 && downloadProgress < 100) {
     return (
-      <div className="fixed top-4 right-4 z-50 bg-blue-500 text-white rounded-lg shadow-lg p-4 max-w-md animate-slide-in">
+      <div className="fixed top-12 right-4 z-50 bg-blue-500 text-white rounded-lg shadow-lg p-4 max-w-md animate-slide-in">
         <div className="flex items-start gap-3">
           <Download className="w-6 h-6 flex-shrink-0 mt-0.5 animate-pulse" />
           <div className="flex-1">
@@ -82,7 +82,7 @@ export function UpdateNotification() {
   // Notification de mise à jour disponible
   if (updateAvailable) {
     return (
-      <div className="fixed top-4 right-4 z-50 bg-indigo-600 text-white rounded-lg shadow-lg p-4 max-w-md animate-slide-in">
+      <div className="fixed top-12 right-4 z-50 bg-indigo-600 text-white rounded-lg shadow-lg p-4 max-w-md animate-slide-in">
         <div className="flex items-start gap-3">
           <RefreshCw className="w-6 h-6 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
@@ -119,7 +119,7 @@ export function UpdateNotification() {
   // Erreur
   if (error) {
     return (
-      <div className="fixed top-4 right-4 z-50 bg-red-500 text-white rounded-lg shadow-lg p-4 max-w-md animate-slide-in">
+      <div className="fixed top-12 right-4 z-50 bg-red-500 text-white rounded-lg shadow-lg p-4 max-w-md animate-slide-in">
         <div className="flex items-start gap-3">
           <X className="w-6 h-6 flex-shrink-0 mt-0.5" />
           <div className="flex-1">

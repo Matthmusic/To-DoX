@@ -7,7 +7,7 @@ import { classNames } from "../utils";
  * Filtre automatiquement les suggestions basées sur l'historique des projets
  * Convertit automatiquement la saisie en majuscules
  */
-export function ProjectAutocomplete({ value, onChange, projectHistory, placeholder, className }) {
+export function ProjectAutocomplete({ value, onChange, onBlur, projectHistory, placeholder, className }) {
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [focusedSuggestionIndex, setFocusedSuggestionIndex] = useState(-1);
   const inputRef = useRef(null);
@@ -100,6 +100,13 @@ export function ProjectAutocomplete({ value, onChange, projectHistory, placehold
     setIsSuggestionsOpen(true);
   }
 
+  function handleInputBlur() {
+    // Délai pour permettre le clic sur une suggestion
+    setTimeout(() => {
+      if (onBlur) onBlur();
+    }, 150);
+  }
+
   return (
     <div ref={wrapperRef} className="relative">
       <input
@@ -110,6 +117,7 @@ export function ProjectAutocomplete({ value, onChange, projectHistory, placehold
         value={value}
         onChange={handleInputChange}
         onFocus={handleInputFocus}
+        onBlur={handleInputBlur}
         onKeyDown={handleKeyDown}
       />
       {isSuggestionsOpen &&

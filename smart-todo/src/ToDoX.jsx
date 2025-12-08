@@ -24,6 +24,8 @@ import {
   Upload,
   Download,
   HardDrive,
+  List,
+  Pencil,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import ToDoXLogo from "./assets/To Do X.svg";
@@ -213,6 +215,7 @@ export default function ToDoX() {
   const [showUsersPanel, setShowUsersPanel] = useState(false);
   const [showStoragePanel, setShowStoragePanel] = useState(false);
   const [showWeeklyReportPanel, setShowWeeklyReportPanel] = useState(false);
+  const [showProjectsListPanel, setShowProjectsListPanel] = useState(false);
 
   const importFileRef = useRef(null);
 
@@ -906,6 +909,11 @@ export default function ToDoX() {
                 onClick={() => importFileRef.current?.click()}
               />
               <DropdownItem
+                icon={List}
+                label="Liste des projets"
+                onClick={() => setShowProjectsListPanel(true)}
+              />
+              <DropdownItem
                 icon={FolderOpen}
                 label="Dossiers projets"
                 onClick={() => setShowDirPanel(true)}
@@ -1124,6 +1132,18 @@ export default function ToDoX() {
           <WeeklyReportModal
             tasks={tasks}
             onClose={() => setShowWeeklyReportPanel(false)}
+          />
+        )}
+
+        {showProjectsListPanel && (
+          <ProjectsListPanel
+            projectHistory={projectHistory}
+            setProjectHistory={setProjectHistory}
+            tasks={tasks}
+            setTasks={setTasks}
+            directories={directories}
+            setDirectories={setDirectories}
+            onClose={() => setShowProjectsListPanel(false)}
           />
         )}
       </div>
@@ -1659,6 +1679,11 @@ function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose,
   const menuRef = useRef(null);
   const [adjustedPosition, setAdjustedPosition] = useState({ top: position.y, left: position.x });
 
+  // États locaux pour les champs texte (sauvegarde uniquement sur blur)
+  const [localTitle, setLocalTitle] = useState(task.title);
+  const [localProject, setLocalProject] = useState(task.project);
+  const [localNotes, setLocalNotes] = useState(task.notes || "");
+
   useEffect(() => {
     function closeOnClick(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -1720,15 +1745,18 @@ function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose,
         <label className="mt-2 text-xs text-slate-400">Titre</label>
         <input
           type="text"
-          value={task.title}
-          onChange={(e) => onUpdate(task.id, { title: e.target.value })}
+          value={localTitle}
+          onChange={(e) => setLocalTitle(e.target.value)}
+          onBlur={() => localTitle !== task.title && onUpdate(task.id, { title: localTitle })}
+          onKeyDown={(e) => e.key === "Enter" && e.target.blur()}
           className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
         />
 
         <label className="mt-2 text-xs text-slate-400">Projet</label>
         <ProjectAutocomplete
-          value={task.project}
-          onChange={(val) => onUpdate(task.id, { project: val })}
+          value={localProject}
+          onChange={setLocalProject}
+          onBlur={() => localProject !== task.project && onUpdate(task.id, { project: localProject })}
           projectHistory={projectHistory}
           placeholder="Projet"
           className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
@@ -1766,8 +1794,9 @@ function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose,
 
         <label className="mt-2 text-xs text-slate-400">Notes</label>
         <textarea
-          value={task.notes || ""}
-          onChange={(e) => onUpdate(task.id, { notes: e.target.value })}
+          value={localNotes}
+          onChange={(e) => setLocalNotes(e.target.value)}
+          onBlur={() => localNotes !== (task.notes || "") && onUpdate(task.id, { notes: localNotes })}
           className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
           rows={3}
         />
@@ -1803,6 +1832,11 @@ function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose,
 
 // Modal d'édition de tâche
 function TaskEditModal({ task, onUpdate, onClose, projectHistory, users, onArchive, onDelete }) {
+  // États locaux pour les champs texte (sauvegarde uniquement sur blur)
+  const [localTitle, setLocalTitle] = useState(task.title);
+  const [localProject, setLocalProject] = useState(task.project);
+  const [localNotes, setLocalNotes] = useState(task.notes || "");
+
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4 backdrop-blur"
@@ -1837,15 +1871,18 @@ function TaskEditModal({ task, onUpdate, onClose, projectHistory, users, onArchi
           <label className="mt-2 text-xs text-slate-400">Titre</label>
           <input
             type="text"
-            value={task.title}
-            onChange={(e) => onUpdate(task.id, { title: e.target.value })}
+            value={localTitle}
+            onChange={(e) => setLocalTitle(e.target.value)}
+            onBlur={() => localTitle !== task.title && onUpdate(task.id, { title: localTitle })}
+            onKeyDown={(e) => e.key === "Enter" && e.target.blur()}
             className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
           />
 
           <label className="mt-2 text-xs text-slate-400">Projet</label>
           <ProjectAutocomplete
-            value={task.project}
-            onChange={(val) => onUpdate(task.id, { project: val })}
+            value={localProject}
+            onChange={setLocalProject}
+            onBlur={() => localProject !== task.project && onUpdate(task.id, { project: localProject })}
             projectHistory={projectHistory}
             placeholder="Projet"
             className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
@@ -1883,8 +1920,9 @@ function TaskEditModal({ task, onUpdate, onClose, projectHistory, users, onArchi
 
           <label className="mt-2 text-xs text-slate-400">Notes</label>
           <textarea
-            value={task.notes || ""}
-            onChange={(e) => onUpdate(task.id, { notes: e.target.value })}
+            value={localNotes}
+            onChange={(e) => setLocalNotes(e.target.value)}
+            onBlur={() => localNotes !== (task.notes || "") && onUpdate(task.id, { notes: localNotes })}
             className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
             rows={3}
           />
@@ -2163,6 +2201,222 @@ function ProjectDirs({ projects, directories, setDirectories, onClose }) {
         <p className="mt-3 text-[11px] text-slate-500">
           Note : selon le navigateur, l'ouverture de liens <code>file://</code> peut être restreinte. Pour un usage 100% fiable,
           ouvre cette app en local (ex: <strong>file:///</strong> via un bundler dev) ou empaquette-la avec Electron/Tauri.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Panneau de gestion de la liste des projets
+function ProjectsListPanel({ projectHistory, setProjectHistory, tasks, setTasks, directories, setDirectories, onClose }) {
+  const [localHistory, setLocalHistory] = useState(() => [...projectHistory]);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingValue, setEditingValue] = useState("");
+
+  // Compte le nombre de tâches par projet
+  const taskCountByProject = useMemo(() => {
+    const counts = {};
+    tasks.forEach(t => {
+      if (t.project) {
+        counts[t.project] = (counts[t.project] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [tasks]);
+
+  function startEditing(index) {
+    setEditingIndex(index);
+    setEditingValue(localHistory[index]);
+  }
+
+  function saveEditing() {
+    if (editingIndex === null) return;
+
+    const oldName = localHistory[editingIndex];
+    const newName = editingValue.trim().toUpperCase();
+
+    if (!newName) {
+      alert("Le nom du projet ne peut pas être vide");
+      return;
+    }
+
+    if (newName !== oldName && localHistory.includes(newName)) {
+      alert("Un projet avec ce nom existe déjà");
+      return;
+    }
+
+    // Mettre à jour la liste locale
+    const newHistory = [...localHistory];
+    newHistory[editingIndex] = newName;
+    setLocalHistory(newHistory);
+
+    setEditingIndex(null);
+    setEditingValue("");
+  }
+
+  function cancelEditing() {
+    setEditingIndex(null);
+    setEditingValue("");
+  }
+
+  function deleteProject(index) {
+    const projectName = localHistory[index];
+    const taskCount = taskCountByProject[projectName] || 0;
+
+    if (taskCount > 0) {
+      if (!window.confirm(`Le projet "${projectName}" contient ${taskCount} tâche(s). Voulez-vous vraiment le supprimer de la liste ? (Les tâches ne seront pas supprimées)`)) {
+        return;
+      }
+    }
+
+    const newHistory = localHistory.filter((_, i) => i !== index);
+    setLocalHistory(newHistory);
+  }
+
+  function save() {
+    // Détecter les renommages
+    const renames = {};
+    projectHistory.forEach((oldName, index) => {
+      const newName = localHistory[index];
+      if (newName && newName !== oldName) {
+        renames[oldName] = newName;
+      }
+    });
+
+    // Appliquer les renommages aux tâches
+    if (Object.keys(renames).length > 0) {
+      setTasks(prevTasks => prevTasks.map(t => {
+        if (t.project && renames[t.project]) {
+          return { ...t, project: renames[t.project] };
+        }
+        return t;
+      }));
+
+      // Mettre à jour les directories
+      setDirectories(prevDirs => {
+        const newDirs = { ...prevDirs };
+        Object.entries(renames).forEach(([oldName, newName]) => {
+          if (newDirs[oldName]) {
+            newDirs[newName] = newDirs[oldName];
+            delete newDirs[oldName];
+          }
+        });
+        return newDirs;
+      });
+    }
+
+    // Supprimer les projets qui ne sont plus dans la liste
+    const removedProjects = projectHistory.filter(p => !localHistory.includes(p));
+    if (removedProjects.length > 0) {
+      setDirectories(prevDirs => {
+        const newDirs = { ...prevDirs };
+        removedProjects.forEach(p => {
+          delete newDirs[p];
+        });
+        return newDirs;
+      });
+    }
+
+    setProjectHistory(localHistory);
+    onClose();
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Liste des projets</h3>
+          <button
+            onClick={onClose}
+            className="rounded-2xl border border-white/20 bg-white/5 px-3 py-1 text-sm text-slate-100 hover:bg-[#1E3A8A]/60"
+          >
+            Fermer
+          </button>
+        </div>
+        <p className="mt-2 text-sm text-slate-400">
+          Gérez la liste des projets utilisés pour l'autocomplétion. Vous pouvez renommer ou supprimer des projets.
+        </p>
+        <div className="mt-4 max-h-[50vh] space-y-2 overflow-auto pr-1">
+          {localHistory.length === 0 && (
+            <div className="text-sm text-slate-400">
+              Aucun projet dans l'historique.
+            </div>
+          )}
+          {localHistory.map((project, index) => (
+            <div key={index} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2">
+              {editingIndex === index ? (
+                <>
+                  <input
+                    type="text"
+                    value={editingValue}
+                    onChange={(e) => setEditingValue(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEditing();
+                      if (e.key === "Escape") cancelEditing();
+                    }}
+                    className="flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-1 text-sm text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
+                    autoFocus
+                  />
+                  <button
+                    onClick={saveEditing}
+                    className="rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-2 py-1 text-xs text-emerald-100 transition hover:bg-emerald-400/20"
+                  >
+                    OK
+                  </button>
+                  <button
+                    onClick={cancelEditing}
+                    className="rounded-lg border border-white/20 bg-white/5 px-2 py-1 text-xs text-slate-300 transition hover:bg-white/10"
+                  >
+                    Annuler
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="flex-1 text-sm font-medium text-slate-200">{project}</span>
+                  <span className="text-xs text-slate-500">
+                    {taskCountByProject[project] || 0} tâche(s)
+                  </span>
+                  <button
+                    onClick={() => startEditing(index)}
+                    className="rounded-lg border border-cyan-400/40 bg-cyan-400/10 p-1.5 text-cyan-100 transition hover:bg-cyan-400/20"
+                    title="Renommer"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => deleteProject(index)}
+                    className="rounded-lg border border-rose-400/40 bg-rose-400/10 p-1.5 text-rose-100 transition hover:bg-rose-400/20"
+                    title="Supprimer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-[#1E3A8A]/60"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={save}
+            className="rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-emerald-500/20"
+          >
+            Enregistrer
+          </button>
+        </div>
+        <p className="mt-3 text-[11px] text-slate-500">
+          Note : Renommer un projet mettra à jour toutes les tâches associées. Supprimer un projet le retire uniquement de l'autocomplétion.
         </p>
       </div>
     </div>
