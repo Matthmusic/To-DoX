@@ -8,7 +8,7 @@ Une application Kanban minimaliste et intelligente pour la gestion de tâches av
 
 [![Download Latest Release](https://img.shields.io/github/v/release/Matthmusic/To-DoX?label=Télécharger&style=for-the-badge&logo=github)](https://github.com/Matthmusic/To-DoX/releases/latest)
 
-**Version actuelle : 1.8.7**
+**Version actuelle : 1.8.8**
 
 Téléchargez simplement le fichier `.exe` depuis la [page des releases](https://github.com/Matthmusic/To-DoX/releases/latest) et lancez-le !
 

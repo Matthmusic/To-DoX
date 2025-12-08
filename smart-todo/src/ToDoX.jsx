@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ClipboardList,
   FolderOpen,
+  FolderPlus,
   Loader2,
   SearchCheck,
   User,
@@ -26,6 +27,7 @@ import {
   HardDrive,
   List,
   Pencil,
+  X,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import ToDoXLogo from "./assets/To Do X.svg";
@@ -1076,6 +1078,7 @@ export default function ToDoX() {
                         onUpdateSubtaskTitle={updateSubtaskTitle}
                         onReorderSubtasks={reorderSubtasks}
                         getSubtaskProgress={getSubtaskProgress}
+                        onSetProjectDirectory={setProjectDirectory}
                       />
                     );
                   })}
@@ -1174,6 +1177,7 @@ function ProjectCard({
   onUpdateSubtaskTitle,
   onReorderSubtasks,
   getSubtaskProgress,
+  onSetProjectDirectory,
 }) {
   const completedTasks = tasks.filter(t => t.status === "done").length;
   const totalTasks = tasks.length;
@@ -1238,6 +1242,7 @@ function ProjectCard({
               onUpdateSubtaskTitle={onUpdateSubtaskTitle}
               onReorderSubtasks={onReorderSubtasks}
               getSubtaskProgress={getSubtaskProgress}
+              onSetProjectDirectory={onSetProjectDirectory}
             />
           ))}
         </div>
@@ -1416,6 +1421,7 @@ function TaskCard({
   projectDir,
   projectHistory,
   users,
+  onSetProjectDirectory,
   onAddSubtask,
   onToggleSubtask,
   onDeleteSubtask,
@@ -1425,6 +1431,10 @@ function TaskCard({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
+  const [showDirectoryModal, setShowDirectoryModal] = useState(false);
+  const [directoryInput, setDirectoryInput] = useState("");
+  const [directoryError, setDirectoryError] = useState("");
+  const isElectronEnv = typeof window !== "undefined" && Boolean(window.electronAPI?.isElectron);
 
   // Calcul des jours ouvrés restants (hors weekends)
   const businessDays = useMemo(() => {
@@ -1495,6 +1505,54 @@ function TaskCard({
     setContextMenu({ x: e.clientX, y: e.clientY });
   };
 
+  useEffect(() => {
+    if (showDirectoryModal) {
+      setDirectoryInput(projectDir || "");
+      setDirectoryError("");
+    }
+  }, [showDirectoryModal, projectDir]);
+
+  const handleOpenDirectoryModal = () => {
+    if (typeof onSetProjectDirectory !== "function") return;
+    setShowDirectoryModal(true);
+  };
+
+  const handleCloseDirectoryModal = () => {
+    setShowDirectoryModal(false);
+    setDirectoryError("");
+  };
+
+  const handleBrowseDirectory = async () => {
+    if (typeof window === "undefined" || !window.electronAPI?.selectProjectFolder) {
+      setDirectoryError("Explorateur disponible uniquement via l'application bureau.");
+      return;
+    }
+
+    try {
+      const result = await window.electronAPI.selectProjectFolder();
+      if (result?.success && !result.canceled && result.path) {
+        setDirectoryInput(result.path);
+        setDirectoryError("");
+      }
+    } catch (error) {
+      devWarn("Impossible d'ouvrir l'explorateur de fichiers", error);
+      setDirectoryError("Ouverture de l'explorateur impossible. Réessayez.");
+    }
+  };
+
+  const handleSaveDirectory = () => {
+    if (typeof onSetProjectDirectory !== "function") return;
+
+    if (!directoryInput.trim()) {
+      setDirectoryError("Merci d'indiquer un chemin valide.");
+      return;
+    }
+
+    onSetProjectDirectory(task.project, directoryInput.trim());
+    setShowDirectoryModal(false);
+    setDirectoryError("");
+  };
+
   return (
     <div
       className={classNames(
@@ -1511,18 +1569,47 @@ function TaskCard({
       <div className={classNames("absolute inset-0 pointer-events-none opacity-80 bg-gradient-to-br", urgencyTone)} />
       <div className="relative z-10 flex items-start gap-2">
         <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold leading-tight text-lg">{task.title}</h3>
-            {inactive && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-200/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-100">
-                <AlertTriangle className="h-3 w-3" />
-                À relancer
-              </span>
+          <div className="flex items-start gap-2">
+            <div className="flex flex-1 items-center gap-2 min-w-0">
+              <h3 className="font-semibold leading-tight text-lg flex-1">{task.title}</h3>
+              {inactive && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-200/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-100">
+                  <AlertTriangle className="h-3 w-3" />
+                  À relancer
+                </span>
+              )}
+            </div>
+            {fileUrl ? (
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-300/40 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
+                title={projectDir || "Ouvrir le dossier projet"}
+                aria-label="Ouvrir le dossier projet"
+              >
+                <FolderOpen className="h-4 w-4" />
+              </a>
+            ) : (
+              typeof onSetProjectDirectory === "function" && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenDirectoryModal();
+                  }}
+                  className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-dashed border-cyan-300/40 bg-transparent text-cyan-100 transition hover:bg-cyan-300/10"
+                  title="Associer un dossier à ce projet"
+                  aria-label="Associer un dossier à ce projet"
+                >
+                  <FolderPlus className="h-4 w-4" />
+                </button>
+              )
             )}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300">
             <span className={classNames(
-              "rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+              "inline-flex h-7 items-center rounded-full border px-3 text-[11px] font-semibold uppercase tracking-wide",
               getProjectColor(task.project).border,
               getProjectColor(task.project).bg,
               getProjectColor(task.project).text
@@ -1532,7 +1619,7 @@ function TaskCard({
             {task.priority && (
               <span
                 className={classNames(
-                  "rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide shadow-inner",
+                  "inline-flex h-7 items-center rounded-full px-3 text-[11px] font-semibold uppercase tracking-wide shadow-inner",
                   priorityTone
                 )}
               >
@@ -1540,9 +1627,14 @@ function TaskCard({
               </span>
             )}
             {assignedUser && assignedUser.id !== "unassigned" && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-blue-300/40 bg-blue-300/10 px-2 py-0.5 text-[11px] font-semibold text-blue-200">
-                <User className="h-3 w-3" />
-                {assignedUser.name}
+              <span
+                className="relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-300/40 bg-blue-300/15 text-blue-200 group"
+                aria-label={`Assignée à ${assignedUser.name}`}
+              >
+                <User className="h-3.5 w-3.5" />
+                <span className="pointer-events-none absolute top-full left-1/2 z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-slate-950/90 px-2 py-1 text-[10px] font-medium text-slate-100 opacity-0 shadow-lg transition group-hover:opacity-100">
+                  {assignedUser.name}
+                </span>
               </span>
             )}
             {task.due && (
@@ -1561,23 +1653,6 @@ function TaskCard({
               </span>
             )}
           </div>
-          {fileUrl ? (
-            <div className="mt-2">
-              <a
-                href={fileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 rounded-2xl border border-cyan-300/40 bg-cyan-300/10 px-3 py-1 text-xs font-medium text-cyan-100 transition hover:bg-cyan-300/20"
-                title={projectDir}
-              >
-                <FolderOpen className="h-4 w-4" />
-                Ouvrir dossier projet
-              </a>
-            </div>
-          ) : (
-            <div className="mt-2 text-[11px] text-slate-400">Aucun dossier défini pour ce projet.</div>
-          )}
-
           {/* Bouton Sous-tâches - Toujours visible */}
           <div className="mt-3">
             <button
@@ -1670,6 +1745,89 @@ function TaskCard({
           users={users}
         />
       )}
+      {showDirectoryModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+            onClick={handleCloseDirectoryModal}
+          >
+            <div
+              className="w-full max-w-md rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-semibold">Associer un dossier projet</h3>
+                  <p className="text-sm text-slate-400 mt-1">
+                    Sélectionne le dossier correspondant à <span className="font-semibold">{task.project}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseDirectoryModal}
+                  className="rounded-full border border-white/15 bg-white/5 p-1 text-slate-300 transition hover:bg-white/10"
+                  aria-label="Fermer la fenêtre"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                <div>
+                  <label className="text-xs uppercase tracking-wide text-slate-400">Chemin du dossier</label>
+                  <div className="mt-1 flex gap-2">
+                    <input
+                      type="text"
+                      value={directoryInput}
+                      onChange={(e) => setDirectoryInput(e.target.value)}
+                      className="flex-1 rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                      placeholder="C:\\Projets\\MON PROJET"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleBrowseDirectory}
+                      className="flex-shrink-0 inline-flex items-center gap-2 rounded-2xl border border-cyan-400/40 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                      disabled={!isElectronEnv}
+                    >
+                      <FolderOpen className="h-4 w-4" />
+                      Explorer
+                    </button>
+                  </div>
+                  {directoryError && (
+                    <p className="mt-2 text-xs text-rose-300">{directoryError}</p>
+                  )}
+                  {!isElectronEnv && (
+                    <p className="mt-2 text-xs text-slate-500">
+                      Version web : renseigne manuellement le chemin complet de ton dossier.
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500">
+                  Exemple Windows :{" "}
+                  <code className="rounded bg-white/10 px-1">{`C:\\Users\\moi\\OneDrive\\Projects\\${task.project}`}</code>
+                </p>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleCloseDirectoryModal}
+                  className="rounded-2xl border border-white/20 px-4 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveDirectory}
+                  className="rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 px-5 py-2 text-sm font-semibold text-slate-900 shadow-lg shadow-emerald-500/20"
+                >
+                  Associer
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
