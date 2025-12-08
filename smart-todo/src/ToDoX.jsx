@@ -8,15 +8,22 @@ import {
   Loader2,
   SearchCheck,
   User,
+  Users,
   MoreHorizontal,
   FileText,
   FileDown,
+  Printer,
   ChevronDown,
   ChevronUp,
   CheckSquare,
   Plus,
   Trash2,
   GripVertical,
+  Save,
+  Archive,
+  Upload,
+  Download,
+  HardDrive,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import ToDoXLogo from "./assets/To Do X.svg";
@@ -68,9 +75,54 @@ import { QuickAdd } from "./components/QuickAdd";
  * - Aucune dépendance externe; Tailwind pour le style (fourni par l'environnement)
  */
 
+// Composant Dropdown réutilisable
+function DropdownMenu({ icon: Icon, label, children, className = "" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen]);
 
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`rounded-2xl px-4 py-2 font-semibold transition inline-flex items-center gap-2 ${className}`}
+      >
+        <Icon className="h-4 w-4" />
+        {label}
+        <ChevronDown className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {isOpen && (
+        <div className="absolute right-0 top-full mt-2 z-50 min-w-[200px] rounded-2xl border border-white/10 bg-[#0b1124] shadow-2xl overflow-hidden">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
+// Item de dropdown
+function DropdownItem({ icon: Icon, label, onClick, className = "" }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-slate-200 transition hover:bg-white/10 ${className}`}
+    >
+      {Icon && <Icon className="h-4 w-4" />}
+      <span>{label}</span>
+    </button>
+  );
+}
 
 export default function ToDoX() {
   const [storagePath, setStoragePath] = useState(null);
@@ -161,6 +213,8 @@ export default function ToDoX() {
   const [showUsersPanel, setShowUsersPanel] = useState(false);
   const [showStoragePanel, setShowStoragePanel] = useState(false);
   const [showWeeklyReportPanel, setShowWeeklyReportPanel] = useState(false);
+
+  const importFileRef = useRef(null);
 
   const projects = useMemo(() => {
     const s = new Set(tasks.filter((t) => !t.archived).map((t) => t.project).filter(Boolean));
@@ -752,7 +806,10 @@ export default function ToDoX() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `todox_${new Date().toISOString().slice(0, 10)}.json`;
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}h${now.getMinutes().toString().padStart(2, '0')}`;
+    a.download = `todox_${dateStr}_${timeStr}.json`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -823,48 +880,72 @@ export default function ToDoX() {
               <FileText className="h-4 w-4" />
               CR semaine
             </button>
-            <button
-              onClick={exportJSON}
-              className="rounded-2xl bg-gradient-to-r from-fuchsia-400 via-purple-400 to-indigo-500 px-4 py-2 font-semibold text-slate-900 shadow-lg shadow-fuchsia-500/30 transition hover:brightness-110"
+
+            {/* Dropdown Stockage */}
+            <DropdownMenu
+              icon={Save}
+              label="Stockage"
+              className="border border-indigo-400/40 bg-indigo-400/10 text-indigo-100 hover:bg-indigo-400/20"
             >
-              Export JSON
-            </button>
-            <label className="cursor-pointer rounded-2xl border border-white/20 px-4 py-2 text-center text-slate-200 transition hover:bg-[#1E3A8A]/60">
-              Import JSON
-              <input type="file" accept="application/json" className="hidden" onChange={onImport} />
-            </label>
+              <DropdownItem
+                icon={Upload}
+                label="Export JSON"
+                onClick={exportJSON}
+              />
+              <DropdownItem
+                icon={Download}
+                label="Import JSON"
+                onClick={() => importFileRef.current?.click()}
+              />
+              <DropdownItem
+                icon={FolderOpen}
+                label="Dossiers projets"
+                onClick={() => setShowDirPanel(true)}
+              />
+              {window.electronAPI?.isElectron && (
+                <DropdownItem
+                  icon={HardDrive}
+                  label="Configuration"
+                  onClick={() => setShowStoragePanel(true)}
+                />
+              )}
+            </DropdownMenu>
+
+            {/* Bouton Utilisateurs */}
             <button
               onClick={() => setShowUsersPanel(true)}
-              className="rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-emerald-100 transition hover:bg-emerald-400/20"
+              className="rounded-2xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-emerald-100 transition hover:bg-emerald-400/20 inline-flex items-center gap-2"
             >
+              <Users className="h-4 w-4" />
               Utilisateurs
             </button>
-            <button
-              onClick={() => setShowDirPanel(true)}
-              className="rounded-2xl border border-cyan-400/40 bg-cyan-400/10 px-4 py-2 text-cyan-100 transition hover:bg-cyan-400/20"
+
+            {/* Dropdown Archives */}
+            <DropdownMenu
+              icon={Archive}
+              label="Archives"
+              className="border border-amber-400/40 bg-amber-400/10 text-amber-100 hover:bg-amber-400/20"
             >
-              Dossiers projets
-            </button>
-            <button
-              onClick={() => setShowArchivePanel(true)}
-              className="rounded-2xl border border-amber-400/40 bg-amber-400/10 px-4 py-2 text-amber-100 transition hover:bg-amber-400/20"
-            >
-              Archives des projets
-            </button>
-            <button
-              onClick={() => setShowTaskArchivePanel(true)}
-              className="rounded-2xl border border-purple-400/40 bg-purple-400/10 px-4 py-2 text-purple-100 transition hover:bg-purple-400/20"
-            >
-              Archives des tâches
-            </button>
-            {window.electronAPI?.isElectron && (
-              <button
-                onClick={() => setShowStoragePanel(true)}
-                className="rounded-2xl border border-indigo-400/40 bg-indigo-400/10 px-4 py-2 text-indigo-100 transition hover:bg-indigo-400/20"
-              >
-                Stockage
-              </button>
-            )}
+              <DropdownItem
+                icon={ClipboardList}
+                label="Archives des projets"
+                onClick={() => setShowArchivePanel(true)}
+              />
+              <DropdownItem
+                icon={CheckSquare}
+                label="Archives des tâches"
+                onClick={() => setShowTaskArchivePanel(true)}
+              />
+            </DropdownMenu>
+
+            {/* Input file caché pour l'import */}
+            <input
+              ref={importFileRef}
+              type="file"
+              accept="application/json"
+              className="hidden"
+              onChange={onImport}
+            />
           </div>
         </div>
 
@@ -1241,7 +1322,7 @@ function SubtaskList({ task, onAddSubtask, onToggleSubtask, onDeleteSubtask, onU
   };
 
   return (
-    <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+    <div className="relative z-20 mt-3 space-y-2 border-t border-white/10 pt-3">
       <div className="flex items-center gap-2">
         <CheckSquare className="h-4 w-4 text-blue-400" />
         <span className="text-sm font-semibold text-slate-300">Sous-tâches</span>
@@ -1527,7 +1608,7 @@ function TaskCard({
       </div>
 
       {task.notes && (
-        <p className="mt-3 text-sm text-slate-200/90 whitespace-pre-wrap">{task.notes}</p>
+        <p className="relative z-20 mt-3 text-sm text-slate-200/90 whitespace-pre-wrap">{task.notes}</p>
       )}
 
       {/* Liste des sous-tâches (expansion inline) */}
@@ -1825,8 +1906,14 @@ function TaskEditModal({ task, onUpdate, onClose, projectHistory, users, onArchi
 
 function ArchivePanel({ archivedProjects, onUnarchive, onDelete, onClose }) {
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur">
-      <div className="w-full max-w-3xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]">
+    <div
+      className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-3xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Archives</h3>
           <button
@@ -1898,8 +1985,14 @@ function ArchivePanel({ archivedProjects, onUnarchive, onDelete, onClose }) {
 
 function TaskArchivePanel({ archivedTasks, onUnarchive, onDelete, onClose }) {
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur">
-      <div className="w-full max-w-5xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]">
+    <div
+      className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-5xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Archives des tâches</h3>
           <button
@@ -1995,8 +2088,14 @@ function ProjectDirs({ projects, directories, setDirectories, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur">
-      <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]">
+    <div
+      className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Dossiers projets</h3>
           <button
@@ -2111,8 +2210,14 @@ function UsersPanel({ users, setUsers, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur">
-      <div className="w-full max-w-3xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]">
+    <div
+      className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-3xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Gestion des utilisateurs</h3>
           <button
@@ -2743,17 +2848,332 @@ function WeeklyReportModal({ tasks, onClose }) {
     }
 
     // Télécharger le PDF
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}h${now.getMinutes().toString().padStart(2, '0')}`;
     let filename;
     if (period === 'current') {
-      filename = `CR_Semaine_en_cours_${currentWeekRange.startStr.replace(/\//g, '-')}_${currentWeekRange.endStr.replace(/\//g, '-')}.pdf`;
+      filename = `CR_Semaine_en_cours_${currentWeekRange.startStr.replace(/\//g, '-')}_${currentWeekRange.endStr.replace(/\//g, '-')}_${timeStr}.pdf`;
     } else if (period === 'previous') {
-      filename = `CR_Semaine_precedente_${previousWeekRange.startStr.replace(/\//g, '-')}_${previousWeekRange.endStr.replace(/\//g, '-')}.pdf`;
+      filename = `CR_Semaine_precedente_${previousWeekRange.startStr.replace(/\//g, '-')}_${previousWeekRange.endStr.replace(/\//g, '-')}_${timeStr}.pdf`;
     } else {
-      filename = `CR_Complet_${previousWeekRange.startStr.replace(/\//g, '-')}_${currentWeekRange.endStr.replace(/\//g, '-')}.pdf`;
+      filename = `CR_Complet_${previousWeekRange.startStr.replace(/\//g, '-')}_${currentWeekRange.endStr.replace(/\//g, '-')}_${timeStr}.pdf`;
     }
     doc.save(filename);
 
     alert("PDF généré avec succès !");
+  }
+
+  // Imprimer le PDF
+  function printToPDF() {
+    const period = reportPeriod || 'both';
+    const currentCompleted = currentWeekTasks.completed.filter(t => selectedTasks[t.id]);
+    const currentRemaining = currentWeekTasks.remaining.filter(t => selectedTasks[t.id]);
+    const previousCompleted = previousWeekTasks.completed.filter(t => selectedTasks[t.id]);
+    const previousRemaining = previousWeekTasks.remaining.filter(t => selectedTasks[t.id]);
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const maxWidth = pageWidth - (margin * 2);
+    let y = margin;
+
+    // Fonction pour vérifier et ajouter une nouvelle page si nécessaire
+    function checkAddPage(neededSpace = 15) {
+      if (y + neededSpace > pageHeight - margin) {
+        doc.addPage();
+        y = margin;
+        return true;
+      }
+      return false;
+    }
+
+    // Titre principal
+    doc.setFontSize(20);
+    doc.setTextColor(30, 58, 138); // Bleu foncé
+    doc.text("Compte Rendu Hebdomadaire", margin, y);
+    y += 15;
+
+    // Date de génération
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    const today = new Date();
+    const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+    doc.text(`Genere le ${dateStr}`, margin, y);
+    y += 15;
+
+    // ===== SEMAINE EN COURS =====
+    if (period === 'current' || period === 'both') {
+      checkAddPage(20);
+      doc.setFontSize(16);
+      doc.setTextColor(59, 130, 246); // Bleu
+      doc.text(`SEMAINE EN COURS (${currentWeekRange.startStr} au ${currentWeekRange.endStr})`, margin, y);
+      y += 10;
+
+    // Tâches terminées - Semaine en cours
+    checkAddPage(15);
+    doc.setFontSize(12);
+    doc.setTextColor(16, 185, 129); // Vert
+    doc.text("Taches terminees", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    if (currentCompleted.length === 0) {
+      doc.text("Aucune tache terminee cette semaine", margin + 5, y);
+      y += 7;
+    } else {
+      const groupedCompleted = groupByProject(currentCompleted);
+      Object.keys(groupedCompleted).sort().forEach(project => {
+        checkAddPage(10);
+        doc.setFontSize(11);
+        doc.setTextColor(30, 58, 138);
+        doc.text(`[${project}]`, margin + 5, y);
+        y += 7;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        groupedCompleted[project].forEach(task => {
+          checkAddPage(10);
+          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const progress = getSubtaskProgress(task);
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const text = `  - ${task.title}${dueText}${progressText}`;
+          const lines = doc.splitTextToSize(text, maxWidth - 10);
+          lines.forEach(line => {
+            checkAddPage(7);
+            doc.text(line, margin + 5, y);
+            y += 7;
+          });
+
+          // Afficher les sous-tâches
+          if (task.subtasks && task.subtasks.length > 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            task.subtasks.forEach(subtask => {
+              checkAddPage(6);
+              const checkmark = subtask.completed ? "[X]" : "[ ]";
+              const subtaskText = `      ${checkmark} ${subtask.title}`;
+              const subtaskLines = doc.splitTextToSize(subtaskText, maxWidth - 15);
+              subtaskLines.forEach(line => {
+                checkAddPage(6);
+                doc.text(line, margin + 5, y);
+                y += 6;
+              });
+            });
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+          }
+        });
+        y += 3;
+      });
+    }
+    y += 5;
+
+    // Tâches en cours - Semaine en cours
+    checkAddPage(15);
+    doc.setFontSize(12);
+    doc.setTextColor(251, 191, 36); // Amber
+    doc.text("Taches en cours / restantes", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    if (currentRemaining.length === 0) {
+      doc.text("Aucune tache en cours", margin + 5, y);
+      y += 7;
+    } else {
+      const groupedRemaining = groupByProject(currentRemaining);
+      Object.keys(groupedRemaining).sort().forEach(project => {
+        checkAddPage(10);
+        doc.setFontSize(11);
+        doc.setTextColor(30, 58, 138);
+        doc.text(`[${project}]`, margin + 5, y);
+        y += 7;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        groupedRemaining[project].forEach(task => {
+          checkAddPage(10);
+          const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const progress = getSubtaskProgress(task);
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const text = `  - ${task.title} - statut : ${statusLabel}${dueText}${progressText}`;
+          const lines = doc.splitTextToSize(text, maxWidth - 10);
+          lines.forEach(line => {
+            checkAddPage(7);
+            doc.text(line, margin + 5, y);
+            y += 7;
+          });
+
+          // Afficher les sous-tâches
+          if (task.subtasks && task.subtasks.length > 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            task.subtasks.forEach(subtask => {
+              checkAddPage(6);
+              const checkmark = subtask.completed ? "[X]" : "[ ]";
+              const subtaskText = `      ${checkmark} ${subtask.title}`;
+              const subtaskLines = doc.splitTextToSize(subtaskText, maxWidth - 15);
+              subtaskLines.forEach(line => {
+                checkAddPage(6);
+                doc.text(line, margin + 5, y);
+                y += 6;
+              });
+            });
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+          }
+        });
+        y += 3;
+      });
+    }
+      y += 10;
+    }
+
+    // ===== SEMAINE PRÉCÉDENTE =====
+    if (period === 'previous' || period === 'both') {
+      checkAddPage(20);
+      doc.setFontSize(16);
+      doc.setTextColor(147, 51, 234); // Violet
+      doc.text(`SEMAINE PRECEDENTE (${previousWeekRange.startStr} au ${previousWeekRange.endStr})`, margin, y);
+      y += 10;
+
+    // Tâches terminées - Semaine précédente
+    checkAddPage(15);
+    doc.setFontSize(12);
+    doc.setTextColor(16, 185, 129); // Vert
+    doc.text("Taches terminees", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    if (previousCompleted.length === 0) {
+      doc.text("Aucune tache terminee durant cette periode", margin + 5, y);
+      y += 7;
+    } else {
+      const groupedCompleted = groupByProject(previousCompleted);
+      Object.keys(groupedCompleted).sort().forEach(project => {
+        checkAddPage(10);
+        doc.setFontSize(11);
+        doc.setTextColor(30, 58, 138);
+        doc.text(`[${project}]`, margin + 5, y);
+        y += 7;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        groupedCompleted[project].forEach(task => {
+          checkAddPage(10);
+          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const progress = getSubtaskProgress(task);
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const text = `  - ${task.title}${dueText}${progressText}`;
+          const lines = doc.splitTextToSize(text, maxWidth - 10);
+          lines.forEach(line => {
+            checkAddPage(7);
+            doc.text(line, margin + 5, y);
+            y += 7;
+          });
+
+          // Afficher les sous-tâches
+          if (task.subtasks && task.subtasks.length > 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            task.subtasks.forEach(subtask => {
+              checkAddPage(6);
+              const checkmark = subtask.completed ? "[X]" : "[ ]";
+              const subtaskText = `      ${checkmark} ${subtask.title}`;
+              const subtaskLines = doc.splitTextToSize(subtaskText, maxWidth - 15);
+              subtaskLines.forEach(line => {
+                checkAddPage(6);
+                doc.text(line, margin + 5, y);
+                y += 6;
+              });
+            });
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+          }
+        });
+        y += 3;
+      });
+    }
+    y += 5;
+
+    // Tâches en cours - Semaine précédente
+    checkAddPage(15);
+    doc.setFontSize(12);
+    doc.setTextColor(251, 191, 36); // Amber
+    doc.text("Taches en cours / restantes", margin, y);
+    y += 7;
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    if (previousRemaining.length === 0) {
+      doc.text("Aucune tache en cours", margin + 5, y);
+      y += 7;
+    } else {
+      const groupedRemaining = groupByProject(previousRemaining);
+      Object.keys(groupedRemaining).sort().forEach(project => {
+        checkAddPage(10);
+        doc.setFontSize(11);
+        doc.setTextColor(30, 58, 138);
+        doc.text(`[${project}]`, margin + 5, y);
+        y += 7;
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 0, 0);
+        groupedRemaining[project].forEach(task => {
+          checkAddPage(10);
+          const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
+          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const progress = getSubtaskProgress(task);
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const text = `  - ${task.title} - statut : ${statusLabel}${dueText}${progressText}`;
+          const lines = doc.splitTextToSize(text, maxWidth - 10);
+          lines.forEach(line => {
+            checkAddPage(7);
+            doc.text(line, margin + 5, y);
+            y += 7;
+          });
+
+          // Afficher les sous-tâches
+          if (task.subtasks && task.subtasks.length > 0) {
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            task.subtasks.forEach(subtask => {
+              checkAddPage(6);
+              const checkmark = subtask.completed ? "[X]" : "[ ]";
+              const subtaskText = `      ${checkmark} ${subtask.title}`;
+              const subtaskLines = doc.splitTextToSize(subtaskText, maxWidth - 15);
+              subtaskLines.forEach(line => {
+                checkAddPage(6);
+                doc.text(line, margin + 5, y);
+                y += 6;
+              });
+            });
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+          }
+        });
+        y += 3;
+      });
+    }
+    }
+
+    // Footer sur chaque page
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Page ${i} / ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.text("Genere avec To-DoX", pageWidth - margin, pageHeight - 10, { align: 'right' });
+    }
+
+    // Ouvrir la boîte de dialogue d'impression
+    doc.autoPrint();
+    window.open(doc.output('bloburl'), '_blank');
   }
 
   const currentCompletedCount = currentWeekTasks.completed.filter(t => selectedTasks[t.id]).length;
@@ -2762,8 +3182,14 @@ function WeeklyReportModal({ tasks, onClose }) {
   const previousRemainingCount = previousWeekTasks.remaining.filter(t => selectedTasks[t.id]).length;
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur">
-      <div className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]">
+    <div
+      className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-xl font-semibold flex items-center gap-2">
@@ -3069,11 +3495,18 @@ function WeeklyReportModal({ tasks, onClose }) {
               >
                 Retour
               </button>
-              <button
+              {/* <button
                 onClick={copyToClipboard}
                 className="rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-emerald-500/20 transition hover:brightness-110 inline-flex items-center gap-2"
               >
                 Copier dans le presse-papiers
+              </button> */}
+              <button
+                onClick={printToPDF}
+                className="rounded-2xl bg-gradient-to-r from-amber-400 via-orange-400 to-rose-500 px-5 py-2 font-semibold text-slate-900 shadow-lg shadow-amber-500/20 transition hover:brightness-110 inline-flex items-center gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                Imprimer
               </button>
               <button
                 onClick={exportToPDF}
@@ -3127,8 +3560,14 @@ function StoragePanel({ storagePath, setStoragePath, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur">
-      <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]">
+    <div
+      className="fixed inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#050b1f] p-6 text-slate-100 shadow-[0_25px_60px_rgba(2,4,20,0.8)]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Configuration du stockage</h3>
           <button
