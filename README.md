@@ -8,10 +8,13 @@ Une application Kanban minimaliste et intelligente pour la gestion de tâches av
 
 [![Download Latest Release](https://img.shields.io/github/v/release/Matthmusic/To-DoX?label=Télécharger&style=for-the-badge&logo=github)](https://github.com/Matthmusic/To-DoX/releases/latest)
 
-**Version actuelle : 1.3.0**
-- ✅ Mises à jour automatiques
-- ✅ Dark mode complet
+**Version actuelle : 1.8.3**
+
+Téléchargez simplement le fichier `.exe` depuis la [page des releases](https://github.com/Matthmusic/To-DoX/releases/latest) et lancez-le !
+
+- ✅ Mises à jour automatiques intégrées
 - ✅ Interface moderne et fluide
+- ✅ Aucune installation complexe requise
 
 ## ✨ Fonctionnalités
 
@@ -58,82 +61,17 @@ Une application Kanban minimaliste et intelligente pour la gestion de tâches av
 - **GitHub Actions** - CI/CD automatisé
 - **NSIS** - Installateur Windows personnalisé
 
-## Installation
+## 💻 Installation
 
-### Téléchargement de l'application (recommandé)
+### Pour les utilisateurs
 
-Téléchargez la dernière version de To-DoX directement depuis la [page des releases](https://github.com/Matthmusic/To-DoX/releases) :
+**C'est simple !** Téléchargez le fichier `.exe` depuis la [page des releases](https://github.com/Matthmusic/To-DoX/releases/latest) et lancez-le.
 
-- **Windows** : Téléchargez le fichier `.exe` et exécutez l'installateur
-- **macOS** : Téléchargez le fichier `.dmg`, montez-le et glissez To-DoX dans Applications
-- **Linux** : Téléchargez le fichier `.AppImage` ou `.deb` selon votre distribution
+- **Windows** : Double-cliquez sur le `.exe` téléchargé
+- **macOS** : Téléchargez le `.dmg`, montez-le et glissez To-DoX dans Applications
+- **Linux** : Téléchargez le `.AppImage` ou `.deb` selon votre distribution
 
 L'application vérifie automatiquement les mises à jour au démarrage et vous notifie quand une nouvelle version est disponible.
-
-### Installation pour développeurs
-
-#### Prérequis
-- Node.js 20+
-- npm ou yarn
-
-#### Étapes
-
-1. Clonez le dépôt :
-```bash
-git clone https://github.com/Matthmusic/To-DoX.git
-cd To-DoX/smart-todo
-```
-
-2. Installez les dépendances :
-```bash
-npm install
-```
-
-3. Lancez l'application en mode développement :
-
-**Version web** :
-```bash
-npm run dev
-# Ouvrez http://localhost:5173 dans votre navigateur
-```
-
-**Version Electron** :
-```bash
-npm run dev:electron
-# L'application desktop s'ouvre automatiquement
-```
-
-## Scripts disponibles
-
-### Développement
-- `npm run dev` : Lance le serveur de développement web avec hot-reload
-- `npm run dev:electron` : Lance l'application Electron en mode développement
-- `npm run lint` : Vérifie le code avec ESLint
-
-### Production
-- `npm run build` : Compile l'application web pour la production
-- `npm run build:electron` : Compile l'application Electron (toutes plateformes)
-- `npm run electron:build:win` : Build pour Windows et publie sur GitHub
-- `npm run electron:build:mac` : Build pour macOS et publie sur GitHub
-- `npm run electron:build:linux` : Build pour Linux et publie sur GitHub
-- `npm run preview` : Prévisualise la version de production web
-
-## Créer une release
-
-Pour publier une nouvelle version :
-
-1. Mettez à jour la version dans [smart-todo/package.json](smart-todo/package.json)
-2. Commitez les changements
-3. Créez un tag Git et poussez-le :
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-Le workflow GitHub Actions se déclenche automatiquement et :
-- Build l'application pour Windows, macOS et Linux
-- Crée une release GitHub avec les installateurs
-- Configure l'auto-update pour les utilisateurs existants
 
 ## Utilisation
 
@@ -180,62 +118,24 @@ L'application Electron vérifie automatiquement les mises à jour au démarrage 
 - L'installation se fait au redémarrage de l'application
 - Le système utilise GitHub Releases de manière sécurisée
 
-## Personnalisation
-
-### Modifier les statuts
-Éditez le tableau `STATUSES` dans [smart-todo/src/SmartTodo.jsx:30-36](smart-todo/src/SmartTodo.jsx#L30-L36)
-
-### Modifier les priorités
-Éditez le tableau `PRIORITIES` dans [smart-todo/src/SmartTodo.jsx:39-43](smart-todo/src/SmartTodo.jsx#L39-L43)
-
-### Ajuster le délai d'alerte "À relancer"
-Modifiez la valeur (en millisecondes) dans [smart-todo/src/SmartTodo.jsx:557](smart-todo/src/SmartTodo.jsx#L557)
-```javascript
-// Actuellement : 3 jours = 3 * 24 * 60 * 60 * 1000
-```
-
 ## 📂 Structure du projet
 
 ```
 To-DoX/
-├── .github/
-│   └── workflows/
-│       └── release.yml       # CI/CD pour releases automatiques
 ├── smart-todo/
 │   ├── src/
 │   │   ├── assets/           # Images et logos
 │   │   ├── components/       # Composants React
-│   │   │   ├── TitleBar.tsx  # Barre de titre personnalisée
-│   │   │   └── UpdateNotification.tsx
-│   │   ├── hooks/            # Custom hooks
-│   │   │   └── useAutoUpdater.ts
-│   │   ├── App.tsx           # Composant racine
-│   │   ├── SmartTodo.jsx     # Composant principal (logique métier)
-│   │   ├── main.tsx          # Point d'entrée React
-│   │   └── index.css         # Styles globaux + dark mode
-│   ├── electron.js           # Process principal Electron
-│   ├── preload.js            # Pont sécurisé Electron/React
-│   ├── package.json          # Dépendances + config electron-builder
-│   ├── vite.config.ts        # Configuration Vite
-│   ├── tsconfig.json         # Configuration TypeScript
-│   └── tailwind.config.js    # Configuration Tailwind CSS
-├── OPTIMISATIONS.md          # Documentation des optimisations CI/CD
+│   │   ├── ToDoX.jsx         # Composant principal
+│   │   └── index.css         # Styles globaux
+│   ├── electron.js           # Application Electron
+│   └── package.json          # Configuration
 └── README.md
 ```
 
 ## ⚠️ Limitations connues
 
-- **Stockage local** : Les données sont stockées dans le localStorage. Pensez à exporter régulièrement vos données importantes via "Export JSON"
-- **Version web** : L'ouverture de dossiers locaux n'est pas disponible dans la version web (limitation des navigateurs). Utilisez la version Electron pour cette fonctionnalité
-
-## Contribuer
-
-Les contributions sont les bienvenues ! N'hésitez pas à :
-1. Fork le projet
-2. Créer une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`)
-3. Commit vos changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
+- **Stockage local** : Les données sont stockées localement. Pensez à exporter régulièrement vos données importantes via "Export JSON"
 
 ## Licence
 
@@ -247,21 +147,6 @@ Ce projet est sous licence libre. Vous êtes libre de l'utiliser, le modifier et
 - GitHub: [@Matthmusic](https://github.com/Matthmusic)
 - Email: matthieu@maurelfamily.fr
 
-## 🗺️ Roadmap
-
-- [x] Mode sombre natif
-- [x] Barre de titre personnalisée (Windows)
-- [x] Mises à jour automatiques
-- [x] Nouveau branding et logo
-- [ ] Toggle mode sombre/clair
-- [ ] Notifications pour les échéances proches
-- [ ] Synchronisation cloud (optionnelle)
-- [ ] Application mobile (PWA)
-- [ ] Raccourcis clavier
-- [ ] Historique des modifications
-- [ ] Sous-tâches
-- [ ] Pièces jointes
-
 ---
 
-Développé avec par Matthmusic | Propulsé par React & Vite
+Développé avec ❤️ par Matthmusic | Propulsé par React, Electron & Vite
