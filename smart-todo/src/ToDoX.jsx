@@ -1756,7 +1756,13 @@ function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose,
         <ProjectAutocomplete
           value={localProject}
           onChange={setLocalProject}
-          onBlur={() => localProject !== task.project && onUpdate(task.id, { project: localProject })}
+          onBlur={(selectedValue) => {
+            const finalValue = selectedValue ?? localProject;
+            if (finalValue !== task.project) {
+              setLocalProject(finalValue);
+              onUpdate(task.id, { project: finalValue });
+            }
+          }}
           projectHistory={projectHistory}
           placeholder="Projet"
           className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
@@ -1882,7 +1888,13 @@ function TaskEditModal({ task, onUpdate, onClose, projectHistory, users, onArchi
           <ProjectAutocomplete
             value={localProject}
             onChange={setLocalProject}
-            onBlur={() => localProject !== task.project && onUpdate(task.id, { project: localProject })}
+            onBlur={(selectedValue) => {
+              const finalValue = selectedValue ?? localProject;
+              if (finalValue !== task.project) {
+                setLocalProject(finalValue);
+                onUpdate(task.id, { project: finalValue });
+              }
+            }}
             projectHistory={projectHistory}
             placeholder="Projet"
             className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"

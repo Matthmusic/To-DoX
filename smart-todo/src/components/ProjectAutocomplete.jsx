@@ -14,6 +14,7 @@ export function ProjectAutocomplete({ value, onChange, onBlur, projectHistory, p
   const wrapperRef = useRef(null);
   const dropdownRef = useRef(null);
   const [dropdownPosition, setDropdownPosition] = useState(null);
+  const skipNextBlurRef = useRef(false);
 
   const filteredSuggestions = useMemo(() => {
     if (!value) return projectHistory;
@@ -77,9 +78,14 @@ export function ProjectAutocomplete({ value, onChange, onBlur, projectHistory, p
       setFocusedSuggestionIndex((index) => (index > 0 ? index - 1 : -1));
     } else if (event.key === "Enter" && focusedSuggestionIndex >= 0) {
       event.preventDefault();
-      onChange(filteredSuggestions[focusedSuggestionIndex]);
+      const selectedSuggestion = filteredSuggestions[focusedSuggestionIndex];
+      skipNextBlurRef.current = true;
+      onChange(selectedSuggestion);
       setIsSuggestionsOpen(false);
       setFocusedSuggestionIndex(-1);
+      if (onBlur) {
+        setTimeout(() => onBlur(selectedSuggestion), 0);
+      }
     } else if (event.key === "Escape") {
       setIsSuggestionsOpen(false);
       setFocusedSuggestionIndex(-1);
@@ -87,9 +93,14 @@ export function ProjectAutocomplete({ value, onChange, onBlur, projectHistory, p
   }
 
   function handleSuggestionSelect(suggestion) {
+    skipNextBlurRef.current = true;
     onChange(suggestion);
     setIsSuggestionsOpen(false);
     setFocusedSuggestionIndex(-1);
+    // Appeler onBlur immédiatement avec la nouvelle valeur
+    if (onBlur) {
+      setTimeout(() => onBlur(suggestion), 0);
+    }
   }
 
   function handleInputChange(event) {
@@ -103,6 +114,10 @@ export function ProjectAutocomplete({ value, onChange, onBlur, projectHistory, p
   function handleInputBlur() {
     // Délai pour permettre le clic sur une suggestion
     setTimeout(() => {
+      if (skipNextBlurRef.current) {
+        skipNextBlurRef.current = false;
+        return;
+      }
       if (onBlur) onBlur();
     }, 150);
   }

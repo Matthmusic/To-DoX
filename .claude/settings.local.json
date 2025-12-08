@@ -34,7 +34,13 @@
       "Bash(robocopy:*)",
       "Bash(netstat:*)",
       "Bash(cmd /c \"move smart-todo src\")",
-      "Bash(del nul)"
+      "Bash(del nul)",
+      "Bash(gh release list:*)",
+      "SlashCommand(/deploy)",
+      "Bash(cmd /c \"gh release create v1.8.4 --title \"\"v1.8.4\"\" --notes \"\"## Nouvelle fonctionnalité\n\n### Sélection de dossier projet\n- Nouveau bouton + à côté du champ Projet dans le formulaire d''ajout de tâche\n- Ouvre l''explorateur Windows pour sélectionner un dossier\n- Nomme automatiquement le projet avec le nom du dossier sélectionné\n- Enregistre le chemin du dossier pour l''accès rapide depuis les cartes de tâches\n- Si un projet avec le même nom existe déjà : modal de confirmation pour utiliser l''existant ou créer un nouveau projet avec suffixe\"\"\")",
+      "Bash(cmd /c \"cd /d \"\"c:\\DEV\\ToolBox CEAI\\To-DoX\"\" && gh release list --limit 3\")",
+      "Bash(powershell -Command \"cd ''c:\\DEV\\ToolBox CEAI\\To-DoX''; gh release list --limit 3\")",
+      "Bash(cmd /c \"where gh\")"
     ],
     "deny": [],
     "ask": []
