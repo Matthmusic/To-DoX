@@ -1686,6 +1686,10 @@ function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose,
 
   useEffect(() => {
     function closeOnClick(e) {
+      // Ignorer les clics sur les dropdowns d'autocomplete (rendus via portal)
+      if (e.target.closest('[class*="z-[99999]"]')) {
+        return;
+      }
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         onClose();
       }
@@ -1846,7 +1850,11 @@ function TaskEditModal({ task, onUpdate, onClose, projectHistory, users, onArchi
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4 backdrop-blur"
-      onClick={onClose}
+      onClick={(e) => {
+        // Ignorer les clics sur les dropdowns d'autocomplete (rendus via portal)
+        if (e.target.closest('[class*="z-[99999]"]')) return;
+        onClose();
+      }}
     >
       <div
         className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0b1124] p-6 text-slate-100 shadow-2xl"

@@ -155,7 +155,11 @@ export function ProjectAutocomplete({ value, onChange, onBlur, projectHistory, p
                   "cursor-pointer px-3 py-2 text-sm text-slate-100 transition",
                   suggestionIndex === focusedSuggestionIndex ? "bg-[#1E3A8A]" : "hover:bg-[#1E3A8A]/60"
                 )}
-                onClick={() => handleSuggestionSelect(suggestion)}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleSuggestionSelect(suggestion);
+                }}
                 onMouseEnter={() => setFocusedSuggestionIndex(suggestionIndex)}
               >
                 {suggestion}
