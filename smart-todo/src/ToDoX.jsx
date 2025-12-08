@@ -409,7 +409,15 @@ export default function ToDoX() {
       archivedAt: null,
     };
     addToProjectHistory(projectName);
+    // Si un chemin de dossier est fourni, le stocker dans directories
+    if (data.folderPath) {
+      setDirectories((prev) => ({ ...prev, [projectName]: data.folderPath }));
+    }
     setTasks((xs) => [t, ...xs]);
+  }
+
+  function setProjectDirectory(projectName, folderPath) {
+    setDirectories((prev) => ({ ...prev, [projectName]: folderPath }));
   }
 
   function updateTask(id, patch) {
@@ -1002,7 +1010,13 @@ export default function ToDoX() {
         </div>
 
         {/* Formulaire d'ajout rapide */}
-        <QuickAdd onAdd={addTask} projectHistory={projectHistory} users={users} />
+        <QuickAdd
+          onAdd={addTask}
+          projectHistory={projectHistory}
+          users={users}
+          directories={directories}
+          onSetDirectory={setProjectDirectory}
+        />
 
         {/* Kanban */}
         <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-4">

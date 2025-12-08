@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readData: (filePath) => ipcRenderer.invoke('read-data', filePath),
   saveData: (filePath, data) => ipcRenderer.invoke('save-data', filePath, data),
   chooseStorageFolder: () => ipcRenderer.invoke('choose-storage-folder'),
+  selectProjectFolder: () => ipcRenderer.invoke('select-project-folder'),
 
   // Vérifier si on est dans Electron
   isElectron: true

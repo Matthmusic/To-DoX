@@ -284,3 +284,20 @@ ipcMain.handle('choose-storage-folder', async () => {
 
   return { success: true, path: result.filePaths[0] };
 });
+
+// Handler pour sélectionner un dossier projet
+ipcMain.handle('select-project-folder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: 'Sélectionner le dossier du projet'
+  });
+
+  if (result.canceled) {
+    return { success: false, canceled: true };
+  }
+
+  const folderPath = result.filePaths[0];
+  const folderName = path.basename(folderPath);
+
+  return { success: true, path: folderPath, name: folderName };
+});
