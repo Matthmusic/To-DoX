@@ -1623,10 +1623,10 @@ function TaskCard({
         onContextMenu={handleContextMenu}
       >
       <div className={classNames("absolute inset-0 pointer-events-none opacity-80 bg-gradient-to-br", urgencyTone)} />
-      <div className="relative z-10 flex flex-col gap-3">
-        <div className="flex-1">
-          <div className="flex items-start gap-2">
-            <div className="flex flex-1 items-center gap-2 min-w-0">
+      <div className="relative z-10 grid gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="flex items-start gap-2">
               <h3 className="font-semibold leading-tight text-lg flex-1">{task.title}</h3>
               {inactive && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-200/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-100">
@@ -1636,170 +1636,170 @@ function TaskCard({
               )}
             </div>
           </div>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggleFavorite}
-            aria-pressed={isFavorite}
-            className={classNames(
-              "inline-flex h-9 w-9 items-center justify-center rounded-2xl border transition",
-              isFavorite
-                ? "border-amber-300/70 bg-amber-300/20 text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.35)]"
-                : "border-white/15 bg-white/10 text-slate-100 hover:bg-white/20"
-            )}
-            title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-            aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-          >
-            <Star className="h-4 w-4" fill={isFavorite ? "currentColor" : "none"} />
-          </button>
-          {fileUrl ? (
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-300/40 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
-              title={projectDir || "Ouvrir le dossier projet"}
-              aria-label="Ouvrir le dossier projet"
-            >
-              <FolderOpen className="h-4 w-4" />
-            </a>
-          ) : (
-            typeof onSetProjectDirectory === "function" && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenDirectoryModal();
-                }}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-dashed border-cyan-300/40 bg-transparent text-cyan-100 transition hover:bg-cyan-300/10"
-                title="Associer un dossier à ce projet"
-                aria-label="Associer un dossier à ce projet"
-              >
-                <FolderPlus className="h-4 w-4" />
-              </button>
-            )
-          )}
-        </div>
-      </div>
-
-      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300">
-            <span className={classNames(
-              "inline-flex h-7 items-center rounded-full border px-3 text-[11px] font-semibold uppercase tracking-wide",
-              getProjectColor(task.project).border,
-              getProjectColor(task.project).bg,
-              getProjectColor(task.project).text
-            )}>
-              {task.project}
-            </span>
-            {task.priority && (
-              <span
-                className={classNames(
-                  "inline-flex h-7 items-center rounded-full px-3 text-[11px] font-semibold uppercase tracking-wide shadow-inner",
-                  priorityTone
-                )}
-              >
-                {task.priority === "high" ? "Haute" : task.priority === "med" ? "Moyenne" : "Basse"}
-              </span>
-            )}
-            {assignedUser && assignedUser.id !== "unassigned" && (
-              <span
-                className="relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-300/40 bg-blue-300/15 text-blue-200 group"
-                aria-label={`Assignée à ${assignedUser.name}`}
-              >
-                <User className="h-3.5 w-3.5" />
-                <span className="pointer-events-none absolute top-full left-1/2 z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-slate-950/90 px-2 py-1 text-[10px] font-medium text-slate-100 opacity-0 shadow-lg transition group-hover:opacity-100">
-                  {assignedUser.name}
-                </span>
-              </span>
-            )}
-            {(task.status === "done" || task.due) && (
-              <span className="ml-auto text-[11px] font-semibold">
-                {task.status === "done" ? (
-                  completionDateLabel ? (
-                    <span className="text-emerald-200">Fait le : {completionDateLabel}</span>
-                  ) : (
-                    <span className="text-emerald-200">Fait</span>
-                  )
-                ) : task.due && businessDays !== null ? (
-                  <>
-                    {businessDays < 0 && <span className="text-rose-200">En retard ({-businessDays} j ouvrés)</span>}
-                    {businessDays === 0 && <span className="text-rose-200">Jour J</span>}
-                    {businessDays > 0 && (
-                      <span className={classNames(
-                        businessDays < 3 ? "text-rose-200" :
-                        businessDays <= 7 ? "text-amber-200" :
-                        "text-emerald-200"
-                      )}>
-                        J-{businessDays} ouvrés
-                      </span>
-                    )}
-                  </>
-                ) : null}
-              </span>
-            )}
-
-          {/* Bouton Sous-tâches - Toujours visible */}
-          <div className="mt-3">
+          <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-2 text-sm font-medium text-slate-300 transition hover:text-slate-100"
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <ChevronDown className="h-4 w-4" />
+              type="button"
+              onClick={toggleFavorite}
+              aria-pressed={isFavorite}
+              className={classNames(
+                "inline-flex h-9 w-9 items-center justify-center rounded-2xl border transition",
+                isFavorite
+                  ? "border-amber-300/70 bg-amber-300/20 text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.35)]"
+                  : "border-white/15 bg-white/10 text-slate-100 hover:bg-white/20"
               )}
-              <CheckSquare className="h-4 w-4 text-blue-400" />
-              <span>
-                {subtaskProgress
-                  ? `${subtaskProgress.completed}/${subtaskProgress.total} sous-tâches`
-                  : "Sous-tâches"}
-              </span>
+              title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+              aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            >
+              <Star className="h-4 w-4" fill={isFavorite ? "currentColor" : "none"} />
             </button>
-
-            {/* Barre de progression - Seulement si des sous-tâches existent */}
-            {subtaskProgress && (
-              <div className="mt-2 space-y-1">
-                <div className="flex items-center justify-between">
-                  <span
-                    className={classNames(
-                      "text-xs font-semibold",
-                      subtaskProgress.percentage < 30
-                        ? "text-rose-400"
-                        : subtaskProgress.percentage < 70
-                        ? "text-amber-400"
-                        : "text-emerald-400"
-                    )}
-                  >
-                    {subtaskProgress.percentage}%
-                  </span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className={classNames(
-                      "h-full transition-all duration-300",
-                      subtaskProgress.percentage < 30
-                        ? "bg-gradient-to-r from-rose-500 to-rose-400"
-                        : subtaskProgress.percentage < 70
-                        ? "bg-gradient-to-r from-amber-500 to-amber-400"
-                        : "bg-gradient-to-r from-emerald-500 to-emerald-400"
-                    )}
-                    style={{ width: `${subtaskProgress.percentage}%` }}
-                  />
-                </div>
-              </div>
+            {fileUrl ? (
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-300/40 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
+                title={projectDir || "Ouvrir le dossier projet"}
+                aria-label="Ouvrir le dossier projet"
+              >
+                <FolderOpen className="h-4 w-4" />
+              </a>
+            ) : (
+              typeof onSetProjectDirectory === "function" && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenDirectoryModal();
+                  }}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-dashed border-cyan-300/40 bg-transparent text-cyan-100 transition hover:bg-cyan-300/10"
+                  title="Associer un dossier à ce projet"
+                  aria-label="Associer un dossier à ce projet"
+                >
+                  <FolderPlus className="h-4 w-4" />
+                </button>
+              )
             )}
           </div>
+        </div>
 
-          {/* Badge de suggestion si toutes les sous-tâches sont complétées */}
-          {allSubtasksCompleted && task.status !== "done" && (
-            <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-2 text-xs font-medium text-emerald-200">
-              <CheckCircle2 className="h-4 w-4" />
-              Toutes les sous-tâches sont terminées ! Vous pouvez passer cette tâche en "Fait".
+        <div className="flex w-full flex-wrap items-center gap-2 text-xs text-slate-300">
+          <span className={classNames(
+            "inline-flex h-7 items-center rounded-full border px-3 text-[11px] font-semibold uppercase tracking-wide",
+            getProjectColor(task.project).border,
+            getProjectColor(task.project).bg,
+            getProjectColor(task.project).text
+          )}>
+            {task.project}
+          </span>
+          {task.priority && (
+            <span
+              className={classNames(
+                "inline-flex h-7 items-center rounded-full px-3 text-[11px] font-semibold uppercase tracking-wide shadow-inner",
+                priorityTone
+              )}
+            >
+              {task.priority === "high" ? "Haute" : task.priority === "med" ? "Moyenne" : "Basse"}
+            </span>
+          )}
+          {assignedUser && assignedUser.id !== "unassigned" && (
+            <span
+              className="relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-300/40 bg-blue-300/15 text-blue-200 group"
+              aria-label={`Assignée à ${assignedUser.name}`}
+            >
+              <User className="h-3.5 w-3.5" />
+              <span className="pointer-events-none absolute top-full left-1/2 z-10 mt-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-white/10 bg-slate-950/90 px-2 py-1 text-[10px] font-medium text-slate-100 opacity-0 shadow-lg transition group-hover:opacity-100">
+                {assignedUser.name}
+              </span>
+            </span>
+          )}
+          {(task.status === "done" || task.due) && (
+            <span className="ml-auto text-[11px] font-semibold">
+              {task.status === "done" ? (
+                completionDateLabel ? (
+                  <span className="text-emerald-200">Fait le : {completionDateLabel}</span>
+                ) : (
+                  <span className="text-emerald-200">Fait</span>
+                )
+              ) : task.due && businessDays !== null ? (
+                <>
+                  {businessDays < 0 && <span className="text-rose-200">En retard ({-businessDays} j ouvrés)</span>}
+                  {businessDays === 0 && <span className="text-rose-200">Jour J</span>}
+                  {businessDays > 0 && (
+                    <span className={classNames(
+                      businessDays < 3 ? "text-rose-200" :
+                      businessDays <= 7 ? "text-amber-200" :
+                      "text-emerald-200"
+                    )}>
+                      J-{businessDays} ouvrés
+                    </span>
+                  )}
+                </>
+              ) : null}
+            </span>
+          )}
+        </div>
+
+        {/* Bouton Sous-tâches - Toujours visible */}
+        <div className="w-full">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-2 text-sm font-medium text-slate-300 transition hover:text-slate-100"
+          >
+            {isExpanded ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+            <CheckSquare className="h-4 w-4 text-blue-400" />
+            <span>
+              {subtaskProgress
+                ? `${subtaskProgress.completed}/${subtaskProgress.total} sous-tâches`
+                : "Sous-tâches"}
+            </span>
+          </button>
+
+          {/* Barre de progression - Seulement si des sous-tâches existent */}
+          {subtaskProgress && (
+            <div className="mt-2 w-full space-y-1">
+              <div className="flex items-center justify-between">
+                <span
+                  className={classNames(
+                    "text-xs font-semibold",
+                    subtaskProgress.percentage < 30
+                      ? "text-rose-400"
+                      : subtaskProgress.percentage < 70
+                      ? "text-amber-400"
+                      : "text-emerald-400"
+                  )}
+                >
+                  {subtaskProgress.percentage}%
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+                <div
+                  className={classNames(
+                    "h-full transition-all duration-300",
+                    subtaskProgress.percentage < 30
+                      ? "bg-gradient-to-r from-rose-500 to-rose-400"
+                      : subtaskProgress.percentage < 70
+                      ? "bg-gradient-to-r from-amber-500 to-amber-400"
+                      : "bg-gradient-to-r from-emerald-500 to-emerald-400"
+                  )}
+                  style={{ width: `${subtaskProgress.percentage}%` }}
+                />
+              </div>
             </div>
           )}
         </div>
+
+        {/* Badge de suggestion si toutes les sous-tâches sont complétées */}
+        {allSubtasksCompleted && task.status !== "done" && (
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-300/40 bg-emerald-300/10 px-3 py-2 text-xs font-medium text-emerald-200">
+            <CheckCircle2 className="h-4 w-4" />
+            Toutes les sous-tâches sont terminées ! Vous pouvez passer cette tâche en "Fait".
+          </div>
+        )}
+      </div>
       </div>
 
       {task.notes && (
