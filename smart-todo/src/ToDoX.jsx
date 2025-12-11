@@ -1605,13 +1605,14 @@ function TaskCard({
 
   return (
     <div className={classNames(
+      "block w-full",
       isFavorite ? "rainbow-border rounded-[26px]" : "",
       isFavorite && isDayJ ? "rainbow-pulse" : "",
       !isFavorite && isDayJ ? "dayj-pulse" : ""
     )}>
       <div
         className={classNames(
-          "card-surface relative z-10 overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-4 text-slate-100 shadow-[0_15px_35px_rgba(2,4,20,0.45)] backdrop-blur-xl transition",
+          "card-surface relative z-10 w-full overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-4 text-slate-100 shadow-[0_15px_35px_rgba(2,4,20,0.45)] backdrop-blur-xl transition",
           businessDays !== null && businessDays < 3
             ? "border-rose-400/60 shadow-rose-500/20"
             : "",
@@ -1682,7 +1683,7 @@ function TaskCard({
         </div>
       </div>
 
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300">
             <span className={classNames(
               "inline-flex h-7 items-center rounded-full border px-3 text-[11px] font-semibold uppercase tracking-wide",
               getProjectColor(task.project).border,
