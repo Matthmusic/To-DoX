@@ -159,7 +159,7 @@ export default function ToDoX() {
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   const [tasks, setTasks] = useState(() => {
-    // Initialisation temporaire depuis localStorage (pour compatibilit?)
+    // Initialisation temporaire depuis localStorage (pour compatibilité)
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       try {
@@ -177,7 +177,7 @@ export default function ToDoX() {
         }));
       } catch {}
     }
-    // T?ches de d?mo import?es depuis constants.js
+    // Tâches de démo importées depuis constants.js
     return DEMO_TASKS;
   });
 
@@ -661,10 +661,10 @@ export default function ToDoX() {
       byStatusAndProject[s.id] = {};
     });
 
-    // Fonction de calcul des jours ouvr?s (hors de la boucle de tri)
+    // Fonction de calcul des jours ouvrés (hors de la boucle de tri)
     const calcBusinessDays = (task) => businessDayDelta(task.due);
 
-    // Regrouper les t?ches par statut et projet
+    // Regrouper les tâches par statut et projet
     for (const t of filteredTasks) {
       const projectName = t.project || "Sans projet";
       if (!byStatusAndProject[t.status][projectName]) {
@@ -673,7 +673,7 @@ export default function ToDoX() {
       byStatusAndProject[t.status][projectName].push(t);
     }
 
-    // Trier les t?ches dans chaque projet par urgence
+    // Trier les tâches dans chaque projet par urgence
     for (const status in byStatusAndProject) {
       for (const project in byStatusAndProject[status]) {
         byStatusAndProject[status][project].sort((a, b) => {
@@ -684,7 +684,7 @@ export default function ToDoX() {
           const daysB = calcBusinessDays(b);
 
           if (!Number.isFinite(daysA) && !Number.isFinite(daysB)) return 0;
-          if (!Number.isFinite(daysA)) return 1; // Sans ?ch?ance en bas
+          if (!Number.isFinite(daysA)) return 1; // Sans échéance en bas
           if (!Number.isFinite(daysB)) return -1;
 
           return daysA - daysB; // Ordre croissant : les plus urgents en premier
@@ -1630,7 +1630,7 @@ function TaskCard({
               {inactive && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-200/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-100">
                   <AlertTriangle className="h-3 w-3" />
-                  ? relancer
+                  À relancer
                 </span>
               )}
             </div>
@@ -1672,8 +1672,8 @@ function TaskCard({
                   handleOpenDirectoryModal();
                 }}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-dashed border-cyan-300/40 bg-transparent text-cyan-100 transition hover:bg-cyan-300/10"
-                title="Associer un dossier ? ce projet"
-                aria-label="Associer un dossier ? ce projet"
+                title="Associer un dossier à ce projet"
+                aria-label="Associer un dossier à ce projet"
               >
                 <FolderPlus className="h-4 w-4" />
               </button>
@@ -1722,7 +1722,7 @@ function TaskCard({
                   )
                 ) : task.due && businessDays !== null ? (
                   <>
-                    {businessDays < 0 && <span className="text-rose-200">En retard ({-businessDays} j ouvr?s)</span>}
+                    {businessDays < 0 && <span className="text-rose-200">En retard ({-businessDays} j ouvrés)</span>}
                     {businessDays === 0 && <span className="text-rose-200">Jour J</span>}
                     {businessDays > 0 && (
                       <span className={classNames(
@@ -1730,7 +1730,7 @@ function TaskCard({
                         businessDays <= 7 ? "text-amber-200" :
                         "text-emerald-200"
                       )}>
-                        J-{businessDays} ouvr?s
+                        J-{businessDays} ouvrés
                       </span>
                     )}
                   </>
@@ -2953,17 +2953,17 @@ function WeeklyReportModal({ tasks, onClose }) {
     return { completed, total, percentage };
   }
 
-    // Helper pour g?n?rer une section de rapport (r?duit la duplication)
+  // Helper pour générer une section de rapport (réduit la duplication)
   function generateWeekSection(completed, remaining, weekRange, isCurrentWeek) {
-    const periodLabel = isCurrentWeek ? 'EN COURS' : 'PRECEDENTE';
+    const periodLabel = isCurrentWeek ? 'EN COURS' : 'PRÉCÉDENTE';
     let text = `SEMAINE ${periodLabel} (${weekRange.startStr} au ${weekRange.endStr})\n\n`;
 
-    // Taches terminees
-    text += `Taches terminees\n`;
+    // Tâches terminées
+    text += `Tâches terminées\n`;
     if (completed.length === 0) {
       text += isCurrentWeek
-        ? "- Aucune tache terminee cette semaine\n"
-        : "- Aucune tache terminee durant cette periode\n";
+        ? "- Aucune tâche terminée cette semaine\n"
+        : "- Aucune tâche terminée durant cette période\n";
     } else {
       const groupedCompleted = groupByProject(completed);
       Object.keys(groupedCompleted).sort().forEach(project => {
@@ -2971,15 +2971,15 @@ function WeeklyReportModal({ tasks, onClose }) {
         groupedCompleted[project].forEach(task => {
           const doneAt = task.completedAt || task.updatedAt || task.createdAt;
           const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
-          const dueText = task.due ? ` (Echeance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
           text += `  - ${task.title}${doneText}${dueText}${progressText}\n`;
 
-          // Afficher les sous-taches
+          // Afficher les sous-tâches
           if (task.subtasks && task.subtasks.length > 0) {
             task.subtasks.forEach(subtask => {
-              const checkmark = subtask.completed ? "?" : "?";
+              const checkmark = subtask.completed ? "✓" : "○";
               text += `      ${checkmark} ${subtask.title}\n`;
             });
           }
@@ -2987,25 +2987,25 @@ function WeeklyReportModal({ tasks, onClose }) {
       });
     }
 
-    // Taches en cours / restantes
-    text += `\nTaches en cours / restantes\n`;
+    // Tâches en cours / restantes
+    text += `\nTâches en cours / restantes\n`;
     if (remaining.length === 0) {
-      text += "- Aucune tache en cours\n";
+      text += "- Aucune tâche en cours\n";
     } else {
       const groupedRemaining = groupByProject(remaining);
       Object.keys(groupedRemaining).sort().forEach(project => {
         text += `\n  [${project}]\n`;
         groupedRemaining[project].forEach(task => {
           const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-          const dueText = task.due ? ` (Echeance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
           text += `  - ${task.title} - statut : ${statusLabel}${dueText}${progressText}\n`;
 
-          // Afficher les sous-taches
+          // Afficher les sous-tâches
           if (task.subtasks && task.subtasks.length > 0) {
             task.subtasks.forEach(subtask => {
-              const checkmark = subtask.completed ? "?" : "?";
+              const checkmark = subtask.completed ? "✓" : "○";
               text += `      ${checkmark} ${subtask.title}\n`;
             });
           }
@@ -3123,7 +3123,7 @@ function generateReport(period = 'both') {
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(16, 185, 129); // Vert
-    doc.text("Taches terminees", margin, y);
+    doc.text("Tâches terminées", margin, y);
     y += 7;
 
     doc.setFontSize(10);
@@ -3146,9 +3146,9 @@ function generateReport(period = 'both') {
           checkAddPage(10);
           const doneAt = task.completedAt || task.updatedAt || task.createdAt;
           const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
-          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
           const text = `  - ${task.title}${doneText}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
@@ -3185,7 +3185,7 @@ function generateReport(period = 'both') {
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(251, 191, 36); // Amber
-    doc.text("Taches en cours / restantes", margin, y);
+    doc.text("Tâches en cours / restantes", margin, y);
     y += 7;
 
     doc.setFontSize(10);
@@ -3207,9 +3207,9 @@ function generateReport(period = 'both') {
         groupedRemaining[project].forEach(task => {
           checkAddPage(10);
           const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
           const text = `  - ${task.title} - statut : ${statusLabel}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
@@ -3248,14 +3248,14 @@ function generateReport(period = 'both') {
       checkAddPage(20);
       doc.setFontSize(16);
       doc.setTextColor(147, 51, 234); // Violet
-      doc.text(`SEMAINE PRECEDENTE (${previousWeekRange.startStr} au ${previousWeekRange.endStr})`, margin, y);
+      doc.text(`SEMAINE PRÉCÉDENTE (${previousWeekRange.startStr} au ${previousWeekRange.endStr})`, margin, y);
       y += 10;
 
     // Tâches terminées - Semaine précédente
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(16, 185, 129); // Vert
-    doc.text("Taches terminees", margin, y);
+    doc.text("Tâches terminées", margin, y);
     y += 7;
 
     doc.setFontSize(10);
@@ -3278,9 +3278,9 @@ function generateReport(period = 'both') {
           checkAddPage(10);
           const doneAt = task.completedAt || task.updatedAt || task.createdAt;
           const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
-          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
           const text = `  - ${task.title}${doneText}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
@@ -3317,7 +3317,7 @@ function generateReport(period = 'both') {
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(251, 191, 36); // Amber
-    doc.text("Taches en cours / restantes", margin, y);
+    doc.text("Tâches en cours / restantes", margin, y);
     y += 7;
 
     doc.setFontSize(10);
@@ -3339,9 +3339,9 @@ function generateReport(period = 'both') {
         groupedRemaining[project].forEach(task => {
           checkAddPage(10);
           const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
           const text = `  - ${task.title} - statut : ${statusLabel}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
@@ -3451,7 +3451,7 @@ function generateReport(period = 'both') {
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(16, 185, 129); // Vert
-    doc.text("Taches terminees", margin, y);
+    doc.text("Tâches terminées", margin, y);
     y += 7;
 
     doc.setFontSize(10);
@@ -3474,9 +3474,9 @@ function generateReport(period = 'both') {
           checkAddPage(10);
           const doneAt = task.completedAt || task.updatedAt || task.createdAt;
           const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
-          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
           const text = `  - ${task.title}${doneText}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
@@ -3513,7 +3513,7 @@ function generateReport(period = 'both') {
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(251, 191, 36); // Amber
-    doc.text("Taches en cours / restantes", margin, y);
+    doc.text("Tâches en cours / restantes", margin, y);
     y += 7;
 
     doc.setFontSize(10);
@@ -3535,9 +3535,9 @@ function generateReport(period = 'both') {
         groupedRemaining[project].forEach(task => {
           checkAddPage(10);
           const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
           const text = `  - ${task.title} - statut : ${statusLabel}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
@@ -3576,14 +3576,14 @@ function generateReport(period = 'both') {
       checkAddPage(20);
       doc.setFontSize(16);
       doc.setTextColor(147, 51, 234); // Violet
-      doc.text(`SEMAINE PRECEDENTE (${previousWeekRange.startStr} au ${previousWeekRange.endStr})`, margin, y);
+      doc.text(`SEMAINE PRÉCÉDENTE (${previousWeekRange.startStr} au ${previousWeekRange.endStr})`, margin, y);
       y += 10;
 
     // Tâches terminées - Semaine précédente
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(16, 185, 129); // Vert
-    doc.text("Taches terminees", margin, y);
+    doc.text("Tâches terminées", margin, y);
     y += 7;
 
     doc.setFontSize(10);
@@ -3606,9 +3606,9 @@ function generateReport(period = 'both') {
           checkAddPage(10);
           const doneAt = task.completedAt || task.updatedAt || task.createdAt;
           const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
-          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
           const text = `  - ${task.title}${doneText}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
@@ -3645,7 +3645,7 @@ function generateReport(period = 'both') {
     checkAddPage(15);
     doc.setFontSize(12);
     doc.setTextColor(251, 191, 36); // Amber
-    doc.text("Taches en cours / restantes", margin, y);
+    doc.text("Tâches en cours / restantes", margin, y);
     y += 7;
 
     doc.setFontSize(10);
@@ -3667,9 +3667,9 @@ function generateReport(period = 'both') {
         groupedRemaining[project].forEach(task => {
           checkAddPage(10);
           const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-          const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
           const text = `  - ${task.title} - statut : ${statusLabel}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
@@ -3801,7 +3801,7 @@ function generateReport(period = 'both') {
                                       <span>Fait le : {formatTimestampToDate(task.completedAt || task.updatedAt || task.createdAt)}</span>
                                     )}
                                     {task.due && (
-                                      <span>?ch?ance : {formatDateFull(task.due)}</span>
+                                      <span>Échéance : {formatDateFull(task.due)}</span>
                                     )}
                                   </div>
                                 </div>
@@ -3918,7 +3918,7 @@ function generateReport(period = 'both') {
                                       <span>Fait le : {formatTimestampToDate(task.completedAt || task.updatedAt || task.createdAt)}</span>
                                     )}
                                     {task.due && (
-                                      <span>?ch?ance : {formatDateFull(task.due)}</span>
+                                      <span>Échéance : {formatDateFull(task.due)}</span>
                                     )}
                                   </div>
                                 </div>
