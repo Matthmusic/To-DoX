@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*.*.*'
 
+env:
+  ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+  NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+  ELECTRON_CACHE: ${{ runner.temp }}/electron-cache
+
 permissions:
   contents: write
 
