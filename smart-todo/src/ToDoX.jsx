@@ -1623,7 +1623,7 @@ function TaskCard({
         onContextMenu={handleContextMenu}
       >
       <div className={classNames("absolute inset-0 pointer-events-none opacity-80 bg-gradient-to-br", urgencyTone)} />
-      <div className="relative z-10 flex items-start gap-2">
+      <div className="relative z-10 flex flex-col gap-3">
         <div className="flex-1">
           <div className="flex items-start gap-2">
             <div className="flex flex-1 items-center gap-2 min-w-0">
