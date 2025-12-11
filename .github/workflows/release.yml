@@ -5,17 +5,17 @@ on:
     tags:
       - 'v*.*.*'
 
-env:
-  ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-  NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-  ELECTRON_CACHE: ${{ runner.temp }}/electron-cache
-
 permissions:
   contents: write
 
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_CACHE: ${{ runner.temp }}/electron-cache
 
     defaults:
       run:
@@ -34,9 +34,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        env:
-          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-          ELECTRON_CACHE: ${{ runner.temp }}/electron-cache
 
       - name: Build and publish Electron app
         run: npm run electron:build:win
