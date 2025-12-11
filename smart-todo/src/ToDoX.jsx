@@ -28,6 +28,7 @@ import {
   List,
   Pencil,
   X,
+  Star,
 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import ToDoXLogo from "./assets/To Do X.svg";
@@ -128,20 +129,55 @@ function DropdownItem({ icon: Icon, label, onClick, className = "" }) {
   );
 }
 
+// Calcule un delta de jours ouvrÇ¸s en excluant le jour courant
+function businessDayDelta(dueStr) {
+  if (!dueStr) return Infinity;
+  const dueDate = new Date(dueStr + "T00:00:00");
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const isPast = dueDate < now;
+  const start = isPast ? dueDate : now;
+  const end = isPast ? now : dueDate;
+  const raw = businessDaysBetween(start, end);
+  const delta = Math.max(raw - 1, 0); // exclure le jour courant
+
+  return isPast ? -delta : delta;
+}
+
+function formatTimestampToDate(ts) {
+  if (!ts) return "";
+  const date = new Date(ts);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 export default function ToDoX() {
   const [storagePath, setStoragePath] = useState(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   const [tasks, setTasks] = useState(() => {
-    // Initialisation temporaire depuis localStorage (pour compatibilité)
+    // Initialisation temporaire depuis localStorage (pour compatibilit?)
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
-        return parsed?.tasks ?? [];
+        const base = parsed?.tasks ?? [];
+        return base.map((task) => ({
+          ...task,
+          completedAt: task.status === "done" && !task.completedAt
+            ? task.updatedAt || task.createdAt || Date.now()
+            : task.completedAt ?? null,
+          subtasks: task.subtasks || [],
+          archived: task.archived ?? false,
+          archivedAt: task.archivedAt ?? null,
+          favorite: task.favorite ?? false,
+        }));
       } catch {}
     }
-    // Tâches de démo importées depuis constants.js
+    // T?ches de d?mo import?es depuis constants.js
     return DEMO_TASKS;
   });
 
@@ -266,14 +302,19 @@ export default function ToDoX() {
                   migrated.subtasks = [];
                 }
 
-                // Migration archived
-                if (task.archived === undefined) {
-                  migrated.archived = false;
-                  migrated.archivedAt = null;
-                }
+              // Migration archived
+              if (task.archived === undefined) {
+                migrated.archived = false;
+                migrated.archivedAt = null;
+              }
 
-                return migrated;
-              });
+              // Migration favoris
+              if (task.favorite === undefined) {
+                migrated.favorite = false;
+              }
+
+              return migrated;
+            });
 
               const completedAtCount = migratedTasks.filter((t, i) => t.completedAt !== result.data.tasks[i]?.completedAt).length;
               const subtasksCount = migratedTasks.filter((t, i) => !result.data.tasks[i]?.subtasks).length;
@@ -299,10 +340,14 @@ export default function ToDoX() {
                 if (parsed.tasks) {
                   // Migration : ajouter completedAt aux tâches "done" qui n'ont pas ce champ
                   const migratedTasks = parsed.tasks.map(task => {
+                    const migrated = { ...task };
                     if (task.status === "done" && !task.completedAt) {
-                      return { ...task, completedAt: task.updatedAt || task.createdAt || Date.now() };
+                      migrated.completedAt = task.updatedAt || task.createdAt || Date.now();
                     }
-                    return task;
+                    if (task.favorite === undefined) {
+                      migrated.favorite = false;
+                    }
+                    return migrated;
                   });
                   const migratedCount = migratedTasks.filter((t, i) => t.completedAt !== parsed.tasks[i]?.completedAt).length;
                   if (migratedCount > 0) {
@@ -409,9 +454,11 @@ export default function ToDoX() {
       assignedTo: data.assignedTo || "unassigned",
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      completedAt: data.status === "done" ? Date.now() : null,
       notes: data.notes || "",
       archived: false,
       archivedAt: null,
+      favorite: false,
     };
     addToProjectHistory(projectName);
     // Si un chemin de dossier est fourni, le stocker dans directories
@@ -614,21 +661,10 @@ export default function ToDoX() {
       byStatusAndProject[s.id] = {};
     });
 
-    // Fonction de calcul des jours ouvrés (hors de la boucle de tri)
-    const calcBusinessDays = (task) => {
-      if (!task.due) return Infinity;
-      const dueDate = new Date(task.due + "T00:00:00");
-      const now = new Date();
-      now.setHours(0, 0, 0, 0);
+    // Fonction de calcul des jours ouvr?s (hors de la boucle de tri)
+    const calcBusinessDays = (task) => businessDayDelta(task.due);
 
-      if (dueDate < now) {
-        return -businessDaysBetween(dueDate, now);
-      } else {
-        return businessDaysBetween(now, dueDate);
-      }
-    };
-
-    // Regrouper les tâches par statut et projet
+    // Regrouper les t?ches par statut et projet
     for (const t of filteredTasks) {
       const projectName = t.project || "Sans projet";
       if (!byStatusAndProject[t.status][projectName]) {
@@ -637,16 +673,19 @@ export default function ToDoX() {
       byStatusAndProject[t.status][projectName].push(t);
     }
 
-    // Trier les tâches dans chaque projet par urgence
+    // Trier les t?ches dans chaque projet par urgence
     for (const status in byStatusAndProject) {
       for (const project in byStatusAndProject[status]) {
         byStatusAndProject[status][project].sort((a, b) => {
-          if (!a.due && !b.due) return 0;
-          if (!a.due) return 1; // Sans échéance en bas
-          if (!b.due) return -1;
+          const favDiff = (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);
+          if (favDiff !== 0) return favDiff;
 
           const daysA = calcBusinessDays(a);
           const daysB = calcBusinessDays(b);
+
+          if (!Number.isFinite(daysA) && !Number.isFinite(daysB)) return 0;
+          if (!Number.isFinite(daysA)) return 1; // Sans ?ch?ance en bas
+          if (!Number.isFinite(daysB)) return -1;
 
           return daysA - daysB; // Ordre croissant : les plus urgents en premier
         });
@@ -662,6 +701,12 @@ export default function ToDoX() {
         // Calculer la date moyenne pour chaque projet
         const tasksA = byStatusAndProject[status][a];
         const tasksB = byStatusAndProject[status][b];
+
+        const hasFavA = tasksA.some(t => t.favorite);
+        const hasFavB = tasksB.some(t => t.favorite);
+        if (hasFavA !== hasFavB) {
+          return hasFavB ? 1 : -1;
+        }
 
         // Calculer la moyenne des dates de rendu (en timestamp)
         const avgDateA = tasksA.reduce((sum, t) => {
@@ -1438,19 +1483,11 @@ function TaskCard({
 
   // Calcul des jours ouvrés restants (hors weekends)
   const businessDays = useMemo(() => {
-    if (!task.due) return null;
-    const dueDate = new Date(task.due + "T00:00:00");
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
-    if (dueDate < now) {
-      // En retard : calculer les jours ouvrés négatifs
-      return -businessDaysBetween(dueDate, now);
-    } else {
-      // À venir : calculer les jours ouvrés jusqu'à l'échéance
-      return businessDaysBetween(now, dueDate);
-    }
-  }, [task.due]);
+    if (!task.due || task.status === "done") return null;
+    const delta = businessDayDelta(task.due);
+    return Number.isFinite(delta) ? delta : null;
+  }, [task.due, task.status]);
+  const isDayJ = businessDays === 0;
 
   const inactive = useMemo(() => {
     // Badge si > 3j sans update et statut = doing
@@ -1468,6 +1505,14 @@ function TaskCard({
   // Progression des sous-tâches
   const subtaskProgress = useMemo(() => getSubtaskProgress(task), [task.subtasks]);
   const allSubtasksCompleted = subtaskProgress && subtaskProgress.completed === subtaskProgress.total && subtaskProgress.total > 0;
+
+  const isFavorite = Boolean(task.favorite);
+
+  const completionDateLabel = useMemo(() => {
+    if (task.status !== "done") return null;
+    const ts = task.completedAt || task.updatedAt || task.createdAt;
+    return ts ? formatTimestampToDate(ts) : null;
+  }, [task.status, task.completedAt, task.updatedAt, task.createdAt]);
 
   const priorityTone = useMemo(() => {
     if (task.priority === "high") return "bg-gradient-to-r from-rose-500 to-orange-400 text-slate-900";
@@ -1553,19 +1598,29 @@ function TaskCard({
     setDirectoryError("");
   };
 
+  const toggleFavorite = (e) => {
+    e.stopPropagation();
+    onUpdate(task.id, { favorite: !task.favorite });
+  };
+
   return (
-    <div
-      className={classNames(
-        "relative z-10 overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-4 text-slate-100 shadow-[0_15px_35px_rgba(2,4,20,0.45)] backdrop-blur-xl transition",
-        businessDays !== null && businessDays < 3
-          ? "border-rose-400/60 shadow-rose-500/20"
-          : "",
-        hoverTone
-      )}
-      draggable
-      onDragStart={(e) => onDragStart(e, task.id)}
-      onContextMenu={handleContextMenu}
-    >
+    <div className={classNames(
+      isFavorite ? "rainbow-border rounded-[26px]" : "",
+      isFavorite && isDayJ ? "rainbow-pulse" : "",
+      !isFavorite && isDayJ ? "dayj-pulse" : ""
+    )}>
+      <div
+        className={classNames(
+          "card-surface relative z-10 overflow-hidden rounded-3xl border border-white/15 bg-white/10 p-4 text-slate-100 shadow-[0_15px_35px_rgba(2,4,20,0.45)] backdrop-blur-xl transition",
+          businessDays !== null && businessDays < 3
+            ? "border-rose-400/60 shadow-rose-500/20"
+            : "",
+          hoverTone
+        )}
+        draggable
+        onDragStart={(e) => onDragStart(e, task.id)}
+        onContextMenu={handleContextMenu}
+      >
       <div className={classNames("absolute inset-0 pointer-events-none opacity-80 bg-gradient-to-br", urgencyTone)} />
       <div className="relative z-10 flex items-start gap-2">
         <div className="flex-1">
@@ -1575,38 +1630,58 @@ function TaskCard({
               {inactive && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-300/40 bg-amber-200/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-100">
                   <AlertTriangle className="h-3 w-3" />
-                  À relancer
+                  ? relancer
                 </span>
               )}
             </div>
-            {fileUrl ? (
-              <a
-                href={fileUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-300/40 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
-                title={projectDir || "Ouvrir le dossier projet"}
-                aria-label="Ouvrir le dossier projet"
-              >
-                <FolderOpen className="h-4 w-4" />
-              </a>
-            ) : (
-              typeof onSetProjectDirectory === "function" && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenDirectoryModal();
-                  }}
-                  className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-dashed border-cyan-300/40 bg-transparent text-cyan-100 transition hover:bg-cyan-300/10"
-                  title="Associer un dossier à ce projet"
-                  aria-label="Associer un dossier à ce projet"
-                >
-                  <FolderPlus className="h-4 w-4" />
-                </button>
-              )
-            )}
           </div>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleFavorite}
+            aria-pressed={isFavorite}
+            className={classNames(
+              "inline-flex h-9 w-9 items-center justify-center rounded-2xl border transition",
+              isFavorite
+                ? "border-amber-300/70 bg-amber-300/20 text-amber-100 shadow-[0_0_12px_rgba(251,191,36,0.35)]"
+                : "border-white/15 bg-white/10 text-slate-100 hover:bg-white/20"
+            )}
+            title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+          >
+            <Star className="h-4 w-4" fill={isFavorite ? "currentColor" : "none"} />
+          </button>
+          {fileUrl ? (
+            <a
+              href={fileUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-cyan-300/40 bg-cyan-300/10 text-cyan-100 transition hover:bg-cyan-300/20"
+              title={projectDir || "Ouvrir le dossier projet"}
+              aria-label="Ouvrir le dossier projet"
+            >
+              <FolderOpen className="h-4 w-4" />
+            </a>
+          ) : (
+            typeof onSetProjectDirectory === "function" && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenDirectoryModal();
+                }}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-dashed border-cyan-300/40 bg-transparent text-cyan-100 transition hover:bg-cyan-300/10"
+                title="Associer un dossier ? ce projet"
+                aria-label="Associer un dossier ? ce projet"
+              >
+                <FolderPlus className="h-4 w-4" />
+              </button>
+            )
+          )}
+        </div>
+      </div>
+
           <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-300">
             <span className={classNames(
               "inline-flex h-7 items-center rounded-full border px-3 text-[11px] font-semibold uppercase tracking-wide",
@@ -1637,22 +1712,32 @@ function TaskCard({
                 </span>
               </span>
             )}
-            {task.due && (
+            {(task.status === "done" || task.due) && (
               <span className="ml-auto text-[11px] font-semibold">
-                {businessDays < 0 && <span className="text-rose-200">En retard ({-businessDays} j ouvrés)</span>}
-                {businessDays === 0 && <span className="text-amber-200">Échéance aujourd'hui</span>}
-                {businessDays > 0 && (
-                  <span className={classNames(
-                    businessDays < 3 ? "text-rose-200" :
-                    businessDays <= 7 ? "text-amber-200" :
-                    "text-emerald-200"
-                  )}>
-                    J-{businessDays} ouvrés
-                  </span>
-                )}
+                {task.status === "done" ? (
+                  completionDateLabel ? (
+                    <span className="text-emerald-200">Fait le : {completionDateLabel}</span>
+                  ) : (
+                    <span className="text-emerald-200">Fait</span>
+                  )
+                ) : task.due && businessDays !== null ? (
+                  <>
+                    {businessDays < 0 && <span className="text-rose-200">En retard ({-businessDays} j ouvr?s)</span>}
+                    {businessDays === 0 && <span className="text-rose-200">Jour J</span>}
+                    {businessDays > 0 && (
+                      <span className={classNames(
+                        businessDays < 3 ? "text-rose-200" :
+                        businessDays <= 7 ? "text-amber-200" :
+                        "text-emerald-200"
+                      )}>
+                        J-{businessDays} ouvr?s
+                      </span>
+                    )}
+                  </>
+                ) : null}
               </span>
             )}
-          </div>
+
           {/* Bouton Sous-tâches - Toujours visible */}
           <div className="mt-3">
             <button
@@ -2868,29 +2953,33 @@ function WeeklyReportModal({ tasks, onClose }) {
     return { completed, total, percentage };
   }
 
-  // Helper pour générer une section de rapport (réduit la duplication)
+    // Helper pour g?n?rer une section de rapport (r?duit la duplication)
   function generateWeekSection(completed, remaining, weekRange, isCurrentWeek) {
-    const periodLabel = isCurrentWeek ? 'EN COURS' : 'PRÉCÉDENTE';
-    let text = `📅 SEMAINE ${periodLabel} (${weekRange.startStr} au ${weekRange.endStr})\n\n`;
+    const periodLabel = isCurrentWeek ? 'EN COURS' : 'PRECEDENTE';
+    let text = `SEMAINE ${periodLabel} (${weekRange.startStr} au ${weekRange.endStr})\n\n`;
 
-    // Tâches terminées
-    text += `✅ Tâches terminées\n`;
+    // Taches terminees
+    text += `Taches terminees\n`;
     if (completed.length === 0) {
-      text += isCurrentWeek ? "- Aucune tâche terminée cette semaine\n" : "- Aucune tâche terminée durant cette période\n";
+      text += isCurrentWeek
+        ? "- Aucune tache terminee cette semaine\n"
+        : "- Aucune tache terminee durant cette periode\n";
     } else {
       const groupedCompleted = groupByProject(completed);
       Object.keys(groupedCompleted).sort().forEach(project => {
         text += `\n  [${project}]\n`;
         groupedCompleted[project].forEach(task => {
-          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+          const doneAt = task.completedAt || task.updatedAt || task.createdAt;
+          const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
+          const dueText = task.due ? ` (Echeance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
-          text += `  - ${task.title}${dueText}${progressText}\n`;
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          text += `  - ${task.title}${doneText}${dueText}${progressText}\n`;
 
-          // Afficher les sous-tâches
+          // Afficher les sous-taches
           if (task.subtasks && task.subtasks.length > 0) {
             task.subtasks.forEach(subtask => {
-              const checkmark = subtask.completed ? "✓" : "○";
+              const checkmark = subtask.completed ? "?" : "?";
               text += `      ${checkmark} ${subtask.title}\n`;
             });
           }
@@ -2898,25 +2987,25 @@ function WeeklyReportModal({ tasks, onClose }) {
       });
     }
 
-    // Tâches en cours / restantes
-    text += `\n⏳ Tâches en cours / restantes\n`;
+    // Taches en cours / restantes
+    text += `\nTaches en cours / restantes\n`;
     if (remaining.length === 0) {
-      text += "- Aucune tâche en cours\n";
+      text += "- Aucune tache en cours\n";
     } else {
       const groupedRemaining = groupByProject(remaining);
       Object.keys(groupedRemaining).sort().forEach(project => {
         text += `\n  [${project}]\n`;
         groupedRemaining[project].forEach(task => {
           const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
-          const dueText = task.due ? ` (échéance : ${formatDateFull(task.due)})` : "";
+          const dueText = task.due ? ` (Echeance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
-          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
-          text += `  - ${task.title} – statut : ${statusLabel}${dueText}${progressText}\n`;
+          const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
+          text += `  - ${task.title} - statut : ${statusLabel}${dueText}${progressText}\n`;
 
-          // Afficher les sous-tâches
+          // Afficher les sous-taches
           if (task.subtasks && task.subtasks.length > 0) {
             task.subtasks.forEach(subtask => {
-              const checkmark = subtask.completed ? "✓" : "○";
+              const checkmark = subtask.completed ? "?" : "?";
               text += `      ${checkmark} ${subtask.title}\n`;
             });
           }
@@ -2926,9 +3015,7 @@ function WeeklyReportModal({ tasks, onClose }) {
 
     return text;
   }
-
-  // Générer le texte du compte rendu
-  function generateReport(period = 'both') {
+function generateReport(period = 'both') {
     const currentCompleted = currentWeekTasks.completed.filter(t => selectedTasks[t.id]);
     const currentRemaining = currentWeekTasks.remaining.filter(t => selectedTasks[t.id]);
     const previousCompleted = previousWeekTasks.completed.filter(t => selectedTasks[t.id]);
@@ -3057,10 +3144,12 @@ function WeeklyReportModal({ tasks, onClose }) {
         doc.setTextColor(0, 0, 0);
         groupedCompleted[project].forEach(task => {
           checkAddPage(10);
+          const doneAt = task.completedAt || task.updatedAt || task.createdAt;
+          const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
           const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
           const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
-          const text = `  - ${task.title}${dueText}${progressText}`;
+          const text = `  - ${task.title}${doneText}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
             checkAddPage(7);
@@ -3187,10 +3276,12 @@ function WeeklyReportModal({ tasks, onClose }) {
         doc.setTextColor(0, 0, 0);
         groupedCompleted[project].forEach(task => {
           checkAddPage(10);
+          const doneAt = task.completedAt || task.updatedAt || task.createdAt;
+          const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
           const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
           const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
-          const text = `  - ${task.title}${dueText}${progressText}`;
+          const text = `  - ${task.title}${doneText}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
             checkAddPage(7);
@@ -3381,10 +3472,12 @@ function WeeklyReportModal({ tasks, onClose }) {
         doc.setTextColor(0, 0, 0);
         groupedCompleted[project].forEach(task => {
           checkAddPage(10);
+          const doneAt = task.completedAt || task.updatedAt || task.createdAt;
+          const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
           const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
           const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
-          const text = `  - ${task.title}${dueText}${progressText}`;
+          const text = `  - ${task.title}${doneText}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
             checkAddPage(7);
@@ -3511,10 +3604,12 @@ function WeeklyReportModal({ tasks, onClose }) {
         doc.setTextColor(0, 0, 0);
         groupedCompleted[project].forEach(task => {
           checkAddPage(10);
+          const doneAt = task.completedAt || task.updatedAt || task.createdAt;
+          const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
           const dueText = task.due ? ` (echeance : ${formatDateFull(task.due)})` : "";
           const progress = getSubtaskProgress(task);
           const progressText = progress ? ` (${progress.completed}/${progress.total} sous-taches)` : "";
-          const text = `  - ${task.title}${dueText}${progressText}`;
+          const text = `  - ${task.title}${doneText}${dueText}${progressText}`;
           const lines = doc.splitTextToSize(text, maxWidth - 10);
           lines.forEach(line => {
             checkAddPage(7);
@@ -3701,9 +3796,12 @@ function WeeklyReportModal({ tasks, onClose }) {
                                 />
                                 <div className="flex-1">
                                   <div className="font-medium text-slate-100">{task.title}</div>
-                                  <div className="text-xs text-slate-400 mt-1">
+                                  <div className="text-xs text-slate-400 mt-1 space-x-2">
+                                    {(task.completedAt || task.updatedAt || task.createdAt) && (
+                                      <span>Fait le : {formatTimestampToDate(task.completedAt || task.updatedAt || task.createdAt)}</span>
+                                    )}
                                     {task.due && (
-                                      <span>Échéance : {formatDateFull(task.due)}</span>
+                                      <span>?ch?ance : {formatDateFull(task.due)}</span>
                                     )}
                                   </div>
                                 </div>
@@ -3815,9 +3913,12 @@ function WeeklyReportModal({ tasks, onClose }) {
                                 />
                                 <div className="flex-1">
                                   <div className="font-medium text-slate-100">{task.title}</div>
-                                  <div className="text-xs text-slate-400 mt-1">
+                                  <div className="text-xs text-slate-400 mt-1 space-x-2">
+                                    {(task.completedAt || task.updatedAt || task.createdAt) && (
+                                      <span>Fait le : {formatTimestampToDate(task.completedAt || task.updatedAt || task.createdAt)}</span>
+                                    )}
                                     {task.due && (
-                                      <span>Échéance : {formatDateFull(task.due)}</span>
+                                      <span>?ch?ance : {formatDateFull(task.due)}</span>
                                     )}
                                   </div>
                                 </div>
@@ -4097,5 +4198,3 @@ function StoragePanel({ storagePath, setStoragePath, onClose }) {
     </div>
   );
 }
-
-

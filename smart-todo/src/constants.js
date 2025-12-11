@@ -71,6 +71,7 @@ export const DEMO_TASKS = [
     archived: false,
     archivedAt: null,
     subtasks: [],
+    favorite: false,
   },
   {
     id: "2",
@@ -87,6 +88,7 @@ export const DEMO_TASKS = [
     archived: false,
     archivedAt: null,
     subtasks: [],
+    favorite: false,
   },
   {
     id: "3",
@@ -103,5 +105,6 @@ export const DEMO_TASKS = [
     archived: false,
     archivedAt: null,
     subtasks: [],
+    favorite: false,
   },
 ];
