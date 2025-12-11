@@ -14,8 +14,10 @@ jobs:
     env:
       ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
       NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
       ELECTRON_CACHE: ${{ runner.temp }}/electron-cache
+      ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     defaults:
       run:
