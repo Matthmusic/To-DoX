@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "app": {
+    "id": "to-dox",
+    "name": "To-DoX",
+    "version": "1.8.13",
+    "description": {
+      "short": "Kanban minimaliste pour gerer les taches avec priorites et echeances.",
+      "long": "To-DoX est une application Kanban minimaliste pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recherche et le filtrage par projets, ainsi que l'export et l'import des donnees. Les donnees sont stockees localement avec sauvegardes et peuvent etre synchronisees via OneDrive."
+    }
+  },
+  "resources": {
+    "logo": {
+      "path": "smart-todo/src/assets/icon.png",
+      "url": "https://raw.githubusercontent.com/Matthmusic/To-DoX/main/smart-todo/src/assets/icon.png"
+    },
+    "icon": {
+      "path": "smart-todo/src/assets/icon.ico",
+      "url": "https://raw.githubusercontent.com/Matthmusic/To-DoX/main/smart-todo/src/assets/icon.ico"
+    }
+  },
+  "detection": {
+    "windows": {
+      "files": [
+        {
+          "path": "C:\\\\Program Files\\\\To-DoX\\\\To-DoX.exe",
+          "description": "Executable principal (installation par defaut)"
+        }
+      ],
+      "directories": [
+        {
+          "path": "%APPDATA%\\\\To-DoX",
+          "description": "Donnees utilisateur Electron"
+        },
+        {
+          "path": "%USERPROFILE%\\\\OneDrive - CEA\\\\DATA\\\\To-Do-X",
+          "description": "Stockage OneDrive par defaut"
+        }
+      ]
+    },
+    "priority": "files"
+  },
+  "metadata": {
+    "author": {
+      "name": "Matthmusic",
+      "url": "https://github.com/Matthmusic"
+    },
+    "category": "Productivite",
+    "tags": [
+      "kanban",
+      "taches",
+      "productivite",
+      "priorites",
+      "onedrive"
+    ],
+    "repository": {
+      "type": "github",
+      "url": "https://github.com/Matthmusic/To-DoX",
+      "branch": "main"
+    },
+    "license": "MIT",
+    "compatibility": {
+      "os": ["windows"],
+      "minVersion": "Windows 10"
+    }
+  },
+  "installation": {
+    "type": "installer",
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-1.8.13.exe"
+  },
+  "changelog": {
+    "1.8.13": {
+      "date": "2025-12-30",
+      "changes": [
+        "Corrections de bugs et stabilite generale",
+        "Ameliorations du stockage OneDrive et des sauvegardes",
+        "Optimisations des performances et du demarrage"
+      ]
+    }
+  }
+}
