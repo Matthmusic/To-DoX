@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "1.8.14",
+    "version": "1.8.15",
     "description": {
       "short": "Kanban minimaliste pour gerer les taches avec priorites et echeances.",
       "long": "To-DoX est une application Kanban minimaliste pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recherche et le filtrage par projets, ainsi que l'export et l'import des donnees. Les donnees sont stockees localement avec sauvegardes et peuvent etre synchronisees via OneDrive."
@@ -67,9 +67,16 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-1.8.14.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-1.8.15.exe"
   },
   "changelog": {
+    "1.8.15": {
+      "date": "2026-01-06",
+      "changes": [
+        "Amelioration de l'impression avec API native Windows",
+        "Remplacement du systeme d'impression PDF par impression HTML native"
+      ]
+    },
     "1.8.14": {
       "date": "2026-01-06",
       "changes": [
