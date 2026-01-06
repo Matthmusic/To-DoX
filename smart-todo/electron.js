@@ -204,6 +204,45 @@ ipcMain.handle('open-external-url', async (_event, url) => {
   }
 });
 
+// Handler pour imprimer du HTML directement
+ipcMain.handle('print-html', async (_event, htmlContent) => {
+  try {
+    // Créer une fenêtre cachée pour l'impression
+    const printWindow = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true
+      }
+    });
+
+    // Charger le contenu HTML
+    await printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`);
+
+    // Attendre que le contenu soit chargé
+    await new Promise(resolve => {
+      printWindow.webContents.on('did-finish-load', resolve);
+    });
+
+    // Ouvrir la boîte de dialogue d'impression Windows
+    printWindow.webContents.print({
+      silent: false,
+      printBackground: true,
+      deviceName: ''
+    }, (success, errorType) => {
+      if (!success) {
+        console.error('Erreur d\'impression:', errorType);
+      }
+      printWindow.close();
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Erreur lors de l\'impression:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Gestion du stockage de fichiers
 const os = require('os');
 

@@ -3713,16 +3713,169 @@ function generateReport(period = 'both') {
       doc.text("Genere avec To-DoX", pageWidth - margin, pageHeight - 10, { align: 'right' });
     }
 
-    // Ouvrir la boîte de dialogue d'impression
-    doc.autoPrint();
-    const blobUrl = doc.output('bloburl');
-
-    // Utiliser l'API Electron si disponible, sinon window.open
-    if (window.electronAPI?.openExternalUrl) {
-      window.electronAPI.openExternalUrl(blobUrl);
+    // Utiliser l'impression native Electron si disponible, sinon PDF blob
+    if (window.electronAPI?.printHtml) {
+      // Générer du HTML pour l'impression native Windows
+      const htmlContent = generatePrintableHTML(period, currentCompleted, currentRemaining, previousCompleted, previousRemaining);
+      window.electronAPI.printHtml(htmlContent);
     } else {
+      // Fallback: ouvrir le PDF dans le navigateur
+      doc.autoPrint();
+      const blobUrl = doc.output('bloburl');
       window.open(blobUrl, '_blank');
     }
+  }
+
+  // Fonction pour générer du HTML imprimable
+  function generatePrintableHTML(period, currentCompleted, currentRemaining, previousCompleted, previousRemaining) {
+    const today = new Date();
+    const dateStr = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
+
+    let html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          @page { margin: 2cm; }
+          body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.4; }
+          h1 { color: #1e3a8a; font-size: 20pt; margin-bottom: 10px; }
+          h2 { color: #3b82f6; font-size: 14pt; margin-top: 20px; margin-bottom: 10px; }
+          h3 { color: #10b981; font-size: 12pt; margin-top: 15px; margin-bottom: 8px; }
+          h4 { color: #ef4444; font-size: 12pt; margin-top: 15px; margin-bottom: 8px; }
+          .project { color: #1e3a8a; font-weight: bold; margin-top: 10px; }
+          .task { margin-left: 15px; margin-bottom: 5px; }
+          .subtask { margin-left: 30px; font-size: 9pt; color: #666; }
+          .date { color: #999; font-size: 9pt; }
+          .footer { margin-top: 20px; text-align: center; color: #999; font-size: 8pt; }
+        </style>
+      </head>
+      <body>
+        <h1>Compte Rendu Hebdomadaire</h1>
+        <p class="date">Généré le ${dateStr}</p>
+    `;
+
+    // SEMAINE EN COURS
+    if (period === 'current' || period === 'both') {
+      html += `<h2>SEMAINE EN COURS (${currentWeekRange.startStr} au ${currentWeekRange.endStr})</h2>`;
+
+      // Tâches terminées
+      html += '<h3>Tâches terminées</h3>';
+      if (currentCompleted.length === 0) {
+        html += '<p class="task">Aucune tâche terminée cette semaine</p>';
+      } else {
+        const groupedCompleted = groupByProject(currentCompleted);
+        Object.keys(groupedCompleted).sort().forEach(project => {
+          html += `<div class="project">[${project}]</div>`;
+          groupedCompleted[project].forEach(task => {
+            const doneAt = task.completedAt || task.updatedAt || task.createdAt;
+            const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
+            const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
+            const progress = getSubtaskProgress(task);
+            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
+            html += `<div class="task">• ${task.title}${doneText}${dueText}${progressText}</div>`;
+
+            // Sous-tâches
+            if (task.subtasks && task.subtasks.length > 0) {
+              task.subtasks.forEach(subtask => {
+                const checkmark = subtask.completed ? "[✓]" : "[ ]";
+                html += `<div class="subtask">${checkmark} ${subtask.title}</div>`;
+              });
+            }
+          });
+        });
+      }
+
+      // Tâches en cours
+      html += '<h4>Tâches en cours / À faire</h4>';
+      if (currentRemaining.length === 0) {
+        html += '<p class="task">Aucune tâche en cours ou à faire</p>';
+      } else {
+        const groupedRemaining = groupByProject(currentRemaining);
+        Object.keys(groupedRemaining).sort().forEach(project => {
+          html += `<div class="project">[${project}]</div>`;
+          groupedRemaining[project].forEach(task => {
+            const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
+            const progress = getSubtaskProgress(task);
+            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
+            html += `<div class="task">• ${task.title}${dueText}${progressText}</div>`;
+
+            // Sous-tâches
+            if (task.subtasks && task.subtasks.length > 0) {
+              task.subtasks.forEach(subtask => {
+                const checkmark = subtask.completed ? "[✓]" : "[ ]";
+                html += `<div class="subtask">${checkmark} ${subtask.title}</div>`;
+              });
+            }
+          });
+        });
+      }
+    }
+
+    // SEMAINE PRÉCÉDENTE
+    if (period === 'previous' || period === 'both') {
+      html += `<h2>SEMAINE PRÉCÉDENTE (${previousWeekRange.startStr} au ${previousWeekRange.endStr})</h2>`;
+
+      // Tâches terminées
+      html += '<h3>Tâches terminées</h3>';
+      if (previousCompleted.length === 0) {
+        html += '<p class="task">Aucune tâche terminée la semaine dernière</p>';
+      } else {
+        const groupedCompleted = groupByProject(previousCompleted);
+        Object.keys(groupedCompleted).sort().forEach(project => {
+          html += `<div class="project">[${project}]</div>`;
+          groupedCompleted[project].forEach(task => {
+            const doneAt = task.completedAt || task.updatedAt || task.createdAt;
+            const doneText = doneAt ? ` (Fait le : ${formatTimestampToDate(doneAt)})` : "";
+            const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
+            const progress = getSubtaskProgress(task);
+            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
+            html += `<div class="task">• ${task.title}${doneText}${dueText}${progressText}</div>`;
+
+            // Sous-tâches
+            if (task.subtasks && task.subtasks.length > 0) {
+              task.subtasks.forEach(subtask => {
+                const checkmark = subtask.completed ? "[✓]" : "[ ]";
+                html += `<div class="subtask">${checkmark} ${subtask.title}</div>`;
+              });
+            }
+          });
+        });
+      }
+
+      // Tâches en cours
+      html += '<h4>Tâches en cours / À faire</h4>';
+      if (previousRemaining.length === 0) {
+        html += '<p class="task">Aucune tâche en cours ou à faire</p>';
+      } else {
+        const groupedRemaining = groupByProject(previousRemaining);
+        Object.keys(groupedRemaining).sort().forEach(project => {
+          html += `<div class="project">[${project}]</div>`;
+          groupedRemaining[project].forEach(task => {
+            const dueText = task.due ? ` (Échéance : ${formatDateFull(task.due)})` : "";
+            const progress = getSubtaskProgress(task);
+            const progressText = progress ? ` (${progress.completed}/${progress.total} sous-tâches)` : "";
+            html += `<div class="task">• ${task.title}${dueText}${progressText}</div>`;
+
+            // Sous-tâches
+            if (task.subtasks && task.subtasks.length > 0) {
+              task.subtasks.forEach(subtask => {
+                const checkmark = subtask.completed ? "[✓]" : "[ ]";
+                html += `<div class="subtask">${checkmark} ${subtask.title}</div>`;
+              });
+            }
+          });
+        });
+      }
+    }
+
+    html += `
+        <div class="footer">Généré avec To-DoX</div>
+      </body>
+      </html>
+    `;
+
+    return html;
   }
 
   const currentCompletedCount = currentWeekTasks.completed.filter(t => selectedTasks[t.id]).length;
