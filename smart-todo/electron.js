@@ -194,6 +194,16 @@ ipcMain.handle('window-is-maximized', () => {
   return mainWindow ? mainWindow.isMaximized() : false;
 });
 
+// Handler pour ouvrir une URL externe (PDF blob)
+ipcMain.handle('open-external-url', async (_event, url) => {
+  try {
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
 // Gestion du stockage de fichiers
 const os = require('os');
 

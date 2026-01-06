@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Utilitaires
   openFolder: (folderPath) => ipcRenderer.invoke('open-folder', folderPath),
+  openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
 
   // Contrôles de la fenêtre
   windowMinimize: () => ipcRenderer.invoke('window-minimize'),

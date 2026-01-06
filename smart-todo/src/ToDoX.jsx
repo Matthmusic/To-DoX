@@ -1799,24 +1799,24 @@ function TaskCard({
             Toutes les sous-tâches sont terminées ! Vous pouvez passer cette tâche en "Fait".
           </div>
         )}
+
+        {task.notes && (
+          <p className="relative z-20 mt-3 text-sm text-slate-200/90 whitespace-pre-wrap">{task.notes}</p>
+        )}
+
+        {/* Liste des sous-tâches (expansion inline) */}
+        {isExpanded && (
+          <SubtaskList
+            task={task}
+            onAddSubtask={onAddSubtask}
+            onToggleSubtask={onToggleSubtask}
+            onDeleteSubtask={onDeleteSubtask}
+            onUpdateSubtaskTitle={onUpdateSubtaskTitle}
+            onReorderSubtasks={onReorderSubtasks}
+          />
+        )}
       </div>
       </div>
-
-      {task.notes && (
-        <p className="relative z-20 mt-3 text-sm text-slate-200/90 whitespace-pre-wrap">{task.notes}</p>
-      )}
-
-      {/* Liste des sous-tâches (expansion inline) */}
-      {isExpanded && (
-        <SubtaskList
-          task={task}
-          onAddSubtask={onAddSubtask}
-          onToggleSubtask={onToggleSubtask}
-          onDeleteSubtask={onDeleteSubtask}
-          onUpdateSubtaskTitle={onUpdateSubtaskTitle}
-          onReorderSubtasks={onReorderSubtasks}
-        />
-      )}
 
       {/* Panneau d'édition au clic droit */}
       {contextMenu && (
@@ -3715,7 +3715,14 @@ function generateReport(period = 'both') {
 
     // Ouvrir la boîte de dialogue d'impression
     doc.autoPrint();
-    window.open(doc.output('bloburl'), '_blank');
+    const blobUrl = doc.output('bloburl');
+
+    // Utiliser l'API Electron si disponible, sinon window.open
+    if (window.electronAPI?.openExternalUrl) {
+      window.electronAPI.openExternalUrl(blobUrl);
+    } else {
+      window.open(blobUrl, '_blank');
+    }
   }
 
   const currentCompletedCount = currentWeekTasks.completed.filter(t => selectedTasks[t.id]).length;
