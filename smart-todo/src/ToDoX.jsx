@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertTriangle,
@@ -1928,6 +1928,18 @@ function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose,
   const [localProject, setLocalProject] = useState(task.project);
   const [localNotes, setLocalNotes] = useState(task.notes || "");
 
+  // Fonction pour sauvegarder les modifications en attente
+  const saveLocalChanges = useCallback(() => {
+    const updates = {};
+    if (localTitle !== task.title) updates.title = localTitle;
+    if (localProject !== task.project) updates.project = localProject;
+    if (localNotes !== (task.notes || "")) updates.notes = localNotes;
+
+    if (Object.keys(updates).length > 0) {
+      onUpdate(task.id, updates);
+    }
+  }, [localTitle, localProject, localNotes, task.title, task.project, task.notes, task.id, onUpdate]);
+
   useEffect(() => {
     function closeOnClick(e) {
       // Ignorer les clics sur les dropdowns d'autocomplete (rendus via portal)
@@ -1935,12 +1947,14 @@ function TaskEditPanel({ task, position, onUpdate, onDelete, onArchive, onClose,
         return;
       }
       if (menuRef.current && !menuRef.current.contains(e.target)) {
+        // Sauvegarder les modifications avant de fermer
+        saveLocalChanges();
         onClose();
       }
     }
     document.addEventListener("mousedown", closeOnClick);
     return () => document.removeEventListener("mousedown", closeOnClick);
-  }, [onClose]);
+  }, [onClose, saveLocalChanges]);
 
   useEffect(() => {
     if (!menuRef.current) return;
