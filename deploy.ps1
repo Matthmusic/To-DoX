@@ -17,7 +17,7 @@ Write-Host "🚀 Déploiement de To-DoX v$Version" -ForegroundColor Cyan
 Write-Host ""
 
 # 1. Vérifier qu'on est dans le bon répertoire
-$rootPath = "c:\DEV\ToolBox CEAI\To-DoX"
+$rootPath = "c:\DEV\TO DO X\To-DoX"
 if ((Get-Location).Path -ne $rootPath) {
     Set-Location $rootPath
     Write-Host "✅ Changement de répertoire vers $rootPath" -ForegroundColor Green
@@ -37,7 +37,7 @@ if ($status -and -not $Force) {
 
 # 3. Mettre à jour la version dans package.json
 Write-Host "📝 Mise à jour de package.json à la version $Version..." -ForegroundColor Cyan
-$packagePath = "smart-todo\package.json"
+$packagePath = "package.json"
 $packageContent = Get-Content $packagePath -Raw
 $packageContent = $packageContent -replace '"version": ".*"', "`"version`": `"$Version`""
 Set-Content $packagePath $packageContent -NoNewline
@@ -45,7 +45,7 @@ Write-Host "✅ Version mise à jour dans package.json" -ForegroundColor Green
 
 # 4. Commiter le changement de version
 Write-Host "📦 Commit du changement de version..." -ForegroundColor Cyan
-git add smart-todo/package.json
+git add package.json
 git commit -m "chore: bump version to $Version"
 Write-Host "✅ Changement de version commité" -ForegroundColor Green
 

@@ -12,10 +12,6 @@ jobs:
   release:
     runs-on: windows-latest
 
-    defaults:
-      run:
-        working-directory: smart-todo
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,7 +21,6 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: smart-todo/package-lock.json
 
       - name: Install dependencies
         run: npm ci

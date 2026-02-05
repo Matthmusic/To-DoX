@@ -21,7 +21,7 @@ Tu vas déployer une nouvelle version de To-DoX en suivant EXACTEMENT cette proc
 
 5. **Commiter le changement de version** :
    ```bash
-   git add smart-todo/package.json
+   git add package.json
    git commit -m "chore: bump version to X.X.X"
    ```
 
@@ -62,7 +62,7 @@ Tu vas déployer une nouvelle version de To-DoX en suivant EXACTEMENT cette proc
 
 Si tu as oublié de mettre à jour package.json :
 1. Mettre à jour package.json
-2. `git add smart-todo/package.json`
+2. `git add package.json`
 3. `git commit --amend --no-edit`
 4. `git tag -d vX.X.X`
 5. `git tag -a vX.X.X -m "Release vX.X.X - [message]"`

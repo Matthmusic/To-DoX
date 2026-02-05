@@ -1,0 +1,396 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #050b1f;
+  background-image:
+    radial-gradient(1200px 700px at 15% 20%, rgba(11, 45, 66, 0.9) 0%, rgba(5, 11, 31, 0) 60%),
+    radial-gradient(900px 600px at 80% 30%, rgba(54, 20, 74, 0.85) 0%, rgba(5, 11, 31, 0) 65%),
+    linear-gradient(120deg, #071a2a 0%, #0c1b3a 45%, #1a0f2c 100%);
+  color: #e2e8f0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Limit kanban row width on very wide aspect ratios */
+.kanban-row {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-aspect-ratio: 16/9) {
+  .kanban-row {
+    width: 90vw;
+  }
+}
+
+.kanban-header {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (min-aspect-ratio: 16/9) {
+  .kanban-header {
+    width: 90vw;
+  }
+}
+
+/* Scrollbar glassmorphism - Webkit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.06);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* Scrollbar glassmorphism - Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.28) rgba(255, 255, 255, 0.06);
+}
+
+select {
+  @apply appearance-none rounded-2xl border border-white/15 bg-[#0b1124] px-3 py-2 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A];
+  background-image: linear-gradient(45deg, transparent 50%, #a5f3fc 50%),
+    linear-gradient(135deg, #a5f3fc 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 13px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2.5rem;
+}
+
+select option {
+  background-color: #050b1f;
+  color: #e2e8f0;
+}
+
+select::-ms-expand {
+  display: none;
+}
+
+/* Date picker calendar icon (WebKit) */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.9;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}
+
+@keyframes contextMenuSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.rainbow-border {
+  position: relative;
+  isolation: isolate;
+  border-radius: 1rem;
+}
+
+.rainbow-border::before,
+.rainbow-border::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  padding: 2px;
+  border-radius: calc(1rem + 4px);
+  background: linear-gradient(45deg, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000);
+  background-size: 400% 400%;
+  animation: rainbow-chase 14s linear infinite;
+  pointer-events: none;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+}
+
+
+.rainbow-border::after {
+  inset: -5px;
+  border-radius: calc(1rem + 7px);
+  filter: blur(24px);
+  opacity: 0.6;
+}
+
+.rainbow-border.rainbow-pulse::before,
+.rainbow-border.rainbow-pulse::after {
+  animation: rainbow-chase 14s linear infinite, rainbow-pulse 3s ease-in-out infinite;
+}
+
+.card-surface {
+  border-radius: 22px;
+  position: relative;
+  z-index: 1;
+}
+
+.dayj-pulse {
+  position: relative;
+  isolation: isolate;
+}
+
+.dayj-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 26px;
+  border: 2px solid rgba(248, 113, 113, 0.8);
+  box-shadow:
+    0 0 14px rgba(248, 113, 113, 0.55),
+    0 0 32px rgba(248, 113, 113, 0.35);
+  animation: dayj-pulse 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes rainbow-chase {
+  0% {
+    background-position: 0 0;
+  }
+  50% {
+    background-position: 400% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
+@keyframes rainbow-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
+
+@keyframes dayj-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.025);
+  }
+}
+
+@keyframes border-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35), 0 0 18px rgba(239, 68, 68, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.7), 0 0 28px rgba(239, 68, 68, 0.45);
+  }
+}
+
+.pulse-glow {
+  animation: border-pulse 2s ease-in-out infinite;
+}
+
+/* ============================================
+   PREMIUM HEADER ANIMATIONS
+   ============================================ */
+
+/* Gradient text animation pour le logo */
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 6s ease infinite;
+}
+
+/* Slow spin pour le logo glow */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+/* Border gradient rotation pour QuickAdd focus */
+@keyframes borderRotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.quickadd-premium-container:focus-within {
+  animation: borderRotate 8s linear infinite;
+  background-size: 200% 200%;
+}
+
+/* Scale hover utilities */
+.hover\:scale-102:hover {
+  transform: scale(1.02);
+}
+
+/* Circular progress animation */
+@keyframes progressFill {
+  from {
+    stroke-dashoffset: 100.53;
+  }
+}
+
+/* Spring animation pour les tags */
+@keyframes springIn {
+  0% {
+    transform: scale(0.8) translateY(-10px);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05) translateY(0);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-spring-in {
+  animation: springIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Glow pulse pour les éléments actifs */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 20px currentColor,
+      0 0 40px currentColor,
+      inset 0 0 10px currentColor;
+    opacity: 0.6;
+  }
+  50% {
+    box-shadow:
+      0 0 30px currentColor,
+      0 0 60px currentColor,
+      inset 0 0 15px currentColor;
+    opacity: 1;
+  }
+}
+
+.glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* Shimmer effect pour loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Fade edges pour les projets scrollables */
+.fade-edges {
+  position: relative;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 5%,
+    black 95%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 5%,
+    black 95%,
+    transparent 100%
+  );
+}
+
+/* Responsive header height constraints */
+@media (min-width: 1920px) {
+  .kanban-header {
+    max-height: 10vh;
+  }
+}
+
+@media (min-width: 2560px) {
+  .kanban-header {
+    max-height: 11vh;
+  }
+}
+
+@media (min-width: 3840px) {
+  .kanban-header {
+    max-height: 7vh;
+  }
+}

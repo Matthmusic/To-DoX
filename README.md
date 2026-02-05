@@ -122,14 +122,13 @@ L'application Electron vérifie automatiquement les mises à jour au démarrage 
 
 ```
 To-DoX/
-├── smart-todo/
-│   ├── src/
-│   │   ├── assets/           # Images et logos
-│   │   ├── components/       # Composants React
-│   │   ├── ToDoX.jsx         # Composant principal
-│   │   └── index.css         # Styles globaux
-│   ├── electron.js           # Application Electron
-│   └── package.json          # Configuration
+├── src/
+│   ├── assets/           # Images et logos
+│   ├── components/       # Composants React
+│   ├── ToDoX.jsx         # Composant principal (en cours de refactoring)
+│   └── index.css         # Styles globaux
+├── electron.js           # Application Electron
+├── package.json          # Configuration
 └── README.md
 ```
 

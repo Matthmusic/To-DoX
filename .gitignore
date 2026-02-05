@@ -1,14 +1,43 @@
+# Dependency directories
 node_modules/
 dist/
+dist-ssr/
+coverage/
+
+# Logs
+logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 Thumbs.db
-smart-todo/node_modules/
-smart-todo/dist/
-smart-todo/.vite/
-smart-todo/release/
+
+# Build artifacts and installers
 *.exe
 *.dmg
 *.AppImage
 *.deb
 *.snap
+release/
+
+# Local env files
+*.local
+.env
+.env.*.local
+
+# Temp / debug
+tmpclaude-*
+errors.txt
+tsc_errors.txt
