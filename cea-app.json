@@ -16,8 +16,8 @@
       "url": "https://raw.githubusercontent.com/Matthmusic/To-DoX/main/src/assets/icon.png"
     },
     "icon": {
-      "path": "src/assets/icon.ico",
-      "url": "https://raw.githubusercontent.com/Matthmusic/To-DoX/main/src/assets/icon.ico"
+      "path": "src/assets/icon.png",
+      "url": "https://raw.githubusercontent.com/Matthmusic/To-DoX/main/src/assets/icon.png"
     }
   },
   "detection": {
