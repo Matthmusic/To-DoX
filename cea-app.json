@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "1.8.16",
+    "version": "2.0.0",
     "description": {
       "short": "Kanban minimaliste pour gerer les taches avec priorites et echeances.",
       "long": "To-DoX est une application Kanban minimaliste pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recherche et le filtrage par projets, ainsi que l'export et l'import des donnees. Les donnees sont stockees localement avec sauvegardes et peuvent etre synchronisees via OneDrive."
@@ -12,12 +12,12 @@
   },
   "resources": {
     "logo": {
-      "path": "smart-todo/src/assets/icon.png",
-      "url": "https://raw.githubusercontent.com/Matthmusic/To-DoX/main/smart-todo/src/assets/icon.png"
+      "path": "src/assets/icon.png",
+      "url": "https://raw.githubusercontent.com/Matthmusic/To-DoX/main/src/assets/icon.png"
     },
     "icon": {
-      "path": "smart-todo/src/assets/icon.ico",
-      "url": "https://raw.githubusercontent.com/Matthmusic/To-DoX/main/smart-todo/src/assets/icon.ico"
+      "path": "src/assets/icon.ico",
+      "url": "https://raw.githubusercontent.com/Matthmusic/To-DoX/main/src/assets/icon.ico"
     }
   },
   "detection": {
@@ -67,9 +67,21 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-1.8.16.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.0.0.exe"
   },
   "changelog": {
+    "2.0.0": {
+      "date": "2026-02-05",
+      "changes": [
+        "Restructuration du projet vers la racine du depot",
+        "Soft-delete des taches pour une synchronisation multi-utilisateurs sans perte de donnees",
+        "Détection de conflits via SHA-256 (remplace mtime+size sur les lecteurs réseau)",
+        "Banner d'erreur si la sauvegarde sur le lecteur réseau échoue",
+        "Correction de la fuite de fenêtre dans le handler d'impression",
+        "Fix du workflow CI GitHub Actions (working-directory obsolète)",
+        "Ajout de tests pour migrateTask, mergeTasksByUpdatedAt, moveProject, archiveProject"
+      ]
+    },
     "1.8.16": {
       "date": "2026-01-07",
       "changes": [
