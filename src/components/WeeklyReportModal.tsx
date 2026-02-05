@@ -28,26 +28,26 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
 
     // Récupère les tâches pour une période donnée
     const getWeeklyTasks = useCallback((allTasks: Task[], range: { start: Date; end: Date }, isCurrentWeek: boolean = false) => {
-        const filtered = allTasks.filter(t =>
-            !t.archived &&
+        // Filtre de base partagé (sans condition sur archived)
+        const baseFilter = (t: Task) =>
             !t.deletedAt &&
             !EXCLUDED_PROJECTS.includes(t.project) &&
-            // Filtrer uniquement les tâches qui incombent à l'utilisateur courant
-            (t.createdBy === currentUser || t.assignedTo.includes(currentUser || ''))
-        );
+            (t.createdBy === currentUser || t.assignedTo.includes(currentUser || ''));
 
-        const completed = filtered.filter(t =>
+        // Tâches terminées : on inclut aussi celles archivées (elles ont été faites dans le timing)
+        const completed = allTasks.filter(t =>
+            baseFilter(t) &&
             t.status === "done" &&
             t.completedAt &&
             t.completedAt >= range.start.getTime() &&
             t.completedAt <= range.end.getTime()
         );
 
-        // Pour la semaine en cours : inclure TOUTES les tâches restantes (même celles d'avant)
-        // Pour les autres semaines : filtrer uniquement les tâches créées pendant la période
+        // Tâches restantes : on exclut les archivées (elles ne sont plus actives)
+        const active = allTasks.filter(t => baseFilter(t) && !t.archived);
         const remaining = isCurrentWeek
-            ? filtered.filter(t => t.status !== "done")
-            : filtered.filter(t =>
+            ? active.filter(t => t.status !== "done")
+            : active.filter(t =>
                 t.status !== "done" &&
                 t.createdAt >= range.start.getTime() &&
                 t.createdAt <= range.end.getTime()
