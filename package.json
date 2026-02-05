@@ -92,7 +92,7 @@
           ]
         }
       ],
-      "icon": "src/assets/icon.ico",
+      "icon": "src/assets/icon.png",
       "requestedExecutionLevel": "asInvoker"
     },
     "mac": {
