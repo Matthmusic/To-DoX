@@ -79,7 +79,8 @@
         "Banner d'erreur si la sauvegarde sur le lecteur réseau échoue",
         "Correction de la fuite de fenêtre dans le handler d'impression",
         "Fix du workflow CI GitHub Actions (working-directory obsolète)",
-        "Ajout de tests pour migrateTask, mergeTasksByUpdatedAt, moveProject, archiveProject"
+        "Ajout de tests pour migrateTask, mergeTasksByUpdatedAt, moveProject, archiveProject",
+        "Fix du compte rendu : les tâches archivées mais terminées dans le timing restent visibles"
       ]
     },
     "1.8.16": {
