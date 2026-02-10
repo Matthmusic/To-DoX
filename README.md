@@ -2,13 +2,13 @@
 
 Une application Kanban minimaliste et intelligente pour la gestion de tâches avec indicateurs visuels de priorité et deadlines.
 
-![To-DoX Logo](smart-todo/src/assets/To%20Do%20X.svg)
+![To-DoX Logo](src/assets/To%20Do%20X.svg)
 
 ## 🚀 Téléchargement
 
 [![Download Latest Release](https://img.shields.io/github/v/release/Matthmusic/To-DoX?label=Télécharger&style=for-the-badge&logo=github)](https://github.com/Matthmusic/To-DoX/releases/latest)
 
-**Version actuelle : 1.8.8**
+**Version actuelle : 2.0.0**
 
 Téléchargez simplement le fichier `.exe` depuis la [page des releases](https://github.com/Matthmusic/To-DoX/releases/latest) et lancez-le !
 
@@ -124,17 +124,62 @@ L'application Electron vérifie automatiquement les mises à jour au démarrage 
 To-DoX/
 ├── src/
 │   ├── assets/           # Images et logos
-│   ├── components/       # Composants React
-│   ├── ToDoX.jsx         # Composant principal (en cours de refactoring)
-│   └── index.css         # Styles globaux
+│   ├── components/       # Composants React réutilisables
+│   ├── hooks/            # Hooks personnalisés (useFilters, useDragAndDrop, etc.)
+│   ├── store/            # Store Zustand centralisé
+│   ├── ToDoX.tsx         # Composant principal
+│   └── types.ts          # Définitions TypeScript
+├── docs/                 # 📚 Documentation complète
+│   ├── deployment/       # Guides de déploiement et releases
+│   ├── setup/            # Configuration initiale
+│   ├── migration/        # Guides de migration backend
+│   └── archive/          # Historique des refactorings
 ├── electron.js           # Application Electron
-├── package.json          # Configuration
-└── README.md
+├── preload.js            # Preload script (sécurité)
+├── package.json          # Configuration et dépendances
+├── README.md             # Ce fichier
+└── CLAUDE.md             # Documentation développeur complète
+```
+
+## 👨‍💻 Documentation développeur
+
+Vous êtes développeur et souhaitez contribuer au projet ? Consultez la documentation complète :
+
+### Documentation principale
+- **[CLAUDE.md](CLAUDE.md)** - Guide complet du développeur (architecture, patterns, hooks, store Zustand)
+- **[docs/](docs/)** - Documentation organisée par thème
+
+### Guides spécifiques
+- **[Déploiement](docs/deployment/)** - Comment déployer une nouvelle version
+- **[Setup](docs/setup/)** - Configuration Electron et multi-utilisateurs
+- **[Migration](docs/migration/)** - Guides de migration backend (PostgreSQL, JSON)
+
+### Commandes de développement
+
+```bash
+# Mode développement (web uniquement)
+npm run dev
+
+# Mode développement Electron
+npm run dev:electron
+
+# Build production
+npm run build
+
+# Build et package Electron
+npm run build:electron
+
+# Tests
+npm run test
+
+# Linter
+npm run lint
 ```
 
 ## ⚠️ Limitations connues
 
 - **Stockage local** : Les données sont stockées localement. Pensez à exporter régulièrement vos données importantes via "Export JSON"
+- **Multi-utilisateurs** : Pour utilisation multi-utilisateurs, consultez [docs/setup/MULTI_USER_SETUP.md](docs/setup/MULTI_USER_SETUP.md)
 
 ## Licence
 

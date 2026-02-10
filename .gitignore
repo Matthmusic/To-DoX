@@ -41,3 +41,6 @@ release/
 tmpclaude-*
 errors.txt
 tsc_errors.txt
+
+# Accidental output file
+nul
