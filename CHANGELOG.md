@@ -5,6 +5,19 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2.1.1] - 2025-02-13
+
+### 🐛 Corrections
+- **TitleBar thématique** : La barre de titre suit maintenant les thèmes actifs
+  - Fond et bordures adaptés au thème
+  - Logo coloré avec la couleur primaire du thème
+  - Icônes de contrôle avec hover states thématiques
+- **Corrections TypeScript** : Nettoyage des erreurs de compilation
+  - Suppression des props non supportées sur Autocomplete
+  - Suppression des imports et variables non utilisées
+
+---
+
 ## [2.1.0] - 2025-02-13
 
 ### ✨ Nouvelles fonctionnalités

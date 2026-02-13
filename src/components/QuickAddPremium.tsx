@@ -335,11 +335,6 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
                                         projectHistory={projectHistory}
                                         placeholder="PROJET"
                                         className="mb-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-theme-primary placeholder-slate-400 uppercase focus:ring-0"
-                                        style={{
-                                            ['--focus-border-color' as any]: `${primaryColor}66`
-                                        }}
-                                        onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = `${primaryColor}66`}
-                                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                                     />
                                     <div className="flex items-center gap-2">
                                         <button
@@ -428,11 +423,6 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
                                         options={users}
                                         placeholder="Non assigné"
                                         className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-theme-primary focus:ring-0"
-                                        style={{
-                                            ['--focus-border-color' as any]: `${secondaryColor}66`
-                                        }}
-                                        onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = `${secondaryColor}66`}
-                                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                                         getValue={(user) => user.id}
                                         getLabel={(user) => user.name}
                                     />

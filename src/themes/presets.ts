@@ -183,7 +183,9 @@ const CRIMSON_NIGHT: Theme = {
 /**
  * THÈME LIGHT MINIMAL
  * Thème clair épuré avec tons sky et violet
+ * (Désactivé pour le moment)
  */
+/*
 const LIGHT_MINIMAL: Theme = {
   id: 'light-minimal',
   name: 'Light Minimal',
@@ -209,6 +211,7 @@ const LIGHT_MINIMAL: Theme = {
     gradientTo: 'rgba(241, 245, 249, 0.8)',
   }
 };
+*/
 
 /**
  * Liste de tous les thèmes prédéfinis

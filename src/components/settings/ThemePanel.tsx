@@ -1,8 +1,8 @@
 import { createPortal } from 'react-dom';
-import { X, Palette, Monitor, Sun, Moon, Sparkles } from 'lucide-react';
+import { X, Palette, Sparkles } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useState } from 'react';
-import type { Theme, ThemeMode } from '../../types';
+import type { Theme } from '../../types';
 
 interface ThemePanelProps {
   onClose: () => void;
@@ -10,13 +10,13 @@ interface ThemePanelProps {
 
 export function ThemePanel({ onClose }: ThemePanelProps) {
   const {
-    mode,
+    // mode,
     activeTheme,
-    effectiveMode,
+    // effectiveMode,
     presetThemes,
     customThemes,
     customAccentColor,
-    setMode,
+    // setMode,
     setActiveTheme,
     setCustomAccent,
   } = useTheme();
@@ -24,11 +24,11 @@ export function ThemePanel({ onClose }: ThemePanelProps) {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [tempColor, setTempColor] = useState(customAccentColor || '#06b6d4');
 
-  const modes: { id: ThemeMode; label: string; icon: typeof Sun; description: string }[] = [
-    // { id: 'light', label: 'Clair', icon: Sun, description: 'Mode clair permanent' }, // Désactivé
-    { id: 'dark', label: 'Sombre', icon: Moon, description: 'Mode sombre permanent' },
-    { id: 'auto', label: 'Auto', icon: Monitor, description: 'Suit le thème système' },
-  ];
+  // const modes: { id: ThemeMode; label: string; icon: typeof Sun; description: string }[] = [
+  //   // { id: 'light', label: 'Clair', icon: Sun, description: 'Mode clair permanent' }, // Désactivé
+  //   { id: 'dark', label: 'Sombre', icon: Moon, description: 'Mode sombre permanent' },
+  //   { id: 'auto', label: 'Auto', icon: Monitor, description: 'Suit le thème système' },
+  // ];
 
   const allThemes = [...presetThemes, ...customThemes];
   const darkThemes = allThemes.filter(t => t.mode === 'dark');
@@ -92,7 +92,7 @@ export function ThemePanel({ onClose }: ThemePanelProps) {
           {lightThemes.length > 0 && (
             <section>
               <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
-                <Sun className="w-5 h-5 text-amber-400" />
+                <Palette className="w-5 h-5 text-amber-400" />
                 Thèmes Clairs
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
