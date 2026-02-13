@@ -75,6 +75,9 @@
       "package.json",
       "src/assets/**/*"
     ],
+    "asarUnpack": [
+      "dist/sounds/**/*"
+    ],
     "extraResources": [
       {
         "from": "src/assets",

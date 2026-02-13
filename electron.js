@@ -1,8 +1,23 @@
-const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog, Notification, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
 const isDev = process.env.NODE_ENV === 'development';
+
+// Enregistrer le protocole app:// comme privilégié (avant app.ready)
+if (!isDev) {
+  protocol.registerSchemesAsPrivileged([
+    {
+      scheme: 'app',
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        corsEnabled: false
+      }
+    }
+  ]);
+}
 
 // Charger autoUpdater seulement en production
 let autoUpdater = null;
@@ -37,7 +52,7 @@ function createWindow() {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'dist/index.html'));
+    mainWindow.loadURL('app://./index.html');
   }
 
   // Ouvrir les liens externes dans le navigateur
@@ -49,6 +64,16 @@ function createWindow() {
 
 // Gestion du cycle de vie de l'app
 app.whenReady().then(() => {
+  // Enregistrer le protocole app:// pour servir les fichiers locaux
+  if (!isDev) {
+    const { net } = require('electron');
+    protocol.handle('app', (request) => {
+      const url = request.url.substring(6); // Enlever 'app://'
+      const filePath = path.normalize(path.join(__dirname, 'dist', url));
+      return net.fetch('file://' + filePath);
+    });
+  }
+
   createWindow();
 
   // Vérifier les mises à jour au démarrage (seulement en production)
