@@ -5,20 +5,7 @@ Toutes les modifications notables de ce projet seront documentées dans ce fichi
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
-## [2.1.1] - 2025-02-13
-
-### 🐛 Corrections
-- **TitleBar thématique** : La barre de titre suit maintenant les thèmes actifs
-  - Fond et bordures adaptés au thème
-  - Logo coloré avec la couleur primaire du thème
-  - Icônes de contrôle avec hover states thématiques
-- **Corrections TypeScript** : Nettoyage des erreurs de compilation
-  - Suppression des props non supportées sur Autocomplete
-  - Suppression des imports et variables non utilisées
-
----
-
-## [2.1.0] - 2025-02-13
+## [2.0.2] - 2025-02-13
 
 ### ✨ Nouvelles fonctionnalités
 
@@ -26,6 +13,32 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - **Filtrage par utilisateur** : Les notifications ne s'affichent que pour les tâches assignées à l'utilisateur connecté
 - **Activation après connexion** : Les notifications démarrent automatiquement après la sélection du compte utilisateur
 - **Sélection du son** : 6 sons de notification au choix
+  - 💧 Goutte d'eau
+  - 🎵 Accord musical
+  - ✨ Pop-up
+  - 🔔 Classique (par défaut)
+  - 😮 Gasp UI
+  - 📱 Message
+- **Aperçu audio** : Bouton de test pour écouter chaque son avant de choisir
+
+#### 🎨 TitleBar thématique
+- La barre de titre suit maintenant les thèmes actifs
+- Fond et bordures adaptés au thème
+- Logo coloré avec la couleur primaire du thème
+- Icônes de contrôle avec hover states thématiques
+
+### 🐛 Corrections
+- **Sons de notification** : Correction des chemins des fichiers audio (déplacés dans public/sounds)
+- **Corrections TypeScript** : Nettoyage des erreurs de compilation
+  - Suppression des props non supportées sur Autocomplete
+  - Suppression des imports et variables non utilisés
+
+### 🔧 Améliorations
+- Meilleure expérience utilisateur dans le panneau de notifications
+- Interface de sélection de son intuitive avec radio buttons
+- Gestion intelligente du cache de notifications (réinitialisation toutes les 24h)
+
+---
   - 💧 Goutte d'eau
   - 🎵 Accord musical
   - ✨ Pop-up

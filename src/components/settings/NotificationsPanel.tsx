@@ -40,7 +40,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
 
   const handlePlaySound = (soundFile: string) => {
     setPlayingSound(soundFile);
-    const audio = new Audio(`/src/sounds/${soundFile}`);
+    const audio = new Audio(`/sounds/${soundFile}`);
     audio.play();
     audio.onended = () => setPlayingSound(null);
   };

@@ -64,7 +64,7 @@ export function useNotifications() {
       // 🔊 Jouer le son sélectionné si activé
       if (notificationSettings.sound && notificationSettings.soundFile) {
         try {
-          const audio = new Audio(`/src/sounds/${notificationSettings.soundFile}`);
+          const audio = new Audio(`/sounds/${notificationSettings.soundFile}`);
           await audio.play();
         } catch (audioError) {
           console.warn('⚠️ Impossible de jouer le son:', audioError);
