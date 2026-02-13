@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import {
     FolderPlus,
     Users,
@@ -12,12 +12,17 @@ import {
     Settings,
     ChevronDown,
     Plus,
+    HelpCircle,
+    Bell,
+    Palette,
 } from "lucide-react";
 import ToDoXLogo from "../assets/To Do X.svg";
 import { QuickAddPremium } from "./QuickAddPremium";
 import { CircularProgressBadge } from "./CircularProgressBadge";
 import { DropdownMenu, DropdownItem } from ".";
+import { SearchInput } from "./SearchInput";
 import useStore from "../store/useStore";
+import { useTheme } from "../hooks/useTheme";
 
 interface KanbanHeaderPremiumProps {
     filterProject: string;
@@ -27,11 +32,21 @@ interface KanbanHeaderPremiumProps {
     onOpenStorage: () => void;
     onOpenUsers: () => void;
     onOpenArchive: () => void;
+    onOpenNotifications: () => void;
+    onOpenThemes: () => void;
     onOpenDirPanel: () => void;
     onOpenProjectsList: () => void;
     onOpenTaskArchive: () => void;
     onExport: () => void;
     onImport: () => void;
+    onOpenHelp: () => void;
+    // Recherche
+    filterSearch: string;
+    onSearchChange: (value: string) => void;
+    searchInputRef?: React.RefObject<{ focus: () => void } | null>;
+    showSearch: boolean;
+    // QuickAdd
+    quickAddRef?: React.RefObject<{ focus: () => void } | null>;
 }
 
 /**
@@ -46,14 +61,61 @@ export function KanbanHeaderPremium({
     onOpenStorage,
     onOpenUsers,
     onOpenArchive,
+    onOpenNotifications,
+    onOpenThemes,
     onOpenDirPanel,
     onOpenProjectsList,
     onOpenTaskArchive,
     onExport,
     onImport,
+    onOpenHelp,
+    filterSearch,
+    onSearchChange,
+    searchInputRef,
+    showSearch,
+    quickAddRef,
 }: KanbanHeaderPremiumProps) {
     const { tasks, projectColors, currentUser } = useStore();
+    const { activeTheme } = useTheme();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
+    const quickAddContainerRef = useRef<HTMLDivElement>(null);
+    const toggleButtonRef = useRef<HTMLButtonElement>(null);
+
+    // Couleurs du thème actif pour le header
+    const primaryColor = activeTheme.palette.primary;
+    const secondaryColor = activeTheme.palette.secondary;
+
+    // Fermer QuickAdd lors d'un clic à l'extérieur
+    useEffect(() => {
+        if (!showQuickAdd) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
+
+            // Ne pas fermer si on clique sur le bouton toggle ou sur le QuickAdd lui-même
+            if (
+                toggleButtonRef.current?.contains(target) ||
+                quickAddContainerRef.current?.contains(target)
+            ) {
+                return;
+            }
+
+            setShowQuickAdd(false);
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showQuickAdd]);
+
+    // Focus automatique sur l'input QuickAdd quand il s'ouvre
+    useEffect(() => {
+        if (showQuickAdd) {
+            // Petit délai pour laisser l'animation se terminer
+            setTimeout(() => {
+                quickAddRef?.current?.focus();
+            }, 100);
+        }
+    }, [showQuickAdd, quickAddRef]);
 
     // Statistiques des projets (FILTRÉES par utilisateur courant)
     const projectStats = useMemo(() => {
@@ -92,26 +154,58 @@ export function KanbanHeaderPremium({
 
 
     return (
-        <header className="kanban-header relative z-10 flex flex-col gap-2 px-4 sm:px-6 py-2 sm:py-3 backdrop-blur-md border-b border-white/5">
+        <header
+            className="kanban-header relative z-10 flex flex-col gap-2 px-4 sm:px-6 py-2 sm:py-3 border-b-2 border-theme-primary"
+        >
             {/* Row 1: Command Strip */}
-            <div className="relative flex items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/5 px-4 sm:px-6 py-2 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+            <div
+                className="relative flex items-center justify-between gap-4 rounded-3xl border-2 px-4 sm:px-6 py-2"
+                style={{
+                    backgroundColor: 'var(--bg-tertiary)',
+                    borderColor: `${primaryColor}30`,
+                    boxShadow: `0 0 0 1px ${primaryColor}33, 0 0 20px ${primaryColor}26, 0 4px 12px -2px rgba(0, 0, 0, 0.4)`
+                }}
+            >
                 {/* Logo - Ultra Compact */}
                 <div className="group flex items-center gap-2 sm:gap-3">
                     <div className="relative flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-3">
-                        <img
-                            src={ToDoXLogo}
-                            alt="Logo"
-                            className="h-8 w-8 sm:h-10 sm:w-10 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)] transition-transform duration-300 group-hover:rotate-[-3deg] brightness-0 invert"
-                            style={{ filter: 'brightness(0) saturate(100%) invert(66%) sepia(73%) saturate(2234%) hue-rotate(157deg) brightness(95%) contrast(101%)' }}
+                        {/* Logo avec couleur dynamique */}
+                        <div
+                            className="h-8 w-8 sm:h-10 sm:w-10 transition-transform duration-300 group-hover:rotate-[-3deg]"
+                            style={{
+                                WebkitMaskImage: `url(${ToDoXLogo})`,
+                                maskImage: `url(${ToDoXLogo})`,
+                                WebkitMaskSize: 'contain',
+                                maskSize: 'contain',
+                                WebkitMaskRepeat: 'no-repeat',
+                                maskRepeat: 'no-repeat',
+                                WebkitMaskPosition: 'center',
+                                maskPosition: 'center',
+                                backgroundColor: primaryColor,
+                                filter: `drop-shadow(0 0 8px ${primaryColor}99)`
+                            }}
                         />
                         {/* Rotating glow on hover */}
-                        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-400 opacity-0 blur-lg transition-opacity duration-300 group-hover:opacity-50 group-hover:animate-spin-slow" />
+                        <div
+                            className="absolute inset-0 rounded-xl opacity-0 blur-lg transition-opacity duration-300 group-hover:opacity-50 group-hover:animate-spin-slow"
+                            style={{
+                                background: `linear-gradient(to right, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
+                            }}
+                        />
                     </div>
                     <div className="flex flex-col">
-                        <h1 className="header-title text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500 bg-clip-text text-transparent bg-[length:200%_100%] animate-gradient-x">
+                        <h1
+                            className="header-title text-xl sm:text-2xl font-black tracking-tight bg-clip-text text-transparent bg-[length:200%_100%] animate-gradient-x"
+                            style={{
+                                backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
+                            }}
+                        >
                             TO DO X
                         </h1>
-                        <p className="text-[9px] sm:text-[10px] font-black text-cyan-400/70 tracking-[0.2em]">
+                        <p
+                            className="text-[9px] sm:text-[10px] font-black tracking-[0.2em]"
+                            style={{ color: `${primaryColor}b3` }}
+                        >
                             COMMAND CENTER
                         </p>
                     </div>
@@ -119,14 +213,49 @@ export function KanbanHeaderPremium({
 
                 {/* Toggle QuickAdd Button */}
                 <button
+                    ref={toggleButtonRef}
                     onClick={() => setShowQuickAdd(!showQuickAdd)}
-                    className="flex items-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/20 focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+                    className="flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition focus:outline-none focus:ring-2 animate-glow-pulse"
+                    style={{
+                        borderColor: `${primaryColor}30`,
+                        backgroundColor: `${primaryColor}10`,
+                        color: `${primaryColor}e6`,
+                        ['--focus-ring-color' as any]: `${primaryColor}80`,
+                        boxShadow: `0 0 15px ${primaryColor}40, 0 0 30px ${primaryColor}20`
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${primaryColor}33`}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = `${primaryColor}10`}
                     title={showQuickAdd ? "Masquer la création rapide" : "Afficher la création rapide"}
                 >
                     <Plus className="h-4 w-4" />
                     <span className="hidden sm:inline">Nouvelle tâche</span>
                     <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showQuickAdd ? 'rotate-180' : ''}`} />
                 </button>
+                <style>{`
+                    @keyframes glow-pulse {
+                        0%, 100% {
+                            box-shadow: 0 0 15px ${primaryColor}40, 0 0 30px ${primaryColor}20;
+                        }
+                        50% {
+                            box-shadow: 0 0 20px ${primaryColor}60, 0 0 40px ${primaryColor}30, 0 0 60px ${primaryColor}15;
+                        }
+                    }
+                    .animate-glow-pulse {
+                        animation: glow-pulse 3s ease-in-out infinite;
+                    }
+                `}</style>
+
+                {/* Search Input - Compact (appear on Ctrl+F) */}
+                {showSearch && (
+                    <div className="hidden md:block w-64">
+                        <SearchInput
+                            ref={searchInputRef}
+                            value={filterSearch}
+                            onChange={onSearchChange}
+                            placeholder="Rechercher... (Esc pour fermer)"
+                        />
+                    </div>
+                )}
 
                 {/* Projects - Circular Progress Badges */}
                 <div className="relative flex-1 overflow-hidden">
@@ -158,7 +287,11 @@ export function KanbanHeaderPremium({
                     {/* Weekly Report - Highlighted */}
                     <button
                         onClick={onOpenWeeklyReport}
-                        className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500 px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-slate-900 shadow-lg shadow-blue-500/30 transition-all hover:scale-105 hover:brightness-110"
+                        className="flex items-center gap-2 rounded-2xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-lg transition-all hover:scale-105 hover:brightness-110"
+                        style={{
+                            backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`,
+                            boxShadow: `0 10px 15px -3px ${primaryColor}30, 0 4px 6px -4px ${primaryColor}30`
+                        }}
                         title="Rapport hebdomadaire"
                     >
                         <Printer className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -168,14 +301,14 @@ export function KanbanHeaderPremium({
                     {/* Quick Access Buttons */}
                     <button
                         onClick={onOpenStorage}
-                        className="hidden md:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-slate-300 transition-all hover:scale-105 hover:bg-white/10 hover:text-white"
+                        className="hidden md:flex items-center gap-1.5 rounded-xl border border-theme-primary bg-white/5 px-2.5 py-2 text-xs text-theme-secondary transition-all hover:scale-105 hover:bg-white/10 hover:text-theme-primary"
                         title="Stockage"
                     >
                         <HardDrive className="h-3.5 w-3.5" />
                     </button>
                     <button
                         onClick={onOpenUsers}
-                        className="hidden md:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-2 text-xs text-slate-300 transition-all hover:scale-105 hover:bg-white/10 hover:text-white"
+                        className="hidden md:flex items-center gap-1.5 rounded-xl border border-theme-primary bg-white/5 px-2.5 py-2 text-xs text-theme-secondary transition-all hover:scale-105 hover:bg-white/10 hover:text-theme-primary"
                         title="Utilisateurs"
                     >
                         <Users className="h-3.5 w-3.5" />
@@ -187,35 +320,53 @@ export function KanbanHeaderPremium({
                     >
                         <Archive className="h-3.5 w-3.5" />
                     </button>
-
                     {/* More Menu */}
                     <DropdownMenu
                         icon={Settings}
                         label=""
-                        className="rounded-xl border border-white/10 bg-[#0b1124] px-2.5 py-2 hover:bg-white/10 transition-all"
+                        className="rounded-xl border border-theme-primary bg-theme-secondary/60 px-2.5 py-2 hover:bg-theme-secondary/80 transition-all text-theme-primary"
                     >
                         <DropdownItem icon={Printer} label="CR Semaine" onClick={onOpenWeeklyReport} />
                         <DropdownItem icon={HardDrive} label="Stockage" onClick={onOpenStorage} />
                         <DropdownItem icon={Users} label="Utilisateurs" onClick={onOpenUsers} />
+                        <DropdownItem icon={Bell} label="Notifications" onClick={onOpenNotifications} />
+                        <DropdownItem icon={Palette} label="Thèmes" onClick={onOpenThemes} />
                         <DropdownItem icon={Archive} label="Archives" onClick={onOpenArchive} />
-                        <div className="my-1 h-px bg-white/10" />
+                        <div className="my-1 h-px bg-theme-primary" />
                         <DropdownItem icon={FolderPlus} label="Dossiers projets" onClick={onOpenDirPanel} />
                         <DropdownItem icon={List} label="Gérer projets" onClick={onOpenProjectsList} />
                         <DropdownItem icon={Trash2} label="Corbeille tâches" onClick={onOpenTaskArchive} />
-                        <div className="my-1 h-px bg-white/10" />
+                        <div className="my-1 h-px bg-theme-primary" />
                         <DropdownItem icon={Download} label="Export JSON" onClick={onExport} />
                         <DropdownItem icon={Upload} label="Import JSON" onClick={onImport} />
                     </DropdownMenu>
+
+                    {/* Help Button */}
+                    <button
+                        onClick={onOpenHelp}
+                        className="flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs transition-all hover:scale-105"
+                        style={{
+                            borderColor: `${primaryColor}33`,
+                            backgroundColor: `${primaryColor}10`,
+                            color: `${primaryColor}cc`
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${primaryColor}33`}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = `${primaryColor}10`}
+                        title="Aide (F1)"
+                    >
+                        <HelpCircle className="h-3.5 w-3.5" />
+                    </button>
                 </div>
             </div>
 
             {/* Row 2: QuickAdd Premium - Collapsible */}
             <div
+                ref={quickAddContainerRef}
                 className={`mx-auto w-full px-2 sm:px-0 sm:w-[95%] lg:w-[90%] xl:w-[85%] 2xl:w-[80%] overflow-visible transition-all duration-300 ${
                     showQuickAdd ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
                 }`}
             >
-                <QuickAddPremium />
+                <QuickAddPremium ref={quickAddRef} />
             </div>
         </header>
     );

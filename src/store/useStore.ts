@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { todayISO, uid } from '../utils';
-import { FIXED_USERS } from '../constants';
-import type { Task, TaskData, User, Directories } from '../types';
+import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
+import { DEFAULT_THEME } from '../themes/presets';
+import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings } from '../types';
 
 interface StoreState {
     // State
@@ -15,6 +16,8 @@ interface StoreState {
     storagePath: string | null;
     isLoadingData: boolean;
     saveError: string | null;
+    notificationSettings: NotificationSettings;
+    themeSettings: ThemeSettings;
 
     // Simple Setters
     setTasks: (tasks: Task[]) => void;
@@ -27,6 +30,10 @@ interface StoreState {
     setStoragePath: (path: string | null) => void;
     setIsLoadingData: (loading: boolean) => void;
     setSaveError: (error: string | null) => void;
+    setNotificationSettings: (settings: NotificationSettings) => void;
+    updateNotificationSettings: (patch: Partial<NotificationSettings>) => void;
+    setThemeSettings: (settings: ThemeSettings) => void;
+    updateThemeSettings: (patch: Partial<ThemeSettings>) => void;
 
     // Task Actions
     addTask: (data: TaskData) => void;
@@ -65,6 +72,23 @@ const useStore = create<StoreState>((set, get) => ({
     storagePath: null,
     isLoadingData: true,
     saveError: null,
+    notificationSettings: {
+        enabled: true,
+        deadlineNotifications: true,
+        staleTaskNotifications: true,
+        checkInterval: 30, // 30 minutes par défaut
+        quietHoursEnabled: false,
+        quietHoursStart: "22:00",
+        quietHoursEnd: "08:00",
+        sound: true,
+        soundFile: DEFAULT_NOTIFICATION_SOUND, // Son par défaut: "Classique"
+    },
+    themeSettings: {
+        mode: 'dark',
+        activeThemeId: DEFAULT_THEME.id,
+        customThemes: [],
+        customAccentColor: undefined,
+    },
 
     // Simple Setters
     setTasks: (tasks) => set({ tasks }),
@@ -79,6 +103,18 @@ const useStore = create<StoreState>((set, get) => ({
     setStoragePath: (path) => set({ storagePath: path }),
     setIsLoadingData: (loading) => set({ isLoadingData: loading }),
     setSaveError: (error) => set({ saveError: error }),
+    setNotificationSettings: (settings) => set({ notificationSettings: settings }),
+    updateNotificationSettings: (patch) => {
+        set((state) => ({
+            notificationSettings: { ...state.notificationSettings, ...patch }
+        }));
+    },
+    setThemeSettings: (settings) => set({ themeSettings: settings }),
+    updateThemeSettings: (patch) => {
+        set((state) => ({
+            themeSettings: { ...state.themeSettings, ...patch }
+        }));
+    },
 
     // Task Actions
     addTask: (data) => {

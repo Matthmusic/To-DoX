@@ -2,6 +2,14 @@
 
 Bienvenue dans la documentation complète du projet To-DoX.
 
+## 🗺️ Roadmap
+
+**[ROADMAP.md](ROADMAP.md)** - Feuille de route et améliorations futures
+- 13 améliorations planifiées organisées par priorité
+- Système de suivi de progression (TODO/EN COURS/TERMINÉ)
+- Estimations de temps et impact pour chaque feature
+- Planification des versions futures (v2.1.0, v2.2.0, v3.0.0)
+
 ## 📚 Structure de la documentation
 
 ### 🚀 [deployment/](deployment/)
@@ -52,6 +60,7 @@ Documentation historique des refactorings et améliorations passées.
 ```
 docs/
 ├── README.md              # Ce fichier (index de la documentation)
+├── ROADMAP.md             # 🗺️ Feuille de route et améliorations futures
 ├── deployment/            # 🚀 Déploiement et releases
 │   ├── DEPLOIEMENT.md
 │   ├── RELEASE.md
@@ -90,6 +99,9 @@ docs/
 ### Je veux comprendre l'historique du projet
 👉 Explorez [archive/](archive/)
 
+### Je veux contribuer ou voir les améliorations prévues
+👉 Consultez [ROADMAP.md](ROADMAP.md)
+
 ## 🔧 Scripts utiles
 
 Le projet inclut un script PowerShell de déploiement automatisé :
@@ -116,4 +128,4 @@ Lors de l'ajout de nouvelle documentation :
 
 ---
 
-*Dernière mise à jour : 2026-02-10*
+*Dernière mise à jour : 2026-02-11*

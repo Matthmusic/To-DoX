@@ -73,3 +73,23 @@ export const FIXED_USERS = [
     { id: "unassigned", name: "Non assigné", email: "" }, // Gardé pour compatibilité avec anciennes données
 ];
 
+/**
+ * 🔔 Sons de notification disponibles
+ */
+export interface NotificationSound {
+  id: string;
+  name: string;
+  file: string;
+}
+
+export const NOTIFICATION_SOUNDS: NotificationSound[] = [
+  { id: "waterdrop", name: "💧 Goutte d'eau", file: "191678__porphyr__waterdrop.wav" },
+  { id: "chord", name: "🎵 Accord musical", file: "457518__graham_makes__chord-alert-notification.wav" },
+  { id: "popup", name: "✨ Pop-up", file: "512135__beezlefm__pop-up-sound.wav" },
+  { id: "notification", name: "🔔 Classique", file: "512136__beezlefm__notification-sound.wav" },
+  { id: "gasp", name: "😮 Gasp UI", file: "542035__rob_marion__gasp_ui_notification_4.wav" },
+  { id: "message", name: "📱 Message", file: "761464__loudkevin__text-message.mp3" },
+];
+
+export const DEFAULT_NOTIFICATION_SOUND = NOTIFICATION_SOUNDS[3].file; // "Classique" par défaut
+

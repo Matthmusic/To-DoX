@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import useStore from "../../store/useStore";
 import type { Task } from "../../types";
-import { Modal } from "../ui/Modal";
+import { GlassModal } from "../ui/GlassModal";
 import { confirmModal } from "../../utils/confirm";
 
 interface ProjectArchivePanelProps {
@@ -34,7 +34,7 @@ export function ProjectArchivePanel({ onClose }: ProjectArchivePanelProps) {
     }, [tasks]);
 
     return (
-        <Modal isOpen={true} onClose={onClose} title="Archives" width="max-w-3xl">
+        <GlassModal isOpen={true} onClose={onClose} title="Archives" size="xl">
             <p className="mt-2 text-sm text-slate-400">
                 Projets archivés. Vous pouvez les désarchiver pour les remettre actifs ou les supprimer définitivement.
             </p>
@@ -90,6 +90,6 @@ export function ProjectArchivePanel({ onClose }: ProjectArchivePanelProps) {
                     </div>
                 ))}
             </div>
-        </Modal>
+        </GlassModal>
     );
 }

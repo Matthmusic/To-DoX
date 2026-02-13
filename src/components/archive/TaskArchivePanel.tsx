@@ -3,7 +3,7 @@ import useStore from "../../store/useStore";
 import type { Task } from "../../types";
 import { classNames } from "../../utils";
 import { confirmModal } from "../../utils/confirm";
-import { Modal } from "../ui/Modal";
+import { GlassModal } from "../ui/GlassModal";
 
 interface TaskArchivePanelProps {
     onClose: () => void;
@@ -17,7 +17,7 @@ export function TaskArchivePanel({ onClose }: TaskArchivePanelProps) {
     }, [tasks]);
 
     return (
-        <Modal isOpen={true} onClose={onClose} title="Archives des tâches" width="max-w-5xl">
+        <GlassModal isOpen={true} onClose={onClose} title="Archives des tâches" size="xl">
             <p className="mt-2 text-sm text-slate-400">
                 Tâches archivées. Vous pouvez les désarchiver pour les remettre actives ou les supprimer définitivement.
             </p>
@@ -86,6 +86,6 @@ export function TaskArchivePanel({ onClose }: TaskArchivePanelProps) {
                     </div>
                 ))}
             </div>
-        </Modal>
+        </GlassModal>
     );
 }

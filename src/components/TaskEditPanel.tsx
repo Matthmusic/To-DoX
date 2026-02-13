@@ -122,7 +122,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
                     onChange={(e) => setLocalTitle(e.target.value)}
                     onBlur={() => localTitle !== task.title && onUpdate(task.id, { title: localTitle })}
                     onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLElement).blur()}
-                    className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                    className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 uppercase focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                 />
 
                 <label className="mt-2 text-xs text-slate-400">Projet</label>

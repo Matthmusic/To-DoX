@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { createPortal } from "react-dom";
 import { Calendar, Hash, AtSign, Sparkles, FolderPlus, Palette } from "lucide-react";
 import { PROJECT_COLORS } from "../constants";
@@ -7,6 +7,8 @@ import { alertModal } from "../utils/confirm";
 import { Autocomplete } from "./Autocomplete";
 import { DatePickerModal } from "./DatePickerModal";
 import { ProjectAutocomplete } from "./ProjectAutocomplete";
+import { useClickOutside } from "../hooks/useClickOutside";
+import { useTheme } from "../hooks/useTheme";
 import useStore from "../store/useStore";
 import type { TaskData, User } from "../types";
 
@@ -18,38 +20,57 @@ interface ProjectExistsModalProps {
 }
 
 function ProjectExistsModal({ existingProject, onUseExisting, onCreateNew, onCancel }: ProjectExistsModalProps) {
+    const { activeTheme } = useTheme();
+    const primaryColor = activeTheme.palette.primary;
+    const secondaryColor = activeTheme.palette.secondary;
+
     return createPortal(
         <div
             className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 p-4 backdrop-blur"
             onClick={onCancel}
         >
             <div
-                className="w-full max-w-md rounded-3xl border border-white/10 bg-[#0b1124] p-6 text-slate-100 shadow-2xl"
+                className="w-full max-w-md rounded-3xl border border-white/10 p-6 text-theme-primary shadow-2xl"
+                style={{ backgroundColor: 'var(--bg-tertiary)' }}
                 onClick={(e) => e.stopPropagation()}
             >
                 <h3 className="text-lg font-semibold mb-4">Projet existant</h3>
-                <p className="text-sm text-slate-300 mb-4">
-                    Un projet nommé <span className="font-semibold text-cyan-400">{existingProject}</span> existe déjà.
+                <p className="text-sm text-theme-secondary mb-4">
+                    Un projet nommé <span className="font-semibold" style={{ color: primaryColor }}>{existingProject}</span> existe déjà.
                 </p>
-                <p className="text-sm text-slate-400 mb-6">
+                <p className="text-sm text-theme-muted mb-6">
                     Voulez-vous utiliser ce projet existant ou créer un nouveau projet avec un suffixe ?
                 </p>
                 <div className="flex flex-col gap-2">
                     <button
                         onClick={onUseExisting}
-                        className="w-full rounded-xl border border-cyan-400/40 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100 transition hover:bg-cyan-400/20"
+                        className="w-full rounded-xl border px-4 py-2 text-sm transition"
+                        style={{
+                            borderColor: `${primaryColor}66`,
+                            backgroundColor: `${primaryColor}1a`,
+                            color: `${primaryColor}e6`
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${primaryColor}33`}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = `${primaryColor}1a`}
                     >
                         Utiliser le projet existant
                     </button>
                     <button
                         onClick={onCreateNew}
-                        className="w-full rounded-xl border border-emerald-400/40 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-100 transition hover:bg-emerald-400/20"
+                        className="w-full rounded-xl border px-4 py-2 text-sm transition"
+                        style={{
+                            borderColor: `${secondaryColor}66`,
+                            backgroundColor: `${secondaryColor}1a`,
+                            color: `${secondaryColor}e6`
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${secondaryColor}33`}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = `${secondaryColor}1a`}
                     >
                         Créer un nouveau projet (avec suffixe)
                     </button>
                     <button
                         onClick={onCancel}
-                        className="w-full rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-slate-300 transition hover:bg-white/10"
+                        className="w-full rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-theme-secondary transition hover:bg-white/10"
                     >
                         Annuler
                     </button>
@@ -63,9 +84,14 @@ function ProjectExistsModal({ existingProject, onUseExisting, onCreateNew, onCan
 /**
  * QuickAdd Premium avec détection automatique de tags #projet et @user
  * Design futuriste avec border gradient animé
+ *
+ * Expose une méthode focus() via ref pour permettre le focus programmatique depuis les raccourcis clavier
  */
-export function QuickAddPremium() {
+export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) => {
     const { addTask, projectHistory, users, directories, projectColors, setDirectories, setProjectColor } = useStore();
+    const { activeTheme } = useTheme();
+    const primaryColor = activeTheme.palette.primary;
+    const secondaryColor = activeTheme.palette.secondary;
 
     const [taskTitle, setTaskTitle] = useState("");
     const [projectName, setProjectName] = useState("");
@@ -91,6 +117,13 @@ export function QuickAddPremium() {
     const userPickerRef = useRef<HTMLDivElement>(null);
     const userButtonRef = useRef<HTMLButtonElement>(null);
 
+    // Exposer la méthode focus() pour les raccourcis clavier
+    useImperativeHandle(ref, () => ({
+        focus: () => {
+            inputRef.current?.focus();
+        },
+    }));
+
     // Détection automatique de #projet et @user dans le titre
     useEffect(() => {
         const projectMatch = taskTitle.match(/#(\w+)/);
@@ -113,50 +146,9 @@ export function QuickAddPremium() {
     }, [taskTitle, projectName, assignedUserId, users]);
 
     // Fermer les dropdowns lors d'un clic en dehors
-    useEffect(() => {
-        if (!showColorPicker) return;
-        function handleClickOutside(event: MouseEvent) {
-            if (
-                colorPickerRef.current?.contains(event.target as Node) ||
-                colorButtonRef.current?.contains(event.target as Node)
-            ) {
-                return;
-            }
-            setShowColorPicker(false);
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [showColorPicker]);
-
-    useEffect(() => {
-        if (!showProjectPicker) return;
-        function handleClickOutside(event: MouseEvent) {
-            if (
-                projectPickerRef.current?.contains(event.target as Node) ||
-                projectButtonRef.current?.contains(event.target as Node)
-            ) {
-                return;
-            }
-            setShowProjectPicker(false);
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [showProjectPicker]);
-
-    useEffect(() => {
-        if (!showUserPicker) return;
-        function handleClickOutside(event: MouseEvent) {
-            if (
-                userPickerRef.current?.contains(event.target as Node) ||
-                userButtonRef.current?.contains(event.target as Node)
-            ) {
-                return;
-            }
-            setShowUserPicker(false);
-        }
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [showUserPicker]);
+    useClickOutside([colorPickerRef, colorButtonRef], () => setShowColorPicker(false), showColorPicker);
+    useClickOutside([projectPickerRef, projectButtonRef], () => setShowProjectPicker(false), showProjectPicker);
+    useClickOutside([userPickerRef, userButtonRef], () => setShowUserPicker(false), showUserPicker);
 
     function onAdd(data: TaskData) {
         addTask(data);
@@ -257,17 +249,7 @@ export function QuickAddPremium() {
         }
     }, [projectName, projectColors]);
 
-    // Keyboard shortcut: Ctrl/Cmd + K to focus
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-                e.preventDefault();
-                inputRef.current?.focus();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, []);
+    // Note: Keyboard shortcut Ctrl+N is now handled centrally by useDefaultShortcuts in ToDoX.tsx
 
     return (
         <>
@@ -278,18 +260,26 @@ export function QuickAddPremium() {
                 <div
                     className={`quickadd-premium-container relative flex items-stretch gap-2 sm:gap-3 rounded-2xl sm:rounded-3xl border-2 px-3 sm:px-5 py-2.5 sm:py-3 transition-all duration-500 ${
                         isFocused
-                            ? "border-transparent shadow-[0_0_0_2px_rgba(6,182,212,0.4),0_0_40px_rgba(6,182,212,0.2)] scale-[1.01] bg-[#0b1124]"
-                            : "border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] bg-[#0b1124]/80 backdrop-blur-xl"
+                            ? "border-transparent scale-[1.01]"
+                            : "border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.3)] backdrop-blur-xl"
                     }`}
                     style={{
+                        backgroundColor: isFocused ? 'var(--bg-tertiary)' : 'var(--bg-tertiary)',
+                        opacity: isFocused ? 1 : 0.8,
+                        boxShadow: isFocused
+                            ? `0 0 0 2px ${primaryColor}66, 0 0 40px ${primaryColor}33`
+                            : undefined,
                         background: isFocused
-                            ? "linear-gradient(#0b1124, #0b1124) padding-box, linear-gradient(90deg, #10b981, #06b6d4, #8b5cf6) border-box"
+                            ? `linear-gradient(var(--bg-tertiary), var(--bg-tertiary)) padding-box, linear-gradient(90deg, ${primaryColor}, ${secondaryColor}, ${primaryColor}) border-box`
                             : undefined,
                     }}
                 >
                     {/* Icon */}
                     <div className="flex items-center">
-                        <Sparkles className={`h-4 w-4 sm:h-5 sm:w-5 transition-all duration-300 ${isFocused ? "text-cyan-400 animate-pulse" : "text-slate-400"}`} />
+                        <Sparkles
+                            className={`h-4 w-4 sm:h-5 sm:w-5 transition-all duration-300 ${isFocused ? "animate-pulse" : "text-theme-muted"}`}
+                            style={{ color: isFocused ? primaryColor : undefined }}
+                        />
                     </div>
 
                     {/* Main Input */}
@@ -297,7 +287,7 @@ export function QuickAddPremium() {
                         <input
                             ref={inputRef}
                             type="text"
-                            className="w-full bg-transparent text-sm sm:text-base text-white placeholder-slate-400 focus:outline-none font-medium"
+                            className="w-full bg-transparent text-sm sm:text-base text-white placeholder-slate-400 focus:outline-none font-medium uppercase"
                             placeholder="Nouvelle tâche... (#projet @user)"
                             value={taskTitle}
                             onChange={handleTitleChange}
@@ -315,10 +305,17 @@ export function QuickAddPremium() {
                                 type="button"
                                 onClick={() => setShowProjectPicker(!showProjectPicker)}
                                 className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition-all whitespace-nowrap ${
-                                    projectName
-                                        ? "border-cyan-400/40 bg-cyan-400/10 text-cyan-300"
-                                        : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                                    !projectName && "border-white/10 bg-white/5 text-theme-muted hover:bg-white/10 hover:text-white"
                                 }`}
+                                style={
+                                    projectName
+                                        ? {
+                                              borderColor: `${primaryColor}66`,
+                                              backgroundColor: `${primaryColor}1a`,
+                                              color: `${primaryColor}e6`
+                                          }
+                                        : undefined
+                                }
                                 title="Sélectionner un projet"
                             >
                                 <Hash className="h-3.5 w-3.5" />
@@ -328,7 +325,8 @@ export function QuickAddPremium() {
                             {showProjectPicker && (
                                 <div
                                     ref={projectPickerRef}
-                                    className="absolute right-0 top-full z-[10000] mt-2 w-80 rounded-2xl border border-white/10 bg-[#0b1124] p-3 shadow-2xl"
+                                    className="absolute right-0 top-full z-[10000] mt-2 w-80 rounded-2xl border border-white/10 p-3 shadow-2xl"
+                                    style={{ backgroundColor: 'var(--bg-tertiary)' }}
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <ProjectAutocomplete
@@ -336,13 +334,18 @@ export function QuickAddPremium() {
                                         onChange={setProjectName}
                                         projectHistory={projectHistory}
                                         placeholder="PROJET"
-                                        className="mb-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 placeholder-slate-400 uppercase focus:border-cyan-400/40 focus:ring-0"
+                                        className="mb-2 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-theme-primary placeholder-slate-400 uppercase focus:ring-0"
+                                        style={{
+                                            ['--focus-border-color' as any]: `${primaryColor}66`
+                                        }}
+                                        onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = `${primaryColor}66`}
+                                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                                     />
                                     <div className="flex items-center gap-2">
                                         <button
                                             type="button"
                                             onClick={handleSelectFolder}
-                                            className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 transition hover:bg-white/10"
+                                            className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-theme-secondary transition hover:bg-white/10"
                                         >
                                             <FolderPlus className="h-3.5 w-3.5" />
                                             Dossier
@@ -351,14 +354,18 @@ export function QuickAddPremium() {
                                             ref={colorButtonRef}
                                             type="button"
                                             onClick={() => setShowColorPicker(!showColorPicker)}
-                                            className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 transition hover:bg-white/10"
+                                            className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-theme-secondary transition hover:bg-white/10"
                                         >
                                             <Palette className="h-3.5 w-3.5" />
                                             Couleur
                                         </button>
                                     </div>
                                     {showColorPicker && (
-                                        <div ref={colorPickerRef} className="mt-2 flex flex-wrap gap-2 rounded-xl border border-white/10 bg-[#050b1f] p-3">
+                                        <div
+                                            ref={colorPickerRef}
+                                            className="mt-2 flex flex-wrap gap-2 rounded-xl border border-white/10 p-3"
+                                            style={{ backgroundColor: 'var(--bg-secondary)' }}
+                                        >
                                             {PROJECT_COLORS.map((c, index) => (
                                                 <button
                                                     key={index}
@@ -389,10 +396,17 @@ export function QuickAddPremium() {
                                 type="button"
                                 onClick={() => setShowUserPicker(!showUserPicker)}
                                 className={`flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition-all whitespace-nowrap ${
-                                    assignedUserId !== "unassigned"
-                                        ? "border-purple-400/40 bg-purple-400/10 text-purple-300"
-                                        : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                                    assignedUserId === "unassigned" && "border-white/10 bg-white/5 text-theme-muted hover:bg-white/10 hover:text-white"
                                 }`}
+                                style={
+                                    assignedUserId !== "unassigned"
+                                        ? {
+                                              borderColor: `${secondaryColor}66`,
+                                              backgroundColor: `${secondaryColor}1a`,
+                                              color: `${secondaryColor}e6`
+                                          }
+                                        : undefined
+                                }
                                 title="Assigner à un utilisateur"
                             >
                                 <AtSign className="h-3.5 w-3.5" />
@@ -400,7 +414,11 @@ export function QuickAddPremium() {
                             </button>
 
                             {showUserPicker && (
-                                <div ref={userPickerRef} className="absolute right-0 top-full z-[10000] mt-2 w-64 rounded-2xl border border-white/10 bg-[#0b1124] p-3 shadow-2xl">
+                                <div
+                                    ref={userPickerRef}
+                                    className="absolute right-0 top-full z-[10000] mt-2 w-64 rounded-2xl border border-white/10 p-3 shadow-2xl"
+                                    style={{ backgroundColor: 'var(--bg-tertiary)' }}
+                                >
                                     <Autocomplete<User, string>
                                         value={assignedUserId}
                                         onChange={(val) => {
@@ -409,7 +427,12 @@ export function QuickAddPremium() {
                                         }}
                                         options={users}
                                         placeholder="Non assigné"
-                                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-100 focus:border-purple-400/40 focus:ring-0"
+                                        className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-theme-primary focus:ring-0"
+                                        style={{
+                                            ['--focus-border-color' as any]: `${secondaryColor}66`
+                                        }}
+                                        onFocus={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = `${secondaryColor}66`}
+                                        onBlur={(e: React.FocusEvent<HTMLInputElement>) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
                                         getValue={(user) => user.id}
                                         getLabel={(user) => user.name}
                                     />
@@ -422,7 +445,7 @@ export function QuickAddPremium() {
                             ref={datePickerButtonRef}
                             type="button"
                             onClick={() => setShowDatePicker(true)}
-                            className="hidden md:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-all hover:bg-white/10 hover:text-white whitespace-nowrap"
+                            className="hidden md:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-theme-secondary transition-all hover:bg-white/10 hover:text-white whitespace-nowrap"
                             title="Définir une échéance"
                         >
                             <Calendar className="h-3.5 w-3.5" />
@@ -432,7 +455,11 @@ export function QuickAddPremium() {
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            className="rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-500 px-4 sm:px-6 py-1.5 text-sm font-black text-slate-900 shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 hover:brightness-110 hover:shadow-emerald-500/40"
+                            className="rounded-xl px-4 sm:px-6 py-1.5 text-sm font-black text-white transition-all hover:scale-105 hover:brightness-110"
+                            style={{
+                                backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`,
+                                boxShadow: `0 10px 15px -3px ${primaryColor}33, 0 4px 6px -4px ${primaryColor}33`
+                            }}
                         >
                             ⏎
                         </button>
@@ -440,7 +467,12 @@ export function QuickAddPremium() {
 
                     {/* Animated border gradient */}
                     {isFocused && (
-                        <div className="quickadd-border-glow absolute -inset-[2px] -z-10 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-purple-500 opacity-20 blur-xl" />
+                        <div
+                            className="quickadd-border-glow absolute -inset-[2px] -z-10 rounded-2xl sm:rounded-3xl opacity-20 blur-xl"
+                            style={{
+                                backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor}, ${primaryColor})`
+                            }}
+                        />
                     )}
                 </div>
             </form>
@@ -461,4 +493,6 @@ export function QuickAddPremium() {
             />
         </>
     );
-}
+});
+
+QuickAddPremium.displayName = 'QuickAddPremium';

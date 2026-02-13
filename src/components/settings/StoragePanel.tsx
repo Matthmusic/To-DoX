@@ -1,6 +1,6 @@
 import { useState } from "react";
 import useStore from "../../store/useStore";
-import { Modal } from "../ui/Modal";
+import { GlassModal } from "../ui/GlassModal";
 import { alertModal } from "../../utils/confirm";
 
 interface StoragePanelProps {
@@ -45,7 +45,7 @@ export function StoragePanel({ onClose }: StoragePanelProps) {
     }
 
     return (
-        <Modal isOpen={true} onClose={onClose} title="Configuration du stockage" width="max-w-2xl">
+        <GlassModal isOpen={true} onClose={onClose} title="Configuration du stockage" size="lg">
             <div className="mt-4 space-y-4">
                 <div className="rounded-2xl border border-indigo-400/30 bg-indigo-400/5 p-4">
                     <h4 className="text-sm font-semibold text-indigo-200">🗂️ Stockage Partagé</h4>
@@ -115,6 +115,6 @@ export function StoragePanel({ onClose }: StoragePanelProps) {
                     </button>
                 </div>
             </div>
-        </Modal>
+        </GlassModal>
     );
 }

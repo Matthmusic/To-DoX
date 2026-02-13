@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import {
     ClipboardList, AlertTriangle, Paperclip, MoreHorizontal,
-    FolderOpen, ChevronDown, ChevronRight, Star, User
+    FolderOpen, ChevronDown, ChevronRight, Star, User, ExternalLink, Edit3
 } from "lucide-react";
 import { businessDayDelta, getProjectColor, getInitials } from "../utils";
-import { SubtaskList } from "./SubtaskList";
+import { SubtaskList, parseFilePaths } from "./SubtaskList";
 import useStore from "../store/useStore";
 import type { Task } from "../types";
 
@@ -30,8 +31,11 @@ export function TaskCard({
     const { directories, users, projectColors, updateTask } = useStore();
     const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
     const [showUserPopover, setShowUserPopover] = useState(false);
+    const [isEditingNotes, setIsEditingNotes] = useState(false);
+    const [localNotes, setLocalNotes] = useState(task.notes || "");
     const userButtonRef = useRef<HTMLButtonElement>(null);
     const userPopoverRef = useRef<HTMLDivElement>(null);
+    const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
 
     // Calcul des indicateurs visuels
     const remainingDays = task.due ? businessDayDelta(task.due) : null;
@@ -80,6 +84,18 @@ export function TaskCard({
         return users.find(u => u.id === task.createdBy) || users.find(u => u.id === "unassigned");
     }, [task.createdBy, users]);
 
+    // Synchroniser localNotes avec task.notes
+    useEffect(() => {
+        setLocalNotes(task.notes || "");
+    }, [task.notes]);
+
+    // Auto-focus le textarea lors de l'édition
+    useEffect(() => {
+        if (isEditingNotes && notesTextareaRef.current) {
+            notesTextareaRef.current.focus();
+        }
+    }, [isEditingNotes]);
+
     useEffect(() => {
         if (!showUserPopover) return;
         function handleClickOutside(event: MouseEvent) {
@@ -125,16 +141,41 @@ export function TaskCard({
         updateTask(task.id, { favorite: !task.favorite });
     };
 
+    const handleSaveNotes = () => {
+        if (localNotes !== task.notes) {
+            updateTask(task.id, { notes: localNotes });
+        }
+        setIsEditingNotes(false);
+    };
+
+    const handleNotesKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Escape") {
+            setLocalNotes(task.notes || "");
+            setIsEditingNotes(false);
+        }
+        // Ctrl+Enter pour sauvegarder
+        if (e.key === "Enter" && e.ctrlKey) {
+            handleSaveNotes();
+        }
+    };
+
     return (
-        <div
+        <motion.div
             draggable
-            onDragStart={(e) => onDragStart(e, task.id)}
+            onDragStart={(e: any) => onDragStart(e as React.DragEvent, task.id)}
             onClick={() => {
                 setIsSubtasksExpanded((prev) => !prev);
             }}
             onContextMenu={(e) => onContextMenu(e, task)}
             className={`group relative mb-3 flex flex-col gap-3 rounded-2xl border border-white/5 bg-[#161b2e] p-4 shadow-lg transition-all hover:border-white/20 ${urgencyGlowClass} ${isDueToday ? "pulse-glow" : isOverdue ? "ring-1 ring-rose-500/50" : ""
                 } ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{
+                duration: 0.2,
+                ease: "easeOut"
+            }}
         >
             {/* Urgency gradient overlay */}
             <div className={`absolute inset-0 pointer-events-none opacity-80 bg-gradient-to-br ${urgencyTone}`} />
@@ -143,7 +184,7 @@ export function TaskCard({
             <div className="relative z-10 flex flex-col gap-3">
             {/* Header: Title + Actions */}
             <div className="flex items-start justify-between gap-2">
-                <h4 className="text-base font-bold text-slate-100 leading-snug line-clamp-2">
+                <h4 className="text-base font-bold text-white leading-snug line-clamp-2 uppercase">
                     {task.title}
                 </h4>
                 <div className="flex items-center gap-1">
@@ -151,7 +192,7 @@ export function TaskCard({
                         onClick={handleToggleFavorite}
                         className={`rounded-lg p-1.5 transition ${task.favorite
                             ? "text-amber-400 hover:bg-amber-400/20"
-                            : "text-slate-500 hover:bg-white/10 hover:text-amber-400"
+                            : "text-slate-400 hover:bg-white/10 hover:text-amber-400"
                             }`}
                         title={task.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                     >
@@ -160,7 +201,7 @@ export function TaskCard({
                     {task.project && (
                         <button
                             onClick={handleOpenFolder}
-                            className={`rounded-lg p-1.5 transition ${projectDir ? "text-indigo-400 hover:bg-indigo-400/20" : "text-slate-600 hover:text-slate-400"}`}
+                            className={`rounded-lg p-1.5 transition ${projectDir ? "text-indigo-400 hover:bg-indigo-400/20" : "text-slate-600 hover:text-slate-300"}`}
                             title={projectDir ? `Ouvrir : ${projectDir}` : "Configurer le dossier"}
                         >
                             <FolderOpen className="h-4 w-4" />
@@ -176,7 +217,7 @@ export function TaskCard({
                         className={`relative inline-flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-bold transition-all hover:scale-110 cursor-pointer ${
                             creatorUser && creatorUser.id !== "unassigned"
                                 ? "border-emerald-300/40 bg-emerald-300/15 text-emerald-200 hover:bg-emerald-300/25"
-                                : "border-slate-500/30 bg-slate-700/20 text-slate-500 hover:bg-slate-700/30"
+                                : "border-slate-500/30 bg-slate-700/20 text-slate-400 hover:bg-slate-700/30"
                         }`}
                         title={creatorUser && creatorUser.id !== "unassigned" ? `Créée par ${creatorUser.name} - Cliquer pour gérer` : "Créateur inconnu - Cliquer pour gérer"}
                     >
@@ -190,7 +231,7 @@ export function TaskCard({
                                 e.stopPropagation();
                                 onContextMenu(e, task);
                             }}
-                            className="relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-500/30 bg-slate-700/20 text-slate-500 transition-all hover:scale-110 hover:bg-slate-700/30 cursor-pointer"
+                            className="relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-500/30 bg-slate-700/20 text-slate-400 transition-all hover:scale-110 hover:bg-slate-700/30 cursor-pointer"
                             title="Non assignée - Cliquer pour assigner"
                         >
                             <User className="h-3.5 w-3.5" />
@@ -213,7 +254,7 @@ export function TaskCard({
                         ))
                     )}
                     <button
-                        className="rounded-lg p-1.5 text-slate-500 transition hover:bg-white/10 hover:text-white"
+                        className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
                         onClick={(e) => {
                             e.stopPropagation();
                             onContextMenu(e, task);
@@ -283,7 +324,7 @@ export function TaskCard({
                                     e.stopPropagation();
                                     setIsSubtasksExpanded(!isSubtasksExpanded);
                                 }}
-                                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-400 transition"
+                                className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-indigo-400 transition"
                             >
                                 <div className={`flex items-center gap-1 ${progressPercentage === 100 ? "text-emerald-400" : ""}`}>
                                     <ClipboardList className="h-3.5 w-3.5" />
@@ -293,7 +334,7 @@ export function TaskCard({
                             </button>
                         )}
                         {task.notes && (
-                            <Paperclip className="h-3.5 w-3.5 text-slate-500" />
+                            <Paperclip className="h-3.5 w-3.5 text-slate-400" />
                         )}
                     </div>
                 )}
@@ -305,7 +346,7 @@ export function TaskCard({
                             e.stopPropagation();
                             setIsSubtasksExpanded(true);
                         }}
-                        className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-400 transition mb-2"
+                        className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-indigo-400 transition mb-2"
                     >
                         <ClipboardList className="h-3.5 w-3.5" />
                         <span className="font-medium">+ Ajouter des sous-tâches</span>
@@ -337,14 +378,86 @@ export function TaskCard({
                 )}
             </div>
 
-            {/* Expanded Subtasks */}
+            {/* Expanded Content: Notes + Subtasks */}
             {isSubtasksExpanded && (
-                <div onClick={e => e.stopPropagation()} className="mt-2 pt-2 border-t border-white/5">
+                <div onClick={e => e.stopPropagation()} className="mt-2 pt-2 border-t border-white/5 space-y-3">
+                    {/* Notes Section */}
+                    {(task.notes || isEditingNotes) && (
+                        <div className="rounded-lg bg-white/5 border border-white/10 p-3 hover:border-amber-400/30 transition-colors">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2">
+                                    <Paperclip className="h-3.5 w-3.5 text-amber-400" />
+                                    <span className="text-xs font-bold text-amber-400 uppercase">Notes</span>
+                                </div>
+                                {!isEditingNotes && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setIsEditingNotes(true);
+                                        }}
+                                        className="p-1 rounded hover:bg-amber-400/20 text-amber-400 transition"
+                                        title="Éditer les notes"
+                                    >
+                                        <Edit3 className="h-3 w-3" />
+                                    </button>
+                                )}
+                            </div>
+                            {isEditingNotes ? (
+                                <div className="space-y-2">
+                                    <textarea
+                                        ref={notesTextareaRef}
+                                        value={localNotes}
+                                        onChange={(e) => setLocalNotes(e.target.value)}
+                                        onBlur={handleSaveNotes}
+                                        onKeyDown={handleNotesKeyDown}
+                                        className="w-full min-h-[100px] rounded-lg bg-white/10 border border-amber-400/30 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:bg-white/15 resize-y"
+                                        placeholder="Ajouter des notes... (Ctrl+Enter pour sauvegarder, Echap pour annuler)"
+                                    />
+                                    <div className="flex gap-2 text-xs text-slate-300">
+                                        <span>💡 Astuce: Utilisez des guillemets pour les chemins avec espaces</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsEditingNotes(true);
+                                    }}
+                                    className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed cursor-pointer hover:text-white transition"
+                                >
+                                    {parseFilePaths(task.notes || "").map((part, idx) =>
+                                        part.type === 'path' ? (
+                                            <button
+                                                key={idx}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (window.electronAPI?.openFolder) {
+                                                        window.electronAPI.openFolder(part.content);
+                                                    } else {
+                                                        alert(`Chemin détecté: ${part.content}\n(Disponible uniquement en mode Electron)`);
+                                                    }
+                                                }}
+                                                className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
+                                                title={`Ouvrir: ${part.content}`}
+                                            >
+                                                <ExternalLink className="h-3 w-3" />
+                                                {part.content}
+                                            </button>
+                                        ) : (
+                                            <span key={idx}>{part.content}</span>
+                                        )
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Subtasks Section */}
                     <SubtaskList task={task} />
                 </div>
             )}
             </div>
             {/* Popover retiré - les initiales sont maintenant affichées directement sur les badges */}
-        </div>
+        </motion.div>
     );
 }

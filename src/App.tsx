@@ -4,10 +4,14 @@ import { TitleBar } from './components/TitleBar'
 import { LoginModal } from './components/LoginModal'
 import useStore from './store/useStore'
 import { useDataPersistence } from './hooks/useDataPersistence'
+import { useTheme } from './hooks/useTheme'
 
 function App() {
   // IMPORTANT: Charger les données dès le début de l'app
   useDataPersistence();
+
+  // Appliquer le thème dès le chargement de l'app
+  useTheme();
 
   const { currentUser, isLoadingData, saveError, setSaveError } = useStore()
 
@@ -16,7 +20,7 @@ function App() {
   const showLogin = !currentUser
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-[#020817]">
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-transparent">
       {/* Toujours afficher le modal si pas d'utilisateur - BLOQUER l'app */}
       {showLogin && <LoginModal />}
       <TitleBar />

@@ -27,6 +27,23 @@ import { alertModal } from "./utils/confirm";
 // Hooks personnalisés
 import { useFilters } from "./hooks/useFilters";
 import { useDragAndDrop } from "./hooks/useDragAndDrop";
+import { useDefaultShortcuts } from "./hooks/useKeyboardShortcuts";
+import { useNotifications } from "./hooks/useNotifications";
+
+// Contexts
+import { ShortcutsProvider, type ShortcutsContextValue } from "./contexts/ShortcutsContext";
+
+// Composants raccourcis
+import { ShortcutsHelpPanel } from "./components/ShortcutsHelpPanel";
+
+// Composants notifications
+import { NotificationsPanel } from "./components/settings/NotificationsPanel";
+
+// Composants thèmes
+import { ThemePanel } from "./components/settings/ThemePanel";
+
+// Error Boundary
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 interface ContextMenuData {
     x: number | null;
@@ -46,6 +63,8 @@ export default function ToDoX() {
     const {
         filterProject,
         setFilterProject,
+        filterSearch,
+        setFilterSearch,
         grouped
     } = useFilters(tasks, currentUser);
 
@@ -63,9 +82,15 @@ export default function ToDoX() {
     const [showStoragePanel, setShowStoragePanel] = useState(false);
     const [showWeeklyReportPanel, setShowWeeklyReportPanel] = useState(false);
     const [showProjectsListPanel, setShowProjectsListPanel] = useState(false);
+    const [showHelpPanel, setShowHelpPanel] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
+    const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
+    const [showThemesPanel, setShowThemesPanel] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
 
     const importFileRef = useRef<HTMLInputElement>(null);
+    const searchInputRef = useRef<{ focus: () => void }>(null);
+    const quickAddRef = useRef<{ focus: () => void }>(null);
 
     // Persist collapsed state
     useEffect(() => {
@@ -160,8 +185,75 @@ export default function ToDoX() {
         setFilterProject(filterProject === projectName ? "all" : projectName);
     };
 
+    // === NOTIFICATIONS SYSTÈME ===
+    useNotifications();
+
+    // === KEYBOARD SHORTCUTS ===
+
+    // Détection d'un modal/panel ouvert (pour désactiver certains raccourcis)
+    const isAnyModalOpen =
+        showDirPanel ||
+        showArchivePanel ||
+        showTaskArchivePanel ||
+        showUsersPanel ||
+        showStoragePanel ||
+        showWeeklyReportPanel ||
+        showProjectsListPanel ||
+        showHelpPanel ||
+        showNotificationsPanel ||
+        showThemesPanel ||
+        contextMenu !== null;
+
+    // Callbacks pour les raccourcis clavier
+    const shortcutsCallbacks: ShortcutsContextValue = {
+        focusQuickAdd: () => {
+            quickAddRef.current?.focus();
+        },
+
+        focusSearch: () => {
+            setShowSearch(true);
+            // Focus après un micro-délai pour que l'input soit rendu
+            setTimeout(() => searchInputRef.current?.focus(), 0);
+        },
+
+        openExport: () => {
+            handleExport();
+        },
+
+        closeModals: () => {
+            // Fermer tous les modaux/panels
+            setShowDirPanel(false);
+            setShowArchivePanel(false);
+            setShowTaskArchivePanel(false);
+            setShowUsersPanel(false);
+            setShowStoragePanel(false);
+            setShowWeeklyReportPanel(false);
+            setShowProjectsListPanel(false);
+            setShowHelpPanel(false);
+            setShowNotificationsPanel(false);
+            setShowSearch(false);
+            setContextMenu(null);
+        },
+
+        openArchives: () => {
+            setShowTaskArchivePanel(true);
+        },
+
+        openProjects: () => {
+            setShowProjectsListPanel(true);
+        },
+
+        openHelp: () => {
+            setShowHelpPanel(true);
+        },
+    };
+
+    // Activer les raccourcis (hook qui gère tout)
+    const { shortcuts } = useDefaultShortcuts(shortcutsCallbacks, isAnyModalOpen);
+
     return (
-        <div className="flex h-full w-full flex-col bg-transparent text-slate-100 font-sans selection:bg-purple-500/30">
+        <ShortcutsProvider value={shortcutsCallbacks}>
+        <div className="flex h-full w-full flex-col bg-transparent text-theme-primary font-sans selection:bg-purple-500/30">
             {/* HEADER PREMIUM */}
             <KanbanHeaderPremium
                 filterProject={filterProject}
@@ -170,27 +262,37 @@ export default function ToDoX() {
                 onOpenWeeklyReport={() => setShowWeeklyReportPanel(true)}
                 onOpenStorage={() => setShowStoragePanel(true)}
                 onOpenUsers={() => setShowUsersPanel(true)}
+                onOpenNotifications={() => setShowNotificationsPanel(true)}
+                onOpenThemes={() => setShowThemesPanel(true)}
                 onOpenArchive={() => setShowArchivePanel(true)}
                 onOpenDirPanel={() => setShowDirPanel(true)}
                 onOpenProjectsList={() => setShowProjectsListPanel(true)}
                 onOpenTaskArchive={() => setShowTaskArchivePanel(true)}
                 onExport={handleExport}
                 onImport={handleImportClick}
+                onOpenHelp={() => setShowHelpPanel(true)}
+                filterSearch={filterSearch}
+                onSearchChange={setFilterSearch}
+                searchInputRef={searchInputRef}
+                quickAddRef={quickAddRef}
+                showSearch={showSearch}
             />
 
             {/* MAIN CONTENT - KANBAN */}
-            <KanbanBoard
-                grouped={grouped}
-                collapsedProjects={collapsedProjects}
-                onDragStartProject={handleDragStartProject}
-                onDragStartTask={handleDragStart}
-                onDrop={handleDrop}
-                onContextMenuTask={handleContextMenu}
-                onSetProjectDirectory={() => setShowDirPanel(true)}
-            />
+            <ErrorBoundary name="KanbanBoard">
+                <KanbanBoard
+                    grouped={grouped}
+                    collapsedProjects={collapsedProjects}
+                    onDragStartProject={handleDragStartProject}
+                    onDragStartTask={handleDragStart}
+                    onDrop={handleDrop}
+                    onContextMenuTask={handleContextMenu}
+                    onSetProjectDirectory={() => setShowDirPanel(true)}
+                />
+            </ErrorBoundary>
 
             {/* MODALS & PANELS */}
-
+            <ErrorBoundary name="Modals">
             {contextMenu && (
                 <TaskEditPanel
                     task={contextMenu.task}
@@ -241,6 +343,26 @@ export default function ToDoX() {
                 />
             )}
 
+            {showHelpPanel && (
+                <ShortcutsHelpPanel
+                    onClose={() => setShowHelpPanel(false)}
+                    shortcuts={shortcuts}
+                />
+            )}
+
+            {showNotificationsPanel && (
+                <NotificationsPanel
+                    onClose={() => setShowNotificationsPanel(false)}
+                />
+            )}
+
+            {showThemesPanel && (
+                <ThemePanel
+                    onClose={() => setShowThemesPanel(false)}
+                />
+            )}
+            </ErrorBoundary>
+
             {/* Hidden File Input for Import */}
             <input
                 type="file"
@@ -251,5 +373,6 @@ export default function ToDoX() {
             />
             <ConfirmModalHost />
         </div>
+        </ShortcutsProvider>
     );
 }

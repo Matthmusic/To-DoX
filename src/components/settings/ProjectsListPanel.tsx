@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import useStore from "../../store/useStore";
-import { Modal } from "../ui/Modal";
+import { GlassModal } from "../ui/GlassModal";
 import { alertModal, confirmModal } from "../../utils/confirm";
 
 interface ProjectsListPanelProps {
@@ -122,7 +122,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
     }
 
     return (
-        <Modal isOpen={true} onClose={onClose} title="Liste des projets" width="max-w-xl">
+        <GlassModal isOpen={true} onClose={onClose} title="Liste des projets" size="xl">
             <p className="mt-2 text-sm text-slate-400">
                 Gérez la liste des projets utilisés pour l'autocomplétion. Vous pouvez renommer ou supprimer des projets.
             </p>
@@ -202,6 +202,6 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
             <p className="mt-3 text-[11px] text-slate-500">
                 Note : Renommer un projet mettra à jour toutes les tâches associées. Supprimer un projet le retire uniquement de l'autocomplétion.
             </p>
-        </Modal>
+        </GlassModal>
     );
 }

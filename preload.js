@@ -41,6 +41,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   chooseStorageFolder: () => ipcRenderer.invoke('choose-storage-folder'),
   selectProjectFolder: () => ipcRenderer.invoke('select-project-folder'),
 
+  // Notifications desktop
+  sendNotification: (title, body, tag) => ipcRenderer.invoke('send-notification', title, body, tag),
+  requestNotificationPermission: () => ipcRenderer.invoke('request-notification-permission'),
+
+  // Error logging
+  logError: (errorLog) => ipcRenderer.invoke('log-error', errorLog),
+
+  // Gestion des thèmes
+  setNativeTheme: (source) => ipcRenderer.invoke('set-native-theme', source),
+  getSystemTheme: () => ipcRenderer.invoke('get-system-theme'),
+  onSystemThemeChanged: (callback) => {
+    ipcRenderer.on('system-theme-changed', (event, data) => callback(data));
+  },
+
   // Vérifier si on est dans Electron
   isElectron: true
 });

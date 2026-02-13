@@ -1,4 +1,5 @@
 import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { TaskCard } from "./TaskCard";
 import { getProjectColor } from "../utils";
@@ -55,21 +56,32 @@ export function ProjectCard({
                 </div>
             </div>
 
-            {!isCollapsed && (
-                <div className={`p-2 ${projectColor.bg}`}>
-                    {tasks.map(task => (
-                        <TaskCard
-                            key={task.id}
-                            task={task}
-                            onDragStart={onDragStartTask}
-                            onClick={onClickTask}
-                            onContextMenu={onContextMenuTask}
-                            onSetProjectDirectory={() => onSetProjectDirectory(project)}
-                        />
-                    ))}
-                    {/* Drop zone placeholder logic if needed */}
-                </div>
-            )}
+            <AnimatePresence initial={false}>
+                {!isCollapsed && (
+                    <motion.div
+                        className={`p-2 ${projectColor.bg}`}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{
+                            duration: 0.3,
+                            ease: "easeInOut"
+                        }}
+                    >
+                        {tasks.map(task => (
+                            <TaskCard
+                                key={task.id}
+                                task={task}
+                                onDragStart={onDragStartTask}
+                                onClick={onClickTask}
+                                onContextMenu={onContextMenuTask}
+                                onSetProjectDirectory={() => onSetProjectDirectory(project)}
+                            />
+                        ))}
+                        {/* Drop zone placeholder logic if needed */}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

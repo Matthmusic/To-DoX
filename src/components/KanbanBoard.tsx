@@ -29,26 +29,26 @@ export function KanbanBoard({
     const { toggleProjectCollapse } = useStore();
 
     return (
-        <main className="flex-1 overflow-x-auto overflow-y-hidden p-6">
+        <main className="flex-1 overflow-x-auto overflow-y-hidden p-6 bg-transparent">
             <div className="kanban-row flex h-full gap-6 justify-center">
                 {STATUSES.map((status) => (
                     <div
                         key={status.id}
-                        className="flex h-full flex-1 basis-0 min-w-[280px] flex-col rounded-3xl bg-white/5 border border-white/10 shadow-[0_16px_50px_rgba(2,6,23,0.35)] backdrop-blur-xl"
+                        className="flex h-full flex-1 basis-0 min-w-[280px] flex-col rounded-3xl bg-theme-bg-secondary border border-theme-primary shadow-[0_16px_50px_rgba(2,6,23,0.35)] backdrop-blur-xl"
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => onDrop(e, status.id)}
                     >
                         {/* Column Header */}
-                        <div className="flex items-center justify-between border-b border-white/5 px-3 py-2 bg-white/[0.02]">
+                        <div className="flex items-center justify-between border-b border-theme-primary px-3 py-2 bg-white/[0.02]">
                             <div className="flex items-center gap-2">
                                 <div className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${status.color} shadow-lg`}>
                                     <status.Icon className="h-4 w-4 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="text-sm font-bold text-slate-100">{status.label}</h2>
+                                    <h2 className="text-sm font-bold text-theme-primary">{status.label}</h2>
                                 </div>
                             </div>
-                            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-semibold text-slate-200">
+                            <span className="rounded-full border border-theme-primary bg-white/5 px-2 py-0.5 text-xs font-semibold text-theme-secondary">
                                 {grouped[status.id] ? Object.values(grouped[status.id]).reduce((acc, tasks) => acc + tasks.length, 0) : 0}
                             </span>
                         </div>

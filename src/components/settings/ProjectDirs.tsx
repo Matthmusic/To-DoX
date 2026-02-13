@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import useStore from "../../store/useStore";
 import type { Directories } from "../../types";
-import { Modal } from "../ui/Modal";
+import { GlassModal } from "../ui/GlassModal";
 
 interface ProjectDirsProps {
     onClose: () => void;
@@ -28,7 +28,7 @@ export function ProjectDirs({ onClose }: ProjectDirsProps) {
     }
 
     return (
-        <Modal isOpen={true} onClose={onClose} title="Dossiers projets" width="max-w-2xl">
+        <GlassModal isOpen={true} onClose={onClose} title="Dossiers projets" size="lg">
             <p className="mt-2 text-sm text-slate-400">
                 Saisis le chemin local du dossier pour chaque projet. Exemples :
                 <br />
@@ -74,6 +74,6 @@ export function ProjectDirs({ onClose }: ProjectDirsProps) {
                 Note : selon le navigateur, l'ouverture de liens <code>file://</code> peut être restreinte. Pour un usage 100% fiable,
                 ouvre cette app en local (ex: <strong>file:///</strong> via un bundler dev) ou empaquette-la avec Electron/Tauri.
             </p>
-        </Modal>
+        </GlassModal>
     );
 }

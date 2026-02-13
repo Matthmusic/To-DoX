@@ -5,6 +5,7 @@ import useStore from "../store/useStore";
 import { STATUSES } from "../constants";
 import { formatTimestampToDate, getCurrentWeekRange, getPreviousWeekRange } from "../utils";
 import type { Task, SubtaskProgress } from "../types";
+import { useTheme } from "../hooks/useTheme";
 
 interface WeeklyReportModalProps {
     onClose: () => void;
@@ -15,6 +16,9 @@ const EXCLUDED_PROJECTS = ["DEV", "PERSO"];
 
 export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
     const { tasks, currentUser, projectColors } = useStore();
+    const { activeTheme } = useTheme();
+    const primaryColor = activeTheme.palette.primary;
+    const secondaryColor = activeTheme.palette.secondary;
 
     // State pour la sélection des tâches
     const [selectedTasks, setSelectedTasks] = useState<Record<string, boolean>>({});
@@ -782,14 +786,49 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                 onClick={onClose}
             >
                 <div
-                    className="w-full max-w-5xl max-h-[90vh] rounded-3xl border border-white/10 bg-[#0b1124]/95 backdrop-blur-xl shadow-[0_25px_60px_rgba(2,4,20,0.8)] flex flex-col"
+                    className="relative w-full max-w-5xl max-h-[90vh] rounded-3xl border-2 border-theme-primary shadow-2xl flex flex-col"
                     onClick={(e) => e.stopPropagation()}
+                    style={{
+                        backdropFilter: 'blur(40px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                        backgroundColor: 'var(--bg-secondary)',
+                        opacity: 0.98
+                    }}
                 >
+                    {/* Gradient de bordure animé */}
+                    <div
+                        className="absolute inset-0 rounded-3xl opacity-50 pointer-events-none"
+                        style={{
+                            backgroundImage: `linear-gradient(to bottom right, ${primaryColor}33, transparent, ${secondaryColor}33)`
+                        }}
+                    />
+
+                    {/* Effet shimmer sur les bords */}
+                    <div className="absolute inset-0 rounded-3xl opacity-30 pointer-events-none">
+                        <div
+                            className="absolute top-0 left-0 right-0 h-px"
+                            style={{
+                                backgroundImage: `linear-gradient(to right, transparent, ${primaryColor}, transparent)`
+                            }}
+                        />
+                        <div
+                            className="absolute bottom-0 left-0 right-0 h-px"
+                            style={{
+                                backgroundImage: `linear-gradient(to right, transparent, ${secondaryColor}, transparent)`
+                            }}
+                        />
+                    </div>
+
                     {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-white/10">
+                    <div className="relative z-10 flex items-center justify-between p-6 border-b border-theme-primary">
                         <div className="flex items-center gap-3">
-                            <FileText className="w-6 h-6 text-cyan-400" />
-                            <h3 className="text-xl font-black bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500 bg-clip-text text-transparent">
+                            <FileText className="w-6 h-6" style={{ color: primaryColor }} />
+                            <h3
+                                className="text-xl font-black bg-clip-text text-transparent"
+                                style={{
+                                    backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+                                }}
+                            >
                                 Compte Rendu Généré
                             </h3>
                         </div>
@@ -802,14 +841,23 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                             </button>
                             <button
                                 onClick={printToPDF}
-                                className="flex items-center gap-2 rounded-xl border border-purple-400/30 bg-purple-500/10 px-4 py-2 text-sm text-purple-200 transition-all hover:bg-purple-500/20"
+                                className="flex items-center gap-2 rounded-xl border px-4 py-2 text-sm transition-all"
+                                style={{
+                                    borderColor: `${secondaryColor}30`,
+                                    backgroundColor: `${secondaryColor}10`,
+                                    color: `${secondaryColor}cc`
+                                }}
                             >
                                 <Printer className="w-4 h-4" />
                                 Imprimer
                             </button>
                             <button
                                 onClick={exportToPDF}
-                                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500 px-4 py-2 text-sm font-black text-slate-900 shadow-lg shadow-cyan-500/20 transition-all hover:scale-105 hover:brightness-110"
+                                className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black text-white shadow-lg transition-all hover:scale-105 hover:brightness-110"
+                                style={{
+                                    backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`,
+                                    boxShadow: `0 10px 15px -3px ${primaryColor}30`
+                                }}
                             >
                                 <FileDown className="w-4 h-4" />
                                 Exporter en PDF
@@ -818,7 +866,7 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                     </div>
 
                     {/* Contenu du rapport */}
-                    <div className="flex-1 overflow-y-auto p-6">
+                    <div className="relative z-10 flex-1 overflow-y-auto p-6">
                         <pre className="font-mono text-sm text-slate-200 whitespace-pre-wrap">
                             {reportText}
                         </pre>
@@ -835,14 +883,49 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
             onClick={onClose}
         >
             <div
-                className="w-full max-w-6xl max-h-[90vh] rounded-3xl border border-white/10 bg-[#0b1124]/95 backdrop-blur-xl shadow-[0_25px_60px_rgba(2,4,20,0.8)] flex flex-col"
+                className="relative w-full max-w-6xl max-h-[90vh] rounded-3xl border-2 border-theme-primary shadow-2xl flex flex-col"
                 onClick={(e) => e.stopPropagation()}
+                style={{
+                    backdropFilter: 'blur(40px) saturate(180%)',
+                    WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                    backgroundColor: 'var(--bg-secondary)',
+                    opacity: 0.98
+                }}
             >
+                {/* Gradient de bordure animé */}
+                <div
+                    className="absolute inset-0 rounded-3xl opacity-50 pointer-events-none"
+                    style={{
+                        backgroundImage: `linear-gradient(to bottom right, ${primaryColor}33, transparent, ${secondaryColor}33)`
+                    }}
+                />
+
+                {/* Effet shimmer sur les bords */}
+                <div className="absolute inset-0 rounded-3xl opacity-30 pointer-events-none">
+                    <div
+                        className="absolute top-0 left-0 right-0 h-px"
+                        style={{
+                            backgroundImage: `linear-gradient(to right, transparent, ${primaryColor}, transparent)`
+                        }}
+                    />
+                    <div
+                        className="absolute bottom-0 left-0 right-0 h-px"
+                        style={{
+                            backgroundImage: `linear-gradient(to right, transparent, ${secondaryColor}, transparent)`
+                        }}
+                    />
+                </div>
+
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="relative z-10 flex items-center justify-between p-6 border-b border-theme-primary">
                     <div className="flex items-center gap-3">
-                        <FileText className="w-6 h-6 text-cyan-400" />
-                        <h3 className="text-xl font-black bg-gradient-to-r from-cyan-400 via-blue-400 to-cyan-500 bg-clip-text text-transparent">
+                        <FileText className="w-6 h-6" style={{ color: primaryColor }} />
+                        <h3
+                            className="text-xl font-black bg-clip-text text-transparent"
+                            style={{
+                                backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
+                            }}
+                        >
                             Compte Rendu Hebdomadaire
                         </h3>
                     </div>
@@ -855,11 +938,17 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                 </div>
 
                 {/* Contenu */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="relative z-10 flex-1 overflow-y-auto p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Semaine en cours */}
-                        <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/5 p-5">
-                            <h4 className="text-lg font-bold text-cyan-300 mb-4">
+                        <div
+                            className="rounded-2xl border p-5"
+                            style={{
+                                borderColor: `${primaryColor}33`,
+                                backgroundColor: `${primaryColor}0d`
+                            }}
+                        >
+                            <h4 className="text-lg font-bold mb-4" style={{ color: primaryColor }}>
                                 Semaine en cours ({currentWeek.startStr} - {currentWeek.endStr})
                             </h4>
 
@@ -872,7 +961,8 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                                     </h5>
                                     <button
                                         onClick={() => toggleAll('current', true)}
-                                        className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                                        className="text-xs transition-colors"
+                                        style={{ color: primaryColor }}
                                     >
                                         {currentWeekTasks.completed.every(t => selectedTasks[t.id]) ? "Désélectionner" : "Tout sélectionner"}
                                     </button>
@@ -916,7 +1006,8 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                                     </h5>
                                     <button
                                         onClick={() => toggleAll('current', false)}
-                                        className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                                        className="text-xs transition-colors"
+                                        style={{ color: primaryColor }}
                                     >
                                         {currentWeekTasks.remaining.every(t => selectedTasks[t.id]) ? "Désélectionner" : "Tout sélectionner"}
                                     </button>
@@ -957,8 +1048,14 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                         </div>
 
                         {/* Semaine précédente */}
-                        <div className="rounded-2xl border border-purple-400/20 bg-purple-500/5 p-5">
-                            <h4 className="text-lg font-bold text-purple-300 mb-4">
+                        <div
+                            className="rounded-2xl border p-5"
+                            style={{
+                                borderColor: `${secondaryColor}33`,
+                                backgroundColor: `${secondaryColor}0d`
+                            }}
+                        >
+                            <h4 className="text-lg font-bold mb-4" style={{ color: secondaryColor }}>
                                 Semaine précédente ({previousWeek.startStr} - {previousWeek.endStr})
                             </h4>
 
@@ -971,7 +1068,8 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                                     </h5>
                                     <button
                                         onClick={() => toggleAll('previous', true)}
-                                        className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                                        className="text-xs transition-colors"
+                                        style={{ color: secondaryColor }}
                                     >
                                         {previousWeekTasks.completed.every(t => selectedTasks[t.id]) ? "Désélectionner" : "Tout sélectionner"}
                                     </button>
@@ -1015,7 +1113,8 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                                     </h5>
                                     <button
                                         onClick={() => toggleAll('previous', false)}
-                                        className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                                        className="text-xs transition-colors"
+                                        style={{ color: secondaryColor }}
                                     >
                                         {previousWeekTasks.remaining.every(t => selectedTasks[t.id]) ? "Désélectionner" : "Tout sélectionner"}
                                     </button>
@@ -1058,16 +1157,21 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                 </div>
 
                 {/* Footer avec boutons de génération */}
-                <div className="border-t border-white/10 p-6">
+                <div className="relative z-10 border-t border-theme-primary p-6">
                     <div className="flex items-center justify-between">
                         <div className="text-sm text-slate-300">
-                            <span className="font-semibold text-cyan-400">{selectedCount}</span> tâches sélectionnées
+                            <span className="font-semibold" style={{ color: primaryColor }}>{selectedCount}</span> tâches sélectionnées
                         </div>
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => generateReport('current')}
                                 disabled={selectedCount === 0}
-                                className="flex items-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200 transition-all hover:bg-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                    borderColor: `${primaryColor}30`,
+                                    backgroundColor: `${primaryColor}10`,
+                                    color: `${primaryColor}cc`
+                                }}
                             >
                                 <FileText className="w-4 h-4" />
                                 CR Semaine en cours
@@ -1075,7 +1179,12 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                             <button
                                 onClick={() => generateReport('previous')}
                                 disabled={selectedCount === 0}
-                                className="flex items-center gap-2 rounded-xl border border-purple-400/30 bg-purple-500/10 px-4 py-2 text-sm font-semibold text-purple-200 transition-all hover:bg-purple-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{
+                                    borderColor: `${secondaryColor}30`,
+                                    backgroundColor: `${secondaryColor}10`,
+                                    color: `${secondaryColor}cc`
+                                }}
                             >
                                 <FileText className="w-4 h-4" />
                                 CR Semaine précédente
@@ -1083,7 +1192,11 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                             <button
                                 onClick={() => generateReport('both')}
                                 disabled={selectedCount === 0}
-                                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-500 px-5 py-2 text-sm font-black text-slate-900 shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 hover:brightness-110 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                                className="flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-black text-white shadow-lg transition-all hover:scale-105 hover:brightness-110 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                                style={{
+                                    backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`,
+                                    boxShadow: `0 10px 15px -3px ${primaryColor}30`
+                                }}
                             >
                                 <FileText className="w-4 h-4" />
                                 CR Complet (2 semaines)

@@ -2,7 +2,7 @@ import { useState } from "react";
 import useStore from "../../store/useStore";
 import type { User } from "../../types";
 import { uid } from "../../utils";
-import { Modal } from "../ui/Modal";
+import { GlassModal } from "../ui/GlassModal";
 import { alertModal, confirmModal } from "../../utils/confirm";
 
 interface UsersPanelProps {
@@ -65,8 +65,8 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
     }
 
     return (
-        <Modal isOpen={true} onClose={onClose} title="Gestion des utilisateurs" width="max-w-3xl">
-            <p className="mt-2 text-sm text-slate-400">
+        <GlassModal isOpen={true} onClose={onClose} title="Gestion des utilisateurs" size="xl">
+            <p className="mt-2 text-sm text-theme-muted">
                 Gérez les utilisateurs qui peuvent être assignés aux tâches. L'email sera utilisé pour les relances futures.
             </p>
 
@@ -74,15 +74,15 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
             <div className="mt-4 rounded-2xl border border-blue-400/30 bg-blue-400/5 p-4">
                 <h4 className="text-sm font-semibold text-blue-200 mb-3">Utilisateur connecté</h4>
                 <div className="flex items-center gap-3">
-                    <span className="text-sm text-slate-300">Session actuelle :</span>
+                    <span className="text-sm text-theme-secondary">Session actuelle :</span>
                     <select
                         value={currentUser || "unassigned"}
                         onChange={(e) => setCurrentUser(e.target.value === "unassigned" ? null : e.target.value)}
-                        className="flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-slate-100 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 cursor-pointer"
+                        className="flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-theme-primary focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 cursor-pointer"
                     >
-                        <option value="unassigned" className="bg-slate-800 text-slate-100">Non assigné</option>
+                        <option value="unassigned" className="bg-slate-800 text-theme-primary">Non assigné</option>
                         {users.filter(u => u.id !== "unassigned").map(user => (
-                            <option key={user.id} value={user.id} className="bg-slate-800 text-slate-100">
+                            <option key={user.id} value={user.id} className="bg-slate-800 text-theme-primary">
                                 {user.name} ({user.email})
                             </option>
                         ))}
@@ -106,7 +106,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                                 value={user.name}
                                 onChange={(e) => updateUser(user.id, "name", e.target.value)}
                                 disabled={user.id === "unassigned"}
-                                className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1 text-sm text-slate-100 disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                                className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1 text-sm text-theme-primary disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                                 placeholder="Nom"
                             />
                         </div>
@@ -116,7 +116,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                                 value={user.email}
                                 onChange={(e) => updateUser(user.id, "email", e.target.value.toLowerCase())}
                                 disabled={user.id === "unassigned"}
-                                className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1 text-sm text-slate-100 disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                                className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1 text-sm text-theme-primary disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                                 placeholder="email@exemple.com"
                             />
                         </div>
@@ -142,14 +142,14 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                         type="text"
                         value={newUserName}
                         onChange={(e) => setNewUserName(e.target.value)}
-                        className="col-span-4 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                        className="col-span-4 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                         placeholder="Nom complet"
                     />
                     <input
                         type="email"
                         value={newUserEmail}
                         onChange={(e) => setNewUserEmail(e.target.value)}
-                        className="col-span-6 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-slate-100 placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                        className="col-span-6 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                         placeholder="email@exemple.com"
                     />
                     <button
@@ -165,7 +165,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
             <div className="mt-6 flex justify-end gap-2">
                 <button
                     onClick={onClose}
-                    className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-[#1E3A8A]/60"
+                    className="rounded-2xl border border-white/20 px-4 py-2 text-theme-primary transition hover:bg-[#1E3A8A]/60"
                 >
                     Annuler
                 </button>
@@ -176,6 +176,6 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                     Enregistrer
                 </button>
             </div>
-        </Modal>
+        </GlassModal>
     );
 }

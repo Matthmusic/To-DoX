@@ -17,6 +17,8 @@ export function useDataPersistence() {
         directories,
         projectHistory,
         projectColors,
+        notificationSettings,
+        themeSettings,
         // users retiré car on utilise FIXED_USERS maintenant
         currentUser,
         storagePath,
@@ -25,6 +27,8 @@ export function useDataPersistence() {
         setDirectories,
         setProjectHistory,
         setProjectColors,
+        setNotificationSettings,
+        setThemeSettings,
         setUsers, // Gardé pour initialisation avec FIXED_USERS
         setCurrentUser,
         setStoragePath,
@@ -86,6 +90,14 @@ export function useDataPersistence() {
                     if (parsed.projectColors) {
                         devLog('✅ [LOCALSTORAGE] Project colors chargés');
                         setProjectColors(parsed.projectColors);
+                    }
+                    if (parsed.notificationSettings) {
+                        devLog('✅ [LOCALSTORAGE] Notification settings chargés');
+                        setNotificationSettings(parsed.notificationSettings);
+                    }
+                    if (parsed.themeSettings) {
+                        devLog('✅ [LOCALSTORAGE] Theme settings chargés');
+                        setThemeSettings(parsed.themeSettings);
                     }
                     // Note: On ignore parsed.users car on utilise FIXED_USERS
                 } catch (error) {
@@ -154,6 +166,14 @@ export function useDataPersistence() {
                             devLog('✅ [ELECTRON] Project colors chargés');
                             setProjectColors(result.data.projectColors);
                         }
+                        if (result.data.notificationSettings) {
+                            devLog('✅ [ELECTRON] Notification settings chargés');
+                            setNotificationSettings(result.data.notificationSettings);
+                        }
+                        if (result.data.themeSettings) {
+                            devLog('✅ [ELECTRON] Theme settings chargés');
+                            setThemeSettings(result.data.themeSettings);
+                        }
                         // Note: On ignore result.data.users car on utilise FIXED_USERS
                         if (result.data.users) {
                             devLog('⚠️ [ELECTRON] Users trouvés dans le fichier mais ignorés (on utilise FIXED_USERS)');
@@ -177,7 +197,8 @@ export function useDataPersistence() {
                             tasks: [],
                             directories: {},
                             projectHistory: [],
-                            projectColors: {}
+                            projectColors: {},
+                            notificationSettings: notificationSettings
                             // Note: users n'est plus sauvegardé dans le fichier, on utilise FIXED_USERS
                         };
                         devLog('💾 [ELECTRON] Sauvegarde des données initiales...');
@@ -260,6 +281,8 @@ export function useDataPersistence() {
                         if (result.data.directories) setDirectories(result.data.directories);
                         if (result.data.projectHistory) setProjectHistory(result.data.projectHistory);
                         if (result.data.projectColors) setProjectColors(result.data.projectColors);
+                        if (result.data.notificationSettings) setNotificationSettings(result.data.notificationSettings);
+                        if (result.data.themeSettings) setThemeSettings(result.data.themeSettings);
                         // Note: On ignore result.data.users car on utilise FIXED_USERS
 
                         devLog('✅ [AUTO-RELOAD] Rechargement terminé');
@@ -274,14 +297,14 @@ export function useDataPersistence() {
         }, 5000); // 5 secondes - Refresh rapide pour détecter les tâches assignées par d'autres users
 
         return () => clearInterval(interval);
-    }, [storagePath, isLoadingData, currentUser, setTasks, setDirectories, setProjectHistory, setProjectColors]); // setUsers retiré car on utilise FIXED_USERS
+    }, [storagePath, isLoadingData, currentUser, setTasks, setDirectories, setProjectHistory, setProjectColors, setNotificationSettings]); // setUsers retiré car on utilise FIXED_USERS
 
     // Sauvegarde automatique avec débounce pour éviter les sauvegardes multiples rapides
     useEffect(() => {
         if (isLoadingData) return;
 
         // localStorage mis à jour immédiatement (synchrone, pas cher)
-        const payload = { tasks, directories, projectHistory, projectColors };
+        const payload = { tasks, directories, projectHistory, projectColors, notificationSettings, themeSettings };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 
         // Sauvegarde fichier Electron débounce de 500ms
@@ -309,7 +332,7 @@ export function useDataPersistence() {
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [tasks, directories, projectHistory, projectColors, storagePath, isLoadingData, setSaveError]);
+    }, [tasks, directories, projectHistory, projectColors, notificationSettings, storagePath, isLoadingData, setSaveError]);
 
     // Sauvegarder l'utilisateur courant dans localStorage
     useEffect(() => {

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
@@ -49,9 +49,6 @@ function createWindow() {
 
 // Gestion du cycle de vie de l'app
 app.whenReady().then(() => {
-  // Forcer le thème dark
-  nativeTheme.themeSource = 'dark';
-
   createWindow();
 
   // Vérifier les mises à jour au démarrage (seulement en production)
@@ -159,6 +156,26 @@ ipcMain.handle('install-update', () => {
 
 ipcMain.handle('get-app-version', () => {
   return app.getVersion();
+});
+
+// Handlers pour le système de thèmes
+ipcMain.handle('set-native-theme', (event, source) => {
+  // source = 'light' | 'dark' | 'system'
+  nativeTheme.themeSource = source;
+  return nativeTheme.shouldUseDarkColors;
+});
+
+ipcMain.handle('get-system-theme', () => {
+  return nativeTheme.shouldUseDarkColors ? 'dark' : 'light';
+});
+
+// Écouter les changements du thème système et notifier le renderer
+nativeTheme.on('updated', () => {
+  if (mainWindow) {
+    mainWindow.webContents.send('system-theme-changed', {
+      shouldUseDarkColors: nativeTheme.shouldUseDarkColors
+    });
+  }
 });
 
 // Handler pour ouvrir des dossiers locaux
@@ -419,4 +436,96 @@ ipcMain.handle('select-project-folder', async () => {
   const folderName = path.basename(folderPath);
 
   return { success: true, path: folderPath, name: folderName };
+});
+
+// ============================================
+// HANDLERS POUR LES NOTIFICATIONS DESKTOP
+// ============================================
+
+// Handler pour envoyer une notification native
+ipcMain.handle('send-notification', async (_event, title, body, tag) => {
+  try {
+    // Vérifier si les notifications sont supportées
+    if (!Notification.isSupported()) {
+      console.warn('⚠️ Notifications non supportées sur ce système');
+      return { success: false, error: 'Notifications not supported' };
+    }
+
+    // Créer et afficher la notification
+    const notification = new Notification({
+      title,
+      body,
+      icon: path.join(__dirname, 'src/assets/icon.png'),
+      tag, // Évite les doublons avec le même tag
+      silent: false, // Son par défaut du système
+    });
+
+    notification.show();
+
+    // Log pour debug
+    console.log(`🔔 [ELECTRON] Notification envoyée: "${title}"`);
+
+    // Gérer le clic sur la notification (focus sur la fenêtre)
+    notification.on('click', () => {
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('❌ [ELECTRON] Erreur notification:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handler pour demander la permission de notifications
+ipcMain.handle('request-notification-permission', async () => {
+  try {
+    // Sur Electron, les notifications sont toujours autorisées si supportées
+    const hasPermission = Notification.isSupported();
+    console.log(`🔔 [ELECTRON] Permission notifications: ${hasPermission ? 'accordée' : 'refusée'}`);
+    return hasPermission;
+  } catch (error) {
+    console.error('❌ [ELECTRON] Erreur permission:', error);
+    return false;
+  }
+});
+
+// Handler pour logger les erreurs dans un fichier
+ipcMain.handle('log-error', async (_event, errorLog) => {
+  try {
+    const logsDir = path.join(app.getPath('userData'), 'logs');
+    const logFile = path.join(logsDir, 'errors.log');
+
+    // Créer le dossier logs s'il n'existe pas
+    await fs.mkdir(logsDir, { recursive: true });
+
+    // Formater l'erreur
+    const formattedError = `
+================================================================================
+[${errorLog.timestamp}] ${errorLog.boundary}
+================================================================================
+Message: ${errorLog.message}
+
+Stack Trace:
+${errorLog.stack}
+
+Component Stack:
+${errorLog.componentStack}
+
+================================================================================
+
+`;
+
+    // Ajouter au fichier de log (append)
+    await fs.appendFile(logFile, formattedError, 'utf8');
+
+    console.log('🪵 [ELECTRON] Erreur loggée dans:', logFile);
+    return { success: true, logPath: logFile };
+  } catch (error) {
+    console.error('❌ [ELECTRON] Impossible de logger l\'erreur:', error);
+    return { success: false, error: error.message };
+  }
 });
