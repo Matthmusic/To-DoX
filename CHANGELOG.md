@@ -39,25 +39,6 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 - Gestion intelligente du cache de notifications (réinitialisation toutes les 24h)
 
 ---
-  - 💧 Goutte d'eau
-  - 🎵 Accord musical
-  - ✨ Pop-up
-  - 🔔 Classique (par défaut)
-  - 😮 Gasp UI
-  - 📱 Message
-- **Aperçu audio** : Bouton de test pour écouter chaque son avant de choisir
-- **Son personnalisé** : Chaque utilisateur peut choisir son son préféré
-
-### 🔧 Améliorations
-- Meilleure expérience utilisateur dans le panneau de notifications
-- Interface de sélection de son intuitive avec radio buttons
-- Gestion intelligente du cache de notifications (réinitialisation toutes les 24h)
-
-### 🐛 Corrections
-- Les notifications ne se déclenchent plus avant la connexion utilisateur
-- Amélioration de la gestion des erreurs lors de la lecture audio
-
----
 
 ## [2.0.1] - 2025-02-XX
 
