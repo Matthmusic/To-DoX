@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  getSoundUrl: (soundFile) => ipcRenderer.invoke('get-sound-url', soundFile),
 
   // Listeners pour les événements de mise à jour
   onUpdateAvailable: (callback) => {

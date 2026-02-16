@@ -8,6 +8,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import useStore from '../store/useStore';
 import { businessDayDelta } from '../utils';
+import { playSoundFile } from '../utils/sound';
 
 // Constantes
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
@@ -64,8 +65,7 @@ export function useNotifications() {
       // 🔊 Jouer le son sélectionné si activé
       if (notificationSettings.sound && notificationSettings.soundFile) {
         try {
-          const audio = new Audio(`/sounds/${notificationSettings.soundFile}`);
-          await audio.play();
+          await playSoundFile(notificationSettings.soundFile);
         } catch (audioError) {
           console.warn('⚠️ Impossible de jouer le son:', audioError);
         }
