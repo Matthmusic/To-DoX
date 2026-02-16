@@ -35,16 +35,13 @@ async function resolveSoundUrl(soundFile) {
     return `http://localhost:5173/sounds/${encodeURIComponent(safeSoundFile)}`;
   }
 
-  // En production, toujours utiliser le chemin dans app.asar.unpacked
-  const soundPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'sounds', safeSoundFile);
-  const fileUrl = toFileUrl(soundPath);
+  // En production, utiliser le protocole app:// pour éviter les restrictions file://
+  const appUrl = `app://sounds/${encodeURIComponent(safeSoundFile)}`;
 
   console.log('🔍 [ELECTRON] Résolution son:', safeSoundFile);
-  console.log('📂 [ELECTRON] process.resourcesPath:', process.resourcesPath);
-  console.log('📂 [ELECTRON] soundPath:', soundPath);
-  console.log('🔊 [ELECTRON] fileUrl:', fileUrl);
+  console.log('🔊 [ELECTRON] appUrl:', appUrl);
 
-  return fileUrl;
+  return appUrl;
 }
 
 // Enregistrer le protocole app:// comme privilégié (avant app.ready)
@@ -116,7 +113,15 @@ app.whenReady().then(() => {
       const hostSegment = parsedUrl.host && parsedUrl.host !== '.' ? parsedUrl.host : '';
       const relativePath = decodeURIComponent(path.posix.join(hostSegment, parsedUrl.pathname));
       const normalizedRelativePath = relativePath.replace(/^\/+/, '');
-      const filePath = path.normalize(path.join(__dirname, 'dist', normalizedRelativePath));
+
+      let filePath;
+      // Les fichiers sons sont dans app.asar.unpacked car ils sont exclus de l'asar
+      if (normalizedRelativePath.startsWith('sounds/')) {
+        filePath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', normalizedRelativePath);
+      } else {
+        filePath = path.join(__dirname, 'dist', normalizedRelativePath);
+      }
+
       const fileUrl = toFileUrl(filePath);
       console.log('🌐 [PROTOCOL] app://', request.url, '→', fileUrl);
       return net.fetch(fileUrl);
