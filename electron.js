@@ -10,6 +10,24 @@ function toFileUrl(filePath) {
   return pathToFileURL(filePath).toString();
 }
 
+function getMimeType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeTypes = {
+    '.html': 'text/html',
+    '.css': 'text/css',
+    '.js': 'application/javascript',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+    '.wav': 'audio/wav',
+    '.mp3': 'audio/mpeg',
+    '.ogg': 'audio/ogg',
+  };
+  return mimeTypes[ext] || 'application/octet-stream';
+}
+
 function sanitizeSoundFileName(soundFile) {
   if (typeof soundFile !== 'string') return null;
   const cleanFileName = path.basename(soundFile).trim();
@@ -107,8 +125,7 @@ function createWindow() {
 app.whenReady().then(() => {
   // Enregistrer le protocole app:// pour servir les fichiers locaux
   if (!isDev) {
-    const { net } = require('electron');
-    protocol.handle('app', (request) => {
+    protocol.handle('app', async (request) => {
       const parsedUrl = new URL(request.url);
       const hostSegment = parsedUrl.host && parsedUrl.host !== '.' ? parsedUrl.host : '';
       const pathSegment = parsedUrl.pathname.replace(/^\/+/, ''); // Supprimer leading slashes
@@ -123,9 +140,25 @@ app.whenReady().then(() => {
         filePath = path.join(__dirname, 'dist', normalizedRelativePath);
       }
 
-      const fileUrl = toFileUrl(filePath);
-      console.log('🌐 [PROTOCOL] app://', request.url, '→', normalizedRelativePath, '→', fileUrl);
-      return net.fetch(fileUrl);
+      console.log('🌐 [PROTOCOL] app://', request.url, '→', normalizedRelativePath, '→', filePath);
+
+      try {
+        // Lire le fichier directement au lieu d'utiliser net.fetch
+        const data = await fs.readFile(filePath);
+        const mimeType = getMimeType(filePath);
+
+        console.log('✅ [PROTOCOL] File loaded:', filePath, 'size:', data.length, 'type:', mimeType);
+
+        return new Response(data, {
+          headers: {
+            'Content-Type': mimeType,
+            'Content-Length': data.length.toString(),
+          },
+        });
+      } catch (error) {
+        console.error('❌ [PROTOCOL] Error loading file:', filePath, error);
+        return new Response('File not found', { status: 404 });
+      }
     });
   }
 
