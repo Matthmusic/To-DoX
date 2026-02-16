@@ -111,8 +111,9 @@ app.whenReady().then(() => {
     protocol.handle('app', (request) => {
       const parsedUrl = new URL(request.url);
       const hostSegment = parsedUrl.host && parsedUrl.host !== '.' ? parsedUrl.host : '';
-      const relativePath = decodeURIComponent(path.posix.join(hostSegment, parsedUrl.pathname));
-      const normalizedRelativePath = relativePath.replace(/^\/+/, '');
+      const pathSegment = parsedUrl.pathname.replace(/^\/+/, ''); // Supprimer leading slashes
+      const relativePath = hostSegment ? `${hostSegment}/${pathSegment}` : pathSegment;
+      const normalizedRelativePath = decodeURIComponent(relativePath);
 
       let filePath;
       // Les fichiers sons sont dans app.asar.unpacked car ils sont exclus de l'asar
@@ -123,7 +124,7 @@ app.whenReady().then(() => {
       }
 
       const fileUrl = toFileUrl(filePath);
-      console.log('🌐 [PROTOCOL] app://', request.url, '→', fileUrl);
+      console.log('🌐 [PROTOCOL] app://', request.url, '→', normalizedRelativePath, '→', fileUrl);
       return net.fetch(fileUrl);
     });
   }
