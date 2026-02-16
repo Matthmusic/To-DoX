@@ -35,27 +35,16 @@ async function resolveSoundUrl(soundFile) {
     return `http://localhost:5173/sounds/${encodeURIComponent(safeSoundFile)}`;
   }
 
-  const soundCandidates = [
-    path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'sounds', safeSoundFile),
-    path.join(__dirname, 'dist', 'sounds', safeSoundFile),
-  ];
+  // En production, toujours utiliser le chemin dans app.asar.unpacked
+  const soundPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'sounds', safeSoundFile);
+  const fileUrl = toFileUrl(soundPath);
 
   console.log('🔍 [ELECTRON] Résolution son:', safeSoundFile);
   console.log('📂 [ELECTRON] process.resourcesPath:', process.resourcesPath);
-  console.log('📂 [ELECTRON] __dirname:', __dirname);
+  console.log('📂 [ELECTRON] soundPath:', soundPath);
+  console.log('🔊 [ELECTRON] fileUrl:', fileUrl);
 
-  for (const candidate of soundCandidates) {
-    console.log('🔍 [ELECTRON] Test:', candidate);
-    if (await fileExists(candidate)) {
-      const fileUrl = toFileUrl(candidate);
-      console.log('✅ [ELECTRON] Trouvé!', fileUrl);
-      return fileUrl;
-    }
-  }
-
-  console.log('⚠️ [ELECTRON] Fichier son non trouvé, fallback vers app://');
-  // Fallback vers le protocole app:// si les fichiers n'ont pas été trouvés.
-  return `app://./sounds/${encodeURIComponent(safeSoundFile)}`;
+  return fileUrl;
 }
 
 // Enregistrer le protocole app:// comme privilégié (avant app.ready)
