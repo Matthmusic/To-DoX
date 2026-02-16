@@ -8,7 +8,7 @@ Une application Kanban minimaliste et intelligente pour la gestion de tâches av
 
 [![Download Latest Release](https://img.shields.io/github/v/release/Matthmusic/To-DoX?label=Télécharger&style=for-the-badge&logo=github)](https://github.com/Matthmusic/To-DoX/releases/latest)
 
-**Version actuelle : 2.0.0**
+**Version actuelle : 2.0.2**
 
 Téléchargez simplement le fichier `.exe` depuis la [page des releases](https://github.com/Matthmusic/To-DoX/releases/latest) et lancez-le !
 
@@ -33,16 +33,31 @@ Téléchargez simplement le fichier `.exe` depuis la [page des releases](https:/
 - **Liens vers dossiers projets** : Configuration de chemins locaux pour ouvrir rapidement les dossiers de travail via Electron
 - **Filtrage avancé** : Recherche par titre, projet, notes, avec filtres combinables (projet, priorité, statut)
 
+### 🔔 Notifications intelligentes ✨ **Nouveau dans v2.0.2**
+- **Filtrage par utilisateur** : Recevez uniquement les notifications pour vos tâches assignées
+- **Alertes deadlines** : Notifications automatiques pour les tâches qui approchent de leur échéance
+- **Alertes tâches stagnantes** : Avertissement si une tâche "En cours" n'a pas bougé depuis 3 jours
+- **Sons personnalisables** : Choisissez parmi 6 sons de notification différents
+  - 💧 Goutte d'eau | 🎵 Accord musical | ✨ Pop-up | 🔔 Classique | 😮 Gasp UI | 📱 Message
+- **Heures silencieuses** : Configurez des plages horaires sans notifications
+- **Aperçu audio** : Testez les sons avant de choisir
+
+### 🎨 Thèmes et personnalisation ✨ **Nouveau dans v2.0.2**
+- **14 thèmes préinstallés** : Du minimaliste au cyberpunk
+- **TitleBar thématique** : La barre de titre suit les couleurs du thème actif
+- **Mode clair/sombre** : Basculez entre les modes selon vos préférences
+- **Personnalisation complète** : Couleurs, bordures, opacités
+
 ### 💾 Persistance et export
 - **Stockage local** : Sauvegarde automatique dans localStorage
 - **Export/Import JSON** : Sauvegardez et partagez vos données facilement
 - **Aucune dépendance backend** : Fonctionne entièrement en local
 
-### 🎨 Interface moderne
-- **Dark mode natif** : Interface complète en mode sombre (barre de titre, scrollbars, application)
+### 💻 Interface moderne
 - **Barre de titre personnalisée** : Design cohérent avec contrôles Windows intégrés
 - **Design fluide** : Animations et transitions soignées
 - **Responsive** : S'adapte à toutes les tailles d'écran
+- **Performance optimisée** : Compilation React et optimisations Vite
 
 ## 🛠️ Technologies utilisées
 
