@@ -1,8 +1,62 @@
 const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog, Notification, protocol } = require('electron');
 const path = require('path');
-const fs = require('fs').promises;
+const fsSync = require('fs');
+const fs = fsSync.promises;
 const crypto = require('crypto');
+const { pathToFileURL } = require('url');
 const isDev = process.env.NODE_ENV === 'development';
+
+function toFileUrl(filePath) {
+  return pathToFileURL(filePath).toString();
+}
+
+function sanitizeSoundFileName(soundFile) {
+  if (typeof soundFile !== 'string') return null;
+  const cleanFileName = path.basename(soundFile).trim();
+  return cleanFileName.length > 0 ? cleanFileName : null;
+}
+
+async function fileExists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveSoundUrl(soundFile) {
+  const safeSoundFile = sanitizeSoundFileName(soundFile);
+  if (!safeSoundFile) {
+    throw new Error('Nom de fichier son invalide');
+  }
+
+  if (isDev) {
+    return `http://localhost:5173/sounds/${encodeURIComponent(safeSoundFile)}`;
+  }
+
+  const soundCandidates = [
+    path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'sounds', safeSoundFile),
+    path.join(__dirname, 'dist', 'sounds', safeSoundFile),
+  ];
+
+  console.log('🔍 [ELECTRON] Résolution son:', safeSoundFile);
+  console.log('📂 [ELECTRON] process.resourcesPath:', process.resourcesPath);
+  console.log('📂 [ELECTRON] __dirname:', __dirname);
+
+  for (const candidate of soundCandidates) {
+    console.log('🔍 [ELECTRON] Test:', candidate);
+    if (await fileExists(candidate)) {
+      const fileUrl = toFileUrl(candidate);
+      console.log('✅ [ELECTRON] Trouvé!', fileUrl);
+      return fileUrl;
+    }
+  }
+
+  console.log('⚠️ [ELECTRON] Fichier son non trouvé, fallback vers app://');
+  // Fallback vers le protocole app:// si les fichiers n'ont pas été trouvés.
+  return `app://./sounds/${encodeURIComponent(safeSoundFile)}`;
+}
 
 // Enregistrer le protocole app:// comme privilégié (avant app.ready)
 if (!isDev) {
@@ -41,6 +95,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      autoplayPolicy: 'no-user-gesture-required',
       preload: path.join(__dirname, 'preload.js')
     },
     icon: path.join(__dirname, 'src/assets/icon.png'),
@@ -68,9 +123,14 @@ app.whenReady().then(() => {
   if (!isDev) {
     const { net } = require('electron');
     protocol.handle('app', (request) => {
-      const url = request.url.substring(6); // Enlever 'app://'
-      const filePath = path.normalize(path.join(__dirname, 'dist', url));
-      return net.fetch('file://' + filePath);
+      const parsedUrl = new URL(request.url);
+      const hostSegment = parsedUrl.host && parsedUrl.host !== '.' ? parsedUrl.host : '';
+      const relativePath = decodeURIComponent(path.posix.join(hostSegment, parsedUrl.pathname));
+      const normalizedRelativePath = relativePath.replace(/^\/+/, '');
+      const filePath = path.normalize(path.join(__dirname, 'dist', normalizedRelativePath));
+      const fileUrl = toFileUrl(filePath);
+      console.log('🌐 [PROTOCOL] app://', request.url, '→', fileUrl);
+      return net.fetch(fileUrl);
     });
   }
 
@@ -181,6 +241,16 @@ ipcMain.handle('install-update', () => {
 
 ipcMain.handle('get-app-version', () => {
   return app.getVersion();
+});
+
+ipcMain.handle('get-sound-url', async (_event, soundFile) => {
+  try {
+    const url = await resolveSoundUrl(soundFile);
+    return { success: true, url };
+  } catch (error) {
+    console.error('❌ [ELECTRON] Erreur résolution son:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Handlers pour le système de thèmes
