@@ -580,7 +580,7 @@ ipcMain.handle('send-notification', async (_event, title, body, tag) => {
       body,
       icon: path.join(__dirname, 'src/assets/icon.png'),
       tag, // Évite les doublons avec le même tag
-      silent: false, // Son par défaut du système
+      silent: true, // Pas de son système (on joue notre propre son)
     });
 
     notification.show();
