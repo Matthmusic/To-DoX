@@ -9,6 +9,7 @@ import useStore from '../../store/useStore';
 import { useState } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { NOTIFICATION_SOUNDS } from '../../constants';
+import { playSoundFile } from '../../utils/sound';
 
 interface NotificationsPanelProps {
   onClose: () => void;
@@ -38,11 +39,17 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
     updateNotificationSettings({ soundFile });
   };
 
-  const handlePlaySound = (soundFile: string) => {
+  const handlePlaySound = async (soundFile: string) => {
     setPlayingSound(soundFile);
-    const audio = new Audio(`/sounds/${soundFile}`);
-    audio.play();
-    audio.onended = () => setPlayingSound(null);
+
+    try {
+      const audio = await playSoundFile(soundFile);
+      audio.onended = () => setPlayingSound(null);
+      audio.onerror = () => setPlayingSound(null);
+    } catch (error) {
+      console.warn('⚠️ Impossible de jouer l\'aperçu sonore:', error);
+      setPlayingSound(null);
+    }
   };
 
   const handleTestNotification = async () => {
@@ -52,11 +59,22 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
     }
 
     try {
+      // Envoyer la notification
       await window.electronAPI.sendNotification(
         '🔔 Test de notification',
         'Si vous voyez ceci, les notifications fonctionnent correctement !',
         'test-notification'
       );
+
+      // 🔊 Jouer le son sélectionné si activé
+      if (notificationSettings.sound && notificationSettings.soundFile) {
+        try {
+          await playSoundFile(notificationSettings.soundFile);
+        } catch (audioError) {
+          console.warn('⚠️ Impossible de jouer le son:', audioError);
+        }
+      }
+
       setTestSent(true);
       setTimeout(() => setTestSent(false), 3000);
     } catch (error) {
@@ -319,7 +337,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handlePlaySound(sound.file);
+                        void handlePlaySound(sound.file);
                       }}
                       disabled={!notificationSettings.enabled || playingSound === sound.file}
                       className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-slate-700 hover:border-theme-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
