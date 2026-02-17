@@ -65,6 +65,8 @@ export interface StoredData {
   users?: User[];
   notificationSettings?: NotificationSettings;
   themeSettings?: ThemeSettings;
+  comments?: Record<string, Comment[]>;
+  pendingMentions?: Record<string, PendingMention[]>;
 }
 
 export interface ElectronAPI {
@@ -217,6 +219,28 @@ export interface SubtaskProgress {
  * Mapping projet -> chemin de dossier
  */
 export type Directories = Record<string, string>;
+
+/**
+ * Commentaire sur une tâche
+ */
+export interface Comment {
+  id: string;
+  taskId: string;
+  userId: string;
+  text: string;
+  createdAt: number;
+}
+
+/**
+ * Mention en attente de notification (pour alerter un utilisateur quand il se connecte)
+ */
+export interface PendingMention {
+  commentId: string;
+  taskId: string;
+  taskTitle: string;
+  fromUserId: string;
+  fromUserName: string;
+}
 
 /**
  * Configuration des notifications desktop

@@ -20,7 +20,8 @@ import {
     WeeklyReportModal,
     ConfirmModalHost,
     KanbanHeaderPremium,
-    KanbanBoard
+    KanbanBoard,
+    TimelineView,
 } from "./components";
 import { alertModal } from "./utils/confirm";
 
@@ -58,14 +59,15 @@ interface ContextMenuData {
 export default function ToDoX() {
     // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser, pendingMentions, clearPendingMentions } = useStore();
 
     const {
         filterProject,
         setFilterProject,
         filterSearch,
         setFilterSearch,
-        grouped
+        grouped,
+        filteredTasks,
     } = useFilters(tasks, currentUser);
 
     const {
@@ -87,6 +89,7 @@ export default function ToDoX() {
     const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
     const [showThemesPanel, setShowThemesPanel] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
+    const [activeView, setActiveView] = useState<'kanban' | 'timeline'>('kanban');
 
     const importFileRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<{ focus: () => void }>(null);
@@ -188,6 +191,34 @@ export default function ToDoX() {
     // === NOTIFICATIONS SYSTÈME ===
     useNotifications();
 
+    // === NOTIFICATIONS @MENTION ===
+    useEffect(() => {
+        if (!currentUser || currentUser === 'unassigned') return;
+        const mentions = pendingMentions[currentUser];
+        if (!mentions || mentions.length === 0) return;
+
+        // Regrouper par expéditeur pour éviter le spam
+        const grouped = mentions.reduce<Record<string, string[]>>((acc, m) => {
+            if (!acc[m.fromUserName]) acc[m.fromUserName] = [];
+            acc[m.fromUserName].push(m.taskTitle);
+            return acc;
+        }, {});
+
+        Object.entries(grouped).forEach(([from, taskTitles]) => {
+            const uniqueTitles = [...new Set(taskTitles)];
+            const body = uniqueTitles.length === 1
+                ? `Dans "${uniqueTitles[0]}"`
+                : `Dans ${uniqueTitles.length} tâches`;
+            window.electronAPI?.sendNotification(
+                `${from} vous a mentionné(e)`,
+                body,
+                `mention-${currentUser}-${Date.now()}`
+            );
+        });
+
+        clearPendingMentions(currentUser);
+    }, [currentUser]);
+
     // === KEYBOARD SHORTCUTS ===
 
     // Détection d'un modal/panel ouvert (pour désactiver certains raccourcis)
@@ -271,6 +302,8 @@ export default function ToDoX() {
                 onExport={handleExport}
                 onImport={handleImportClick}
                 onOpenHelp={() => setShowHelpPanel(true)}
+                activeView={activeView}
+                onViewChange={setActiveView}
                 filterSearch={filterSearch}
                 onSearchChange={setFilterSearch}
                 searchInputRef={searchInputRef}
@@ -278,17 +311,24 @@ export default function ToDoX() {
                 showSearch={showSearch}
             />
 
-            {/* MAIN CONTENT - KANBAN */}
+            {/* MAIN CONTENT */}
             <ErrorBoundary name="KanbanBoard">
-                <KanbanBoard
-                    grouped={grouped}
-                    collapsedProjects={collapsedProjects}
-                    onDragStartProject={handleDragStartProject}
-                    onDragStartTask={handleDragStart}
-                    onDrop={handleDrop}
-                    onContextMenuTask={handleContextMenu}
-                    onSetProjectDirectory={() => setShowDirPanel(true)}
-                />
+                {activeView === 'kanban' ? (
+                    <KanbanBoard
+                        grouped={grouped}
+                        collapsedProjects={collapsedProjects}
+                        onDragStartProject={handleDragStartProject}
+                        onDragStartTask={handleDragStart}
+                        onDrop={handleDrop}
+                        onContextMenuTask={handleContextMenu}
+                        onSetProjectDirectory={() => setShowDirPanel(true)}
+                    />
+                ) : (
+                    <TimelineView
+                        filteredTasks={filteredTasks}
+                        onTaskClick={(task, x, y) => setContextMenu({ x, y, task })}
+                    />
+                )}
             </ErrorBoundary>
 
             {/* MODALS & PANELS */}

@@ -15,6 +15,8 @@ import {
     HelpCircle,
     Bell,
     Palette,
+    LayoutGrid,
+    CalendarDays,
 } from "lucide-react";
 import ToDoXLogo from "../assets/To Do X.svg";
 import { QuickAddPremium } from "./QuickAddPremium";
@@ -40,6 +42,9 @@ interface KanbanHeaderPremiumProps {
     onExport: () => void;
     onImport: () => void;
     onOpenHelp: () => void;
+    // Vue active
+    activeView: 'kanban' | 'timeline';
+    onViewChange: (view: 'kanban' | 'timeline') => void;
     // Recherche
     filterSearch: string;
     onSearchChange: (value: string) => void;
@@ -69,6 +74,8 @@ export function KanbanHeaderPremium({
     onExport,
     onImport,
     onOpenHelp,
+    activeView,
+    onViewChange,
     filterSearch,
     onSearchChange,
     searchInputRef,
@@ -340,6 +347,34 @@ export function KanbanHeaderPremium({
                         <DropdownItem icon={Download} label="Export JSON" onClick={onExport} />
                         <DropdownItem icon={Upload} label="Import JSON" onClick={onImport} />
                     </DropdownMenu>
+
+                    {/* View Toggle (Kanban / Timeline) */}
+                    <div className="flex rounded-xl overflow-hidden border border-white/10">
+                        <button
+                            onClick={() => onViewChange('kanban')}
+                            className="flex items-center gap-1 px-2.5 py-2 text-xs font-semibold transition-colors"
+                            style={activeView === 'kanban'
+                                ? { backgroundColor: `${primaryColor}25`, color: primaryColor }
+                                : { color: 'rgba(255,255,255,0.35)' }
+                            }
+                            title="Vue Kanban"
+                        >
+                            <LayoutGrid className="h-3.5 w-3.5" />
+                            <span className="hidden lg:inline">Kanban</span>
+                        </button>
+                        <button
+                            onClick={() => onViewChange('timeline')}
+                            className="flex items-center gap-1 px-2.5 py-2 text-xs font-semibold transition-colors"
+                            style={activeView === 'timeline'
+                                ? { backgroundColor: `${primaryColor}25`, color: primaryColor }
+                                : { color: 'rgba(255,255,255,0.35)' }
+                            }
+                            title="Vue Timeline"
+                        >
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            <span className="hidden lg:inline">Timeline</span>
+                        </button>
+                    </div>
 
                     {/* Help Button */}
                     <button

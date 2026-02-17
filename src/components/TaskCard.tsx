@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { businessDayDelta, getProjectColor, getInitials } from "../utils";
 import { SubtaskList, parseFilePaths } from "./SubtaskList";
+import { TaskComments } from "./TaskComments";
 import useStore from "../store/useStore";
 import type { Task } from "../types";
 
@@ -454,6 +455,11 @@ export function TaskCard({
 
                     {/* Subtasks Section */}
                     <SubtaskList task={task} />
+
+                    {/* Comments Section */}
+                    <div className="pt-2 border-t border-white/5">
+                        <TaskComments taskId={task.id} />
+                    </div>
                 </div>
             )}
             </div>

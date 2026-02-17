@@ -2,9 +2,9 @@
 
 Document de suivi des améliorations et évolutions de l'application To-DoX.
 
-**Dernière mise à jour :** 12 février 2026
-**Version actuelle :** 2.0.1 (en développement)
-**Prochaine version :** 2.0.2 (planifiée)
+**Dernière mise à jour :** 17 février 2026
+**Version actuelle :** 2.0.2
+**Prochaine version :** 2.0.3 (planifiée)
 
 ---
 
@@ -13,10 +13,12 @@ Document de suivi des améliorations et évolutions de l'application To-DoX.
 | Catégorie | Total | TODO | En cours | Terminé |
 |-----------|-------|------|----------|---------|
 | 🎯 Prioritaires | 3 | 0 | 0 | 3 |
-| 🚀 Techniques | 3 | 2 | 0 | 1 |
-| 🌟 UX/Polish | 4 | 2 | 0 | 2 |
-| 🔧 Quick Wins | 3 | 2 | 0 | 1 |
-| **TOTAL** | **13** | **6** | **0** | **7** |
+| 🚀 Techniques | 2 | 0 | 0 | 2 |
+| 🌟 UX/Polish | 3 | 1 | 0 | 2 |
+| 🔧 Quick Wins | 2 | 0 | 0 | 2 |
+| **TOTAL** | **10** | **1** | **0** | **9** |
+
+> **Timeline :** implémentée (vue 4 semaines/mois, navigation libre, carte au clic) mais non encore marquée TERMINÉ dans la liste ci-dessous — en attente de validation.
 
 **Légende :**
 - 🔲 TODO
@@ -159,89 +161,55 @@ Ajouter une vue alternative au Kanban pour visualiser les tâches sur une ligne 
 
 ## 🚀 Améliorations Techniques
 
-### 4. Tests E2E avec Playwright 🧪
-**Statut :** 🔲 TODO
-**Priorité :** 🔥 Haute
-**Estimation :** 8-10h (setup + premiers tests)
-**Impact :** ⭐⭐⭐⭐⭐
-
-**Description :**
-Mettre en place des tests end-to-end pour valider les flows critiques de l'application.
-
-**Installation :**
-```bash
-npm install -D @playwright/test
-npx playwright install
-```
-
-**Tests à créer :**
-1. **CRUD Tâches**
-   - ✅ Créer une tâche
-   - ✅ Modifier une tâche
-   - ✅ Déplacer entre colonnes (drag & drop)
-   - ✅ Archiver/Désarchiver
-   - ✅ Supprimer
-
-2. **Filtres et recherche**
-   - ✅ Filtrer par projet
-   - ✅ Recherche texte
-   - ✅ Filtrer par utilisateur
-
-3. **Import/Export**
-   - ✅ Export JSON
-   - ✅ Import JSON avec validation
-
-4. **Persistence**
-   - ✅ Sauvegarde automatique
-   - ✅ Rechargement des données au démarrage
-
-**Fichiers concernés :**
-- `tests/e2e/` : Nouveau dossier
-- `playwright.config.ts` : Configuration Playwright
-- `.github/workflows/test.yml` : Intégrer dans CI
-
-**Notes :**
-- Utiliser `test.describe.serial()` pour tests dépendants
-- Capturer screenshots en cas d'échec
-- Tester sur Electron avec `_electron.launch()`
-
----
-
-### 5. Storybook pour UI Components 📚
-**Statut :** 🔲 TODO
+### 4. Storybook pour UI Components 📚
+**Statut :** ✅ TERMINÉ (17 février 2026)
 **Priorité :** ⭐ Moyenne
-**Estimation :** 6-8h (setup + premières stories)
+**Estimation :** 6-8h → **Réalisé en ~3h**
 **Impact :** ⭐⭐⭐⭐
 
 **Description :**
-Documenter visuellement les composants UI pour faciliter le développement et la maintenance.
+Documentation visuelle des composants UI avec Storybook 10 + Vite.
 
-**Installation :**
+**Commandes :**
 ```bash
-npx storybook@latest init
+npm run storybook         # Dev server (port 6006)
+npm run build-storybook   # Build statique → storybook-static/
 ```
 
-**Stories à créer :**
-- `TaskCard.stories.tsx` : Tous les états (todo, doing, review, done, avec/sans deadline, etc.)
-- `ProjectCard.stories.tsx` : Collapsed/Expanded, vide/rempli
-- `QuickAddPremium.stories.tsx` : Focus/Blur, avec suggestions
-- `Modal.stories.tsx` : Toutes les variantes de modaux
-- `Autocomplete.stories.tsx` : Avec/sans données, loading state
+**Stories créées (21 fichiers, ~60 stories) :**
+- ✅ `TaskCard.stories.tsx` : 6 états (todo, doing+deadline, stagnante, review en retard, done, priorité basse)
+- ✅ `ProjectCard.stories.tsx` : 5 variantes (déplié, replié, doing, review, vide)
+- ✅ `Modal.stories.tsx` : 5 variantes (avec titre, large, sans titre, scrollable, fermée)
+- ✅ `Autocomplete.stories.tsx` : 3 cas (objets, chaînes, vide)
+- ✅ `QuickAddPremium.stories.tsx` : vue par défaut
+- ✅ `CircularProgressBadge.stories.tsx` : 5 états (0%, 33%, 75%, 100%, sélectionné)
+- ✅ `DatePickerModal.stories.tsx` : 2 variantes
+- ✅ `DropdownMenu.stories.tsx` : 3 variantes (settings, actions, items seuls)
+- ✅ `SearchInput.stories.tsx` : 2 variantes + focus programmatique
+- ✅ `ProjectAutocomplete.stories.tsx` : 4 variantes
+- ✅ `SubtaskList.stories.tsx` : 4 états (1/3, 2/2, 0/4, sans sous-tâches)
+- ✅ `TaskEditPanel.stories.tsx` : 5 états de tâche
+- ✅ `ShortcutsHelpPanel.stories.tsx` : panel complet + version allégée
+- ✅ `ErrorScreen.stories.tsx` : avec erreur, sans nom boundary, null
+- ✅ `GlassModal.stories.tsx` : GlassModal (sm/md/lg), GlassPanel (4 glows), GlassCard
+- ✅ `LoginModal.stories.tsx` : sélection utilisateur
+- ✅ `UserProfile.stories.tsx` : 3 états (connecté, non connecté, autre user)
+- ✅ `WeeklyReportModal.stories.tsx` : 3 états (avec tâches, vide, sans user)
+- ✅ `UpdateNotification.stories.tsx` : 3 états (pas de MAJ, MAJ dispo, téléchargée)
+- ✅ `Settings.stories.tsx` : 7 panneaux (Notifications, ProjectDirs, ProjectsList, Storage×2, Themes, Users)
+- ✅ `Archive.stories.tsx` : 4 cas (tâches archivées, vide, projets archivés, vide)
 
-**Fichiers concernés :**
-- `src/stories/` : Nouveau dossier pour les stories
-- `.storybook/` : Configuration Storybook
-- `package.json` : Scripts Storybook
+**Fichiers créés :**
+- `.storybook/main.ts` : Config framework `@storybook/react-vite`, viteFinal pour override `base`
+- `.storybook/preview.ts` : Mock `window.electronAPI`, seed Zustand store, import CSS
+- `src/stories/mockData.ts` : 6 tâches de démo couvrant tous les cas visuels
+- `src/stories/*.stories.tsx` : 5 fichiers de stories
 
-**Addons recommandés :**
-- `@storybook/addon-a11y` : Test accessibilité
-- `@storybook/addon-interactions` : Tests d'interactions
-- `storybook-dark-mode` : Toggle dark mode
-
-**Notes :**
-- Utiliser `msw` pour mocker les données Electron
-- Documenter les props dans les stories
-- Configurer Storybook avec Tailwind CSS
+**Architecture :**
+- Mock `window.electronAPI` global dans `preview.ts` (toutes les méthodes sont des no-ops)
+- Store Zustand seedé via `useStore.setState()` dans un décorateur global
+- `index.css` importé → Tailwind + CSS variables du thème Cyberpunk Dark actives
+- `base: '/'` overridé dans `viteFinal` (le projet utilise `'./'` pour Electron)
 
 ---
 
@@ -387,45 +355,7 @@ Micro-animations fluides et professionnelles ajoutées à tous les composants cl
 
 ---
 
-### 8. Système de tags flexibles 🏷️
-**Statut :** 🔲 TODO
-**Priorité :** ⭐ Moyenne
-**Estimation :** 6-8h
-**Impact :** ⭐⭐⭐⭐
-
-**Description :**
-Ajouter un système de tags en complément des projets pour une organisation plus flexible.
-
-**Fonctionnalités :**
-- 🏷️ Tags multiples par tâche (`#urgent`, `#client`, `#bug`)
-- 🎨 Couleurs personnalisables par tag
-- 🔍 Filtrage par tags (AND/OR)
-- ⚡ Autocomplete dans QuickAdd avec `#`
-
-**Fichiers concernés :**
-- `src/types.ts` : Ajouter `tags?: string[]` à `Task`
-- `src/store/useStore.ts` : Ajouter `availableTags: Tag[]`
-- `src/components/TaskCard.tsx` : Afficher les tags
-- `src/components/TagsPanel.tsx` : Nouveau panneau de gestion
-- `src/hooks/useFilters.ts` : Ajouter filtrage par tags
-
-**Structure de données :**
-```typescript
-interface Tag {
-  name: string;
-  color: string; // Hex color
-  icon?: string; // Lucide icon name
-}
-```
-
-**Notes :**
-- Les tags doivent être case-insensitive
-- Auto-créer les tags lors de l'ajout d'une tâche
-- Suggérer tags populaires dans l'autocomplete
-
----
-
-### 9. Commentaires et historique d'activité 💬
+### 8. Commentaires et historique d'activité 💬
 **Statut :** 🔲 TODO
 **Priorité :** ⭐ Moyenne
 **Estimation :** 10-12h
@@ -538,49 +468,7 @@ Sous-tâche: Config dans C:\dev\config.json
 
 ## 🔧 Quick Wins
 
-### 11. Thèmes personnalisables 🎨
-**Statut :** 🔲 TODO
-**Priorité :** 💡 Basse
-**Estimation :** 3-4h
-**Impact :** ⭐⭐⭐
-
-**Description :**
-Remplacer le dark mode forcé par un système de thèmes personnalisables.
-
-**Fonctionnalités :**
-- 🌙 Thème clair/sombre/auto (système)
-- 🎨 Couleurs d'accent personnalisables
-- 💾 Sauvegarde des préférences
-
-**Fichiers concernés :**
-- `electron.js` : Retirer `nativeTheme.themeSource = 'dark'`
-- `src/hooks/useTheme.ts` : Nouveau hook
-- `src/components/settings/ThemePanel.tsx` : Panneau de config
-- `tailwind.config.js` : Variables CSS pour couleurs
-
-**Implémentation :**
-```typescript
-// useTheme.ts
-const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>('auto');
-
-useEffect(() => {
-  if (theme === 'auto') {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-    document.documentElement.classList.toggle('dark', prefersDark.matches);
-  } else {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-  }
-}, [theme]);
-```
-
-**Notes :**
-- Utiliser CSS variables pour les couleurs d'accent
-- Sauvegarder dans localStorage
-- Proposer 3-4 thèmes prédéfinis + custom
-
----
-
-### 12. Changelog intégré dans UpdateNotification 📝
+### 11. Changelog intégré dans UpdateNotification 📝
 **Statut :** ✅ TERMINÉ (12 février 2026)
 **Priorité :** 💡 Basse
 **Estimation :** 2-3h → **Réalisé en 1h30**
@@ -644,13 +532,13 @@ function parseMarkdown(text: string): string {
 ---
 
 ### 13. Build multi-plateforme dans CI 🌍
-**Statut :** 🔲 TODO
+**Statut :** ✅ TERMINÉ (17 février 2026)
 **Priorité :** ⭐ Moyenne
-**Estimation :** 2-3h
+**Estimation :** 2-3h → **Réalisé en 15min**
 **Impact :** ⭐⭐⭐⭐
 
 **Description :**
-Modifier le workflow GitHub Actions pour builder Windows, macOS et Linux en parallèle.
+Workflow GitHub Actions pour builder Windows, macOS et Linux en parallèle sur push de tag `v*`.
 
 **Implémentation :**
 ```yaml
@@ -658,27 +546,37 @@ Modifier le workflow GitHub Actions pour builder Windows, macOS et Linux en para
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        include:
+          - os: windows-latest, script: electron:build:win
+          - os: macos-latest, script: electron:build:mac
+          - os: ubuntu-latest, script: electron:build:linux
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: To-DoX
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      - run: npm run build:electron
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - actions/checkout@v4
+      - actions/setup-node@v4 (node 20, cache npm)
+      - npm ci
+      - npm run ${{ matrix.script }}
+        env: GH_TOKEN, CSC_IDENTITY_AUTO_DISCOVERY: false
 ```
 
-**Fichiers concernés :**
+**Fichiers créés :**
 - `.github/workflows/release.yml`
 
+**Artifacts produits :**
+- Windows : installeur NSIS x64
+- macOS : DMG + ZIP (x64 + arm64)
+- Linux : AppImage + DEB (x64)
+
 **Notes :**
-- Retirer `working-directory: smart-todo` (n'existe plus)
-- Utiliser `secrets.GITHUB_TOKEN` pour publish
-- macOS nécessite certificat pour notarization (optionnel)
+- `fail-fast: false` : les 3 OS buildent indépendamment
+- `CSC_IDENTITY_AUTO_DISCOVERY: false` : skip code signing macOS (pas de certificat Apple)
+- `permissions: contents: write` requis pour publier sur GitHub Releases
+- `working-directory: To-DoX` car le projet est dans un sous-dossier du dépôt
 
 ---
 
@@ -691,23 +589,21 @@ jobs:
 4. ✅ **Error Boundaries** → Sécurité et stabilité (v2.0.1)
 5. ✅ **Changelog UpdateNotification** → UX transparente sur les mises à jour (v2.0.1)
 6. ✅ **Animations Framer Motion** → Micro-animations professionnelles (v2.0.1)
-7. 🔜 **Tests E2E** → Sécurise les releases futures (v2.0.2)
-8. 🔜 **Vue Timeline** → Finaliser ce qui est commencé (v2.0.2)
+7. 🔜 **Storybook** → Documentation visuelle des composants (v2.0.3)
+8. 🔜 **Vue Timeline** → Finaliser ce qui est commencé (v2.0.3)
 
 ### Versions futures
-- **v2.0.1** : ✅ Raccourcis clavier + Notifications desktop + Liens de fichiers + Édition notes rapide + Error Boundaries + Changelog UpdateNotification + Animations Framer Motion (en développement, prête à builder)
-- **v2.0.2** : Tests E2E + Vue Timeline (planifiée)
-- **v2.0.3** : Tags + Storybook (planifiée)
+- **v2.0.1** : ✅ Raccourcis clavier + Notifications desktop + Liens de fichiers + Édition notes rapide + Error Boundaries + Changelog UpdateNotification + Animations Framer Motion
+- **v2.0.2** : ✅ En cours
+- **v2.0.3** : Storybook + Vue Timeline (planifiée)
 - **v2.1.0** : Commentaires + Activité (planifiée)
-- **v2.2.0** : Thèmes personnalisables + Build multi-plateforme CI (planifiée)
+- **v2.2.0** : ✅ Build multi-plateforme CI
 
 ### Dépendances à anticiper
 ```json
 {
   "framer-motion": "^11.x",
-  "marked": "^12.x",
   "react-calendar-timeline": "^0.28.x",
-  "@playwright/test": "^1.x",
   "storybook": "^8.x"
 }
 ```

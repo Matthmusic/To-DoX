@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { todayISO, uid } from '../utils';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
-import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings } from '../types';
+import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention } from '../types';
 
 interface StoreState {
     // State
@@ -51,6 +51,17 @@ interface StoreState {
     updateSubtaskTitle: (taskId: string, subtaskId: string, title: string) => void;
     reorderSubtasks: (taskId: string, start: number, end: number) => void;
 
+    // Comments
+    comments: Record<string, Comment[]>;
+    setComments: (comments: Record<string, Comment[]>) => void;
+    addComment: (taskId: string, text: string) => void;
+    deleteComment: (taskId: string, commentId: string) => void;
+
+    // Pending mention notifications
+    pendingMentions: Record<string, PendingMention[]>;
+    setPendingMentions: (m: Record<string, PendingMention[]>) => void;
+    clearPendingMentions: (userId: string) => void;
+
     // Projects
     addToProjectHistory: (projectName: string) => void;
     toggleProjectCollapse: (status: string, project: string) => void;
@@ -72,6 +83,9 @@ const useStore = create<StoreState>((set, get) => ({
     storagePath: null,
     isLoadingData: true,
     saveError: null,
+    comments: {},
+    pendingMentions: {},
+
     notificationSettings: {
         enabled: true,
         deadlineNotifications: true,
@@ -286,6 +300,66 @@ const useStore = create<StoreState>((set, get) => ({
                 return t;
             })
         }));
+    },
+
+    // Comments
+    setComments: (comments) => set({ comments }),
+
+    addComment: (taskId, text) => {
+        const { currentUser, users, tasks } = get();
+        if (!currentUser || !text.trim()) return;
+        const commentId = uid();
+        const newComment: Comment = {
+            id: commentId,
+            taskId,
+            userId: currentUser,
+            text: text.trim(),
+            createdAt: Date.now(),
+        };
+        set(state => ({
+            comments: {
+                ...state.comments,
+                [taskId]: [...(state.comments[taskId] || []), newComment],
+            }
+        }));
+
+        // Détecter les @mentions et ajouter des notifications en attente
+        const mentionedUsers = users.filter(u =>
+            u.id !== currentUser && text.includes(`@${u.name}`)
+        );
+        if (mentionedUsers.length > 0) {
+            const task = tasks.find(t => t.id === taskId);
+            const fromUser = users.find(u => u.id === currentUser);
+            const taskTitle = task?.title || 'une tâche';
+            const fromUserName = fromUser?.name || currentUser;
+            set(state => {
+                const updated = { ...state.pendingMentions };
+                mentionedUsers.forEach(u => {
+                    const mention: PendingMention = { commentId, taskId, taskTitle, fromUserId: currentUser, fromUserName };
+                    updated[u.id] = [...(updated[u.id] || []), mention];
+                });
+                return { pendingMentions: updated };
+            });
+        }
+    },
+
+    deleteComment: (taskId, commentId) => {
+        set(state => ({
+            comments: {
+                ...state.comments,
+                [taskId]: (state.comments[taskId] || []).filter(c => c.id !== commentId),
+            }
+        }));
+    },
+
+    // Pending mentions
+    setPendingMentions: (pendingMentions) => set({ pendingMentions }),
+    clearPendingMentions: (userId) => {
+        set(state => {
+            const updated = { ...state.pendingMentions };
+            delete updated[userId];
+            return { pendingMentions: updated };
+        });
     },
 
     // Projects

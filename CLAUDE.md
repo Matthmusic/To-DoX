@@ -10,7 +10,7 @@ To-DoX is an Electron-based desktop Kanban task management application with inte
 - React 19 with TypeScript (strict mode)
 - Zustand for state management
 - Vite 7 for build tooling
-- Electron 39 for desktop packaging
+- Electron 32 for desktop packaging
 - Tailwind CSS 3 for styling
 - Vitest for testing
 - React Compiler (Babel plugin) for optimization

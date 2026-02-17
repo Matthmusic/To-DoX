@@ -13,6 +13,7 @@ export { UpdateNotification } from './UpdateNotification';
 // Main Layout Components
 export { KanbanHeaderPremium } from './KanbanHeaderPremium';
 export { KanbanBoard } from './KanbanBoard';
+export { TimelineView } from './TimelineView';
 
 export { SubtaskItem, SubtaskList } from './SubtaskList';
 export { TaskEditPanel } from './TaskEditPanel';
