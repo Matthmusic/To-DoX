@@ -112,7 +112,6 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
     }, [viewMode, offset]);
 
     const dayISOs    = useMemo(() => days.map(toISO), [days]);
-    const dayISOSet  = useMemo(() => new Set(dayISOs), [dayISOs]);
     const rangeStart = dayISOs[0];
     const rangeEnd   = dayISOs[dayISOs.length - 1];
 
