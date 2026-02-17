@@ -321,7 +321,6 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
 
                         // ─ Task row ─
                         const { task, isLast } = row;
-                        const isDueInRange = task.due ? dayISOSet.has(task.due) : false;
                         const isDueBefore  = task.due ? task.due < rangeStart : false;
                         const isDueAfter   = task.due ? task.due > rangeEnd   : false;
                         const isEven = rowIdx % 2 === 0;
