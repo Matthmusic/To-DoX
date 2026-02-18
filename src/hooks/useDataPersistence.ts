@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { STORAGE_KEY, FIXED_USERS } from '../constants';
-import type { StoredData, Task } from '../types';
+import type { Comment, PendingMention, StoredData, Task } from '../types';
 import useStore from '../store/useStore';
 import { devError, devLog, devWarn } from '../utils';
 import { mergeTasksByUpdatedAt, migrateTask } from '../utils/taskMigration';
@@ -99,10 +99,8 @@ export function useDataPersistence() {
                         devLog('✅ [LOCALSTORAGE] Notification settings chargés');
                         setNotificationSettings(parsed.notificationSettings);
                     }
-                    if (parsed.themeSettings) {
-                        devLog('✅ [LOCALSTORAGE] Theme settings chargés');
-                        setThemeSettings(parsed.themeSettings);
-                    }
+                    // Note: themeSettings n'est plus chargé depuis le payload partagé
+                    // (voir clé dédiée 'theme_settings' chargée après ce bloc)
                     if (parsed.comments) {
                         setComments(parsed.comments);
                     }
@@ -112,6 +110,30 @@ export function useDataPersistence() {
                     // Note: On ignore parsed.users car on utilise FIXED_USERS
                 } catch (error) {
                     console.error('❌ [LOCALSTORAGE] Erreur lors du parsing JSON:', error);
+                }
+            }
+
+            // Charger le thème depuis la clé dédiée au poste (indépendante du fichier partagé)
+            const rawTheme = localStorage.getItem('theme_settings');
+            if (rawTheme) {
+                try {
+                    setThemeSettings(JSON.parse(rawTheme));
+                    devLog('✅ [THEME] Thème chargé depuis clé dédiée');
+                } catch {
+                    devWarn('⚠️ [THEME] Erreur parsing theme_settings');
+                }
+            } else {
+                // Migration one-time: récupérer depuis l'ancien payload si présent
+                const rawOld = localStorage.getItem(STORAGE_KEY);
+                if (rawOld) {
+                    try {
+                        const oldParsed = JSON.parse(rawOld) as StoredDataRaw;
+                        if (oldParsed.themeSettings) {
+                            setThemeSettings(oldParsed.themeSettings as Parameters<typeof setThemeSettings>[0]);
+                            localStorage.setItem('theme_settings', JSON.stringify(oldParsed.themeSettings));
+                            devLog('✅ [THEME] Thème migré depuis ancien payload');
+                        }
+                    } catch { /* silencieux */ }
                 }
             }
 
@@ -180,10 +202,7 @@ export function useDataPersistence() {
                             devLog('✅ [ELECTRON] Notification settings chargés');
                             setNotificationSettings(result.data.notificationSettings);
                         }
-                        if (result.data.themeSettings) {
-                            devLog('✅ [ELECTRON] Theme settings chargés');
-                            setThemeSettings(result.data.themeSettings);
-                        }
+                        // Note: themeSettings ignoré depuis le fichier partagé (clé dédiée 'theme_settings')
                         if (result.data.comments) {
                             setComments(result.data.comments);
                         }
@@ -298,8 +317,40 @@ export function useDataPersistence() {
                         if (result.data.projectHistory) setProjectHistory(result.data.projectHistory);
                         if (result.data.projectColors) setProjectColors(result.data.projectColors);
                         if (result.data.notificationSettings) setNotificationSettings(result.data.notificationSettings);
-                        if (result.data.themeSettings) setThemeSettings(result.data.themeSettings);
-                        if (result.data.comments) setComments(result.data.comments);
+                        // Note: themeSettings ignoré depuis le fichier partagé (clé dédiée 'theme_settings')
+                        if (result.data.comments) {
+                            // Fusionner les commentaires du fichier avec les commentaires locaux
+                            // (même stratégie que les tâches) pour éviter qu'une sauvegarde
+                            // d'un autre utilisateur n'efface les commentaires locaux non encore syncés
+                            const localComments = useStore.getState().comments;
+                            const fileComments = result.data.comments as Record<string, Comment[]>;
+                            const merged: Record<string, Comment[]> = { ...fileComments };
+                            for (const taskId of Object.keys(localComments)) {
+                                const fromFile = fileComments[taskId] || [];
+                                const fromLocal = localComments[taskId] || [];
+                                const byId = new Map<string, Comment>();
+                                for (const c of fromFile) byId.set(c.id, c);
+                                for (const c of fromLocal) if (!byId.has(c.id)) byId.set(c.id, c);
+                                merged[taskId] = Array.from(byId.values()).sort((a, b) => a.createdAt - b.createdAt);
+                            }
+                            setComments(merged);
+                        }
+                        if (result.data.pendingMentions) {
+                            // Merge union par userId x commentId: ne jamais perdre une mention
+                            // non encore vue, même si un autre user a sauvegardé entretemps
+                            const localMentions = useStore.getState().pendingMentions;
+                            const fileMentions = result.data.pendingMentions as Record<string, PendingMention[]>;
+                            const mergedM: Record<string, PendingMention[]> = { ...fileMentions };
+                            for (const userId of Object.keys(localMentions)) {
+                                const fromFile = fileMentions[userId] || [];
+                                const fromLocal = localMentions[userId] || [];
+                                const byId = new Map<string, PendingMention>();
+                                for (const m of fromFile) byId.set(m.commentId, m);
+                                for (const m of fromLocal) if (!byId.has(m.commentId)) byId.set(m.commentId, m);
+                                mergedM[userId] = Array.from(byId.values());
+                            }
+                            setPendingMentions(mergedM);
+                        }
                         // Note: On ignore result.data.users car on utilise FIXED_USERS
 
                         devLog('✅ [AUTO-RELOAD] Rechargement terminé');
@@ -321,7 +372,8 @@ export function useDataPersistence() {
         if (isLoadingData) return;
 
         // localStorage mis à jour immédiatement (synchrone, pas cher)
-        const payload = { tasks, directories, projectHistory, projectColors, notificationSettings, themeSettings, comments, pendingMentions };
+        // themeSettings exclu du payload partagé — sauvegardé localement via 'theme_settings'
+        const payload = { tasks, directories, projectHistory, projectColors, notificationSettings, comments, pendingMentions };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 
         // Sauvegarde fichier Electron débounce de 500ms
@@ -349,7 +401,13 @@ export function useDataPersistence() {
         }, 500);
 
         return () => clearTimeout(timer);
-    }, [tasks, directories, projectHistory, projectColors, notificationSettings, themeSettings, comments, pendingMentions, storagePath, isLoadingData, setSaveError]);
+    }, [tasks, directories, projectHistory, projectColors, notificationSettings, comments, pendingMentions, storagePath, isLoadingData, setSaveError]);
+
+    // Sauvegarder le thème localement (clé dédiée au poste, hors fichier partagé)
+    useEffect(() => {
+        if (isLoadingData) return;
+        localStorage.setItem('theme_settings', JSON.stringify(themeSettings));
+    }, [themeSettings, isLoadingData]);
 
     // Sauvegarder l'utilisateur courant dans localStorage
     useEffect(() => {

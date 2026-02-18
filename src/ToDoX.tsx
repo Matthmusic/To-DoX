@@ -192,13 +192,20 @@ export default function ToDoX() {
     useNotifications();
 
     // === NOTIFICATIONS @MENTION ===
+    // Ref pour ne pas notifier deux fois la même mention (anti-doublon inter-renders)
+    const shownMentionIds = useRef(new Set<string>());
+
     useEffect(() => {
         if (!currentUser || currentUser === 'unassigned') return;
         const mentions = pendingMentions[currentUser];
         if (!mentions || mentions.length === 0) return;
 
+        // Filtrer les mentions déjà notifiées (protection contre les re-renders)
+        const newMentions = mentions.filter(m => !shownMentionIds.current.has(m.commentId));
+        if (newMentions.length === 0) return;
+
         // Regrouper par expéditeur pour éviter le spam
-        const grouped = mentions.reduce<Record<string, string[]>>((acc, m) => {
+        const grouped = newMentions.reduce<Record<string, string[]>>((acc, m) => {
             if (!acc[m.fromUserName]) acc[m.fromUserName] = [];
             acc[m.fromUserName].push(m.taskTitle);
             return acc;
@@ -216,8 +223,9 @@ export default function ToDoX() {
             );
         });
 
+        newMentions.forEach(m => shownMentionIds.current.add(m.commentId));
         clearPendingMentions(currentUser);
-    }, [currentUser]);
+    }, [currentUser, pendingMentions]);
 
     // === KEYBOARD SHORTCUTS ===
 
