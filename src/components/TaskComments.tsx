@@ -66,7 +66,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
     const { activeTheme } = useTheme();
     const primary = activeTheme.palette.primary;
 
-    const taskComments = comments[taskId] || [];
+    const taskComments = (comments[taskId] || []).filter(c => !c.deletedAt);
     const userNames = users.map(u => u.name);
 
     const [text, setText] = useState('');

@@ -59,7 +59,7 @@ interface ContextMenuData {
 export default function ToDoX() {
     // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser, pendingMentions, clearPendingMentions } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser } = useStore();
 
     const {
         filterProject,
@@ -190,42 +190,6 @@ export default function ToDoX() {
 
     // === NOTIFICATIONS SYSTÈME ===
     useNotifications();
-
-    // === NOTIFICATIONS @MENTION ===
-    // Ref pour ne pas notifier deux fois la même mention (anti-doublon inter-renders)
-    const shownMentionIds = useRef(new Set<string>());
-
-    useEffect(() => {
-        if (!currentUser || currentUser === 'unassigned') return;
-        const mentions = pendingMentions[currentUser];
-        if (!mentions || mentions.length === 0) return;
-
-        // Filtrer les mentions déjà notifiées (protection contre les re-renders)
-        const newMentions = mentions.filter(m => !shownMentionIds.current.has(m.commentId));
-        if (newMentions.length === 0) return;
-
-        // Regrouper par expéditeur pour éviter le spam
-        const grouped = newMentions.reduce<Record<string, string[]>>((acc, m) => {
-            if (!acc[m.fromUserName]) acc[m.fromUserName] = [];
-            acc[m.fromUserName].push(m.taskTitle);
-            return acc;
-        }, {});
-
-        Object.entries(grouped).forEach(([from, taskTitles]) => {
-            const uniqueTitles = [...new Set(taskTitles)];
-            const body = uniqueTitles.length === 1
-                ? `Dans "${uniqueTitles[0]}"`
-                : `Dans ${uniqueTitles.length} tâches`;
-            window.electronAPI?.sendNotification(
-                `${from} vous a mentionné(e)`,
-                body,
-                `mention-${currentUser}-${Date.now()}`
-            );
-        });
-
-        newMentions.forEach(m => shownMentionIds.current.add(m.commentId));
-        clearPendingMentions(currentUser);
-    }, [currentUser, pendingMentions]);
 
     // === KEYBOARD SHORTCUTS ===
 

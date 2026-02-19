@@ -14,9 +14,10 @@ import { playSoundFile } from '../utils/sound';
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
 export function useNotifications() {
-  const { tasks, notificationSettings, currentUser } = useStore();
+  const { tasks, notificationSettings, currentUser, pendingMentions, clearPendingMentions } = useStore();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const notifiedTasksRef = useRef<Set<string>>(new Set()); // Éviter les doublons
+  const notifiedTasksRef = useRef<Set<string>>(new Set()); // Éviter les doublons notifs tâches
+  const shownMentionIds = useRef(new Set<string>()); // Éviter les doublons @mention
 
   // Vérifier si on est en heures calmes
   const isQuietHours = useCallback((): boolean => {
@@ -217,6 +218,33 @@ export function useNotifications() {
       }
     };
   }, [notificationSettings.enabled, notificationSettings.checkInterval, checkTasksForNotifications, currentUser]);
+
+  // Notifications @mention — réagit en temps réel, respecte les quiet hours et le son
+  useEffect(() => {
+    if (!currentUser || currentUser === 'unassigned') return;
+    const mentions = pendingMentions[currentUser];
+    if (!mentions || mentions.length === 0) return;
+
+    const newMentions = mentions.filter(m => !shownMentionIds.current.has(m.commentId));
+    if (newMentions.length === 0) return;
+
+    const grouped = newMentions.reduce<Record<string, string[]>>((acc, m) => {
+      if (!acc[m.fromUserName]) acc[m.fromUserName] = [];
+      acc[m.fromUserName].push(m.taskTitle);
+      return acc;
+    }, {});
+
+    Object.entries(grouped).forEach(([from, taskTitles]) => {
+      const uniqueTitles = [...new Set(taskTitles)];
+      const body = uniqueTitles.length === 1
+        ? `Dans "${uniqueTitles[0]}"`
+        : `Dans ${uniqueTitles.length} tâches`;
+      sendNotification(`${from} vous a mentionné(e)`, body, `mention-${currentUser}-${Date.now()}`);
+    });
+
+    newMentions.forEach(m => shownMentionIds.current.add(m.commentId));
+    clearPendingMentions(currentUser);
+  }, [currentUser, pendingMentions, sendNotification, clearPendingMentions]);
 
   return {
     isEnabled: notificationSettings.enabled,

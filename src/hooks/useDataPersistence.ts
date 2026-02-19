@@ -8,8 +8,42 @@ import { mergeTasksByUpdatedAt, migrateTask } from '../utils/taskMigration';
 type StoredDataRaw = Omit<StoredData, 'tasks'> & { tasks?: unknown[] };
 
 /**
+ * Merge deux états de commentaires (fichier vs local) avec soft-delete.
+ * Règles :
+ *  - Un commentaire local absent du fichier est conservé (pas encore sauvegardé)
+ *  - Une suppression locale (deletedAt ≠ null) gagne sur la version non-supprimée du fichier
+ *  - Le fichier a priorité dans tous les autres cas
+ */
+function mergeComments(
+    local: Record<string, Comment[]>,
+    fromFile: Record<string, Comment[]>
+): Record<string, Comment[]> {
+    const merged: Record<string, Comment[]> = { ...fromFile };
+    for (const taskId of Object.keys(local)) {
+        const file = fromFile[taskId] || [];
+        const loc = local[taskId] || [];
+        const byId = new Map<string, Comment>();
+        for (const c of file) byId.set(c.id, c);
+        for (const c of loc) {
+            const existing = byId.get(c.id);
+            if (!existing) {
+                byId.set(c.id, c); // commentaire local pas encore dans le fichier
+            } else if (c.deletedAt !== null && existing.deletedAt === null) {
+                byId.set(c.id, c); // suppression locale gagne
+            }
+        }
+        merged[taskId] = Array.from(byId.values()).sort((a, b) => a.createdAt - b.createdAt);
+    }
+    return merged;
+}
+
+/**
  * Hook pour gérer la persistance des données (localStorage + Electron)
- * Avec auto-reload et détection de conflits multi-utilisateurs
+ * Avec auto-reload et détection de conflits multi-utilisateurs.
+ *
+ * Fichiers Electron :
+ *   data.json     — tâches, répertoires, historique, paramètres, pendingMentions
+ *   comments.json — commentaires uniquement (hash indépendant pour sync rapide)
  */
 export function useDataPersistence() {
     const {
@@ -21,7 +55,6 @@ export function useDataPersistence() {
         themeSettings,
         comments,
         pendingMentions,
-        // users retiré car on utilise FIXED_USERS maintenant
         currentUser,
         storagePath,
         isLoadingData,
@@ -33,87 +66,54 @@ export function useDataPersistence() {
         setThemeSettings,
         setComments,
         setPendingMentions,
-        setUsers, // Gardé pour initialisation avec FIXED_USERS
+        setUsers,
         setCurrentUser,
         setStoragePath,
         setIsLoadingData,
         setSaveError,
     } = useStore();
 
-    // Stocker le hash du fichier pour détecter les modifications externes
     const lastFileHash = useRef<string | null>(null);
+    const lastCommentsHash = useRef<string | null>(null);
 
-    // Chargement initial des données
+    // ─── Chargement initial ────────────────────────────────────────────────────
     useEffect(() => {
         async function initStorage() {
             devLog('🚀 [DATA LOADING] Début du chargement des données...');
 
-            // Initialiser les utilisateurs avec la liste fixe
-            devLog('👥 [USERS] Initialisation avec la liste fixe:', FIXED_USERS.length, 'utilisateurs');
             setUsers(FIXED_USERS);
 
-            // Récupérer l'utilisateur courant dès le début pour la migration des anciennes tâches
             const savedUserId = localStorage.getItem('current_user_id');
-            const importingUser = (savedUserId && FIXED_USERS.some(u => u.id === savedUserId)) ? savedUserId : null;
+            const importingUser = (savedUserId && FIXED_USERS.some(u => u.id === savedUserId))
+                ? savedUserId
+                : null;
 
-            // Tâches chargées depuis le localStorage (utilisées comme base pour le merge avec Electron)
             let localTasks: Task[] = [];
 
-            // Load from LocalStorage fallback first
+            // 1. LocalStorage (fallback web + base pour merge Electron)
             const raw = localStorage.getItem(STORAGE_KEY);
-            devLog('📦 [LOCALSTORAGE] Clé de stockage:', STORAGE_KEY);
-            devLog('📦 [LOCALSTORAGE] Données brutes trouvées:', raw ? `${raw.length} caractères` : 'AUCUNE');
+            devLog('📦 [LOCALSTORAGE] Données brutes:', raw ? `${raw.length} car.` : 'AUCUNE');
 
             if (raw) {
                 try {
-                    devLog('🔄 [LOCALSTORAGE] Tentative de parsing JSON...');
                     const parsed = JSON.parse(raw) as StoredDataRaw;
-                    devLog('✅ [LOCALSTORAGE] JSON parsé avec succès:', {
-                        hasTasks: !!parsed.tasks,
-                        tasksCount: parsed.tasks?.length || 0,
-                        hasDirectories: !!parsed.directories,
-                        hasProjectHistory: !!parsed.projectHistory,
-                        hasProjectColors: !!parsed.projectColors,
-                        hasUsers: !!parsed.users
-                    });
-                    devLog('⚠️ [LOCALSTORAGE] Note: Les users du localStorage sont ignorés, on utilise FIXED_USERS');
-
                     if (parsed.tasks) {
                         localTasks = parsed.tasks.map((t) => migrateTask(t, { fallbackUser: importingUser }));
                         devLog('✅ [LOCALSTORAGE] Tâches migrées:', localTasks.length);
                         setTasks(localTasks);
                     }
-                    if (parsed.directories) {
-                        devLog('✅ [LOCALSTORAGE] Directories chargés');
-                        setDirectories(parsed.directories);
-                    }
-                    if (parsed.projectHistory) {
-                        devLog('✅ [LOCALSTORAGE] Project history chargé:', parsed.projectHistory.length);
-                        setProjectHistory(parsed.projectHistory);
-                    }
-                    if (parsed.projectColors) {
-                        devLog('✅ [LOCALSTORAGE] Project colors chargés');
-                        setProjectColors(parsed.projectColors);
-                    }
-                    if (parsed.notificationSettings) {
-                        devLog('✅ [LOCALSTORAGE] Notification settings chargés');
-                        setNotificationSettings(parsed.notificationSettings);
-                    }
-                    // Note: themeSettings n'est plus chargé depuis le payload partagé
-                    // (voir clé dédiée 'theme_settings' chargée après ce bloc)
-                    if (parsed.comments) {
-                        setComments(parsed.comments);
-                    }
-                    if (parsed.pendingMentions) {
-                        setPendingMentions(parsed.pendingMentions);
-                    }
-                    // Note: On ignore parsed.users car on utilise FIXED_USERS
+                    if (parsed.directories) setDirectories(parsed.directories);
+                    if (parsed.projectHistory) setProjectHistory(parsed.projectHistory);
+                    if (parsed.projectColors) setProjectColors(parsed.projectColors);
+                    if (parsed.notificationSettings) setNotificationSettings(parsed.notificationSettings);
+                    if (parsed.comments) setComments(parsed.comments);
+                    if (parsed.pendingMentions) setPendingMentions(parsed.pendingMentions);
                 } catch (error) {
-                    console.error('❌ [LOCALSTORAGE] Erreur lors du parsing JSON:', error);
+                    console.error('❌ [LOCALSTORAGE] Erreur parsing JSON:', error);
                 }
             }
 
-            // Charger le thème depuis la clé dédiée au poste (indépendante du fichier partagé)
+            // 2. Thème depuis clé dédiée (par poste, hors fichier partagé)
             const rawTheme = localStorage.getItem('theme_settings');
             if (rawTheme) {
                 try {
@@ -123,11 +123,10 @@ export function useDataPersistence() {
                     devWarn('⚠️ [THEME] Erreur parsing theme_settings');
                 }
             } else {
-                // Migration one-time: récupérer depuis l'ancien payload si présent
-                const rawOld = localStorage.getItem(STORAGE_KEY);
-                if (rawOld) {
+                // Migration one-time depuis l'ancien payload
+                if (raw) {
                     try {
-                        const oldParsed = JSON.parse(rawOld) as StoredDataRaw;
+                        const oldParsed = JSON.parse(raw) as StoredDataRaw;
                         if (oldParsed.themeSettings) {
                             setThemeSettings(oldParsed.themeSettings as Parameters<typeof setThemeSettings>[0]);
                             localStorage.setItem('theme_settings', JSON.stringify(oldParsed.themeSettings));
@@ -137,207 +136,141 @@ export function useDataPersistence() {
                 }
             }
 
-            // Charger l'utilisateur courant depuis localStorage (déjà lu au début pour la migration)
+            // 3. Utilisateur courant
             devLog('👤 [USER] Utilisateur sauvegardé:', savedUserId || 'AUCUN');
             if (importingUser) {
                 setCurrentUser(importingUser);
             } else if (savedUserId) {
-                // ID trouvé mais pas dans FIXED_USERS
-                devLog('⚠️ [USER] Utilisateur sauvegardé invalide (ancien ID?), forcer reconnexion');
+                devLog('⚠️ [USER] ID invalide (ancien?), forcer reconnexion');
                 localStorage.removeItem('current_user_id');
                 setCurrentUser(null);
             }
 
-            // Electron Load
-            devLog('🖥️ [ELECTRON] Vérification environnement Electron...');
-            devLog('🖥️ [ELECTRON] isElectron:', window.electronAPI?.isElectron || false);
-
+            // 4. Electron — lecture data.json + comments.json
             if (window.electronAPI?.isElectron) {
                 devLog('✅ [ELECTRON] Environnement Electron détecté');
                 try {
                     let savedPath = localStorage.getItem('storage_path');
-                    devLog('📂 [ELECTRON] Storage path sauvegardé:', savedPath || 'AUCUN');
-
                     if (!savedPath) {
-                        devLog('📂 [ELECTRON] Récupération du storage path depuis Electron...');
                         savedPath = await window.electronAPI.getStoragePath();
-                        devLog('📂 [ELECTRON] Storage path reçu:', savedPath);
                         localStorage.setItem('storage_path', savedPath);
                     }
                     setStoragePath(savedPath);
 
                     const filePath = savedPath + '/data.json';
-                    devLog('📄 [ELECTRON] Chemin du fichier:', filePath);
-                    devLog('📄 [ELECTRON] Tentative de lecture du fichier...');
+                    const commentsFilePath = savedPath + '/comments.json';
+                    devLog('📄 [ELECTRON] Lecture data.json:', filePath);
                     const result = await window.electronAPI.readData(filePath);
-                    devLog('📄 [ELECTRON] Résultat de la lecture:', {
-                        success: result?.success,
-                        hasData: !!result?.data,
-                        dataKeys: result?.data ? Object.keys(result.data) : []
-                    });
 
                     if (result.success && result.data) {
-                        devLog('✅ [ELECTRON] Fichier lu avec succès');
+                        devLog('✅ [ELECTRON] data.json lu avec succès');
+
                         if (result.data.tasks) {
-                            devLog('🔄 [ELECTRON] Migration + merge des tâches...');
-                            const fileTasks: Task[] = result.data.tasks.map((t) => migrateTask(t, { fallbackUser: importingUser }));
-                            // Merger avec les tâches du localStorage — ne rien perdre
+                            const fileTasks: Task[] = result.data.tasks.map(
+                                (t) => migrateTask(t, { fallbackUser: importingUser })
+                            );
                             const merged = mergeTasksByUpdatedAt(localTasks, fileTasks);
-                            devLog('✅ [ELECTRON] Tâches mergées:', merged.length, '(localStorage:', localTasks.length, '+ fichier:', fileTasks.length, ')');
+                            devLog('✅ [ELECTRON] Tâches mergées:', merged.length);
                             setTasks(merged);
-                        }
-                        if (result.data.directories) {
-                            devLog('✅ [ELECTRON] Directories chargés');
-                            setDirectories(result.data.directories);
-                        }
-                        if (result.data.projectHistory) {
-                            devLog('✅ [ELECTRON] Project history chargé:', result.data.projectHistory.length);
-                            setProjectHistory(result.data.projectHistory);
-                        }
-                        if (result.data.projectColors) {
-                            devLog('✅ [ELECTRON] Project colors chargés');
-                            setProjectColors(result.data.projectColors);
-                        }
-                        if (result.data.notificationSettings) {
-                            devLog('✅ [ELECTRON] Notification settings chargés');
-                            setNotificationSettings(result.data.notificationSettings);
-                        }
-                        // Note: themeSettings ignoré depuis le fichier partagé (clé dédiée 'theme_settings')
-                        if (result.data.comments) {
-                            setComments(result.data.comments);
-                        }
-                        if (result.data.pendingMentions) {
-                            setPendingMentions(result.data.pendingMentions);
-                        }
-                        // Note: On ignore result.data.users car on utilise FIXED_USERS
-                        if (result.data.users) {
-                            devLog('⚠️ [ELECTRON] Users trouvés dans le fichier mais ignorés (on utilise FIXED_USERS)');
-                        }
-
-                        // Stocker le hash initial du fichier
-                        try {
-                            const hashResult = await window.electronAPI.getFileHash(filePath);
-                            if (hashResult.success) {
-                                lastFileHash.current = hashResult.hash;
-                            }
-                        } catch (hashError) {
-                            devWarn('⚠️ [HASH] Erreur lors du calcul du hash (non-critique):', hashError);
-                            devError('Hash error (non-critical):', hashError);
-                        }
-                    } else if (!result.success) {
-                        // Fichier n'existe pas ou erreur de lecture - créer un fichier vide
-                        devLog('📝 [ELECTRON] Fichier inexistant ou erreur de lecture');
-                        devLog('📝 [ELECTRON] Initialisation du fichier de données...');
-                        const initialData = {
-                            tasks: [],
-                            directories: {},
-                            projectHistory: [],
-                            projectColors: {},
-                            notificationSettings: notificationSettings
-                            // Note: users n'est plus sauvegardé dans le fichier, on utilise FIXED_USERS
-                        };
-                        devLog('💾 [ELECTRON] Sauvegarde des données initiales...');
-                        await window.electronAPI.saveData(filePath, initialData);
-                        devLog('✅ [ELECTRON] Fichier créé avec succès');
-
-                        // Stocker le hash du nouveau fichier
-                        try {
-                            const hashResult = await window.electronAPI.getFileHash(filePath);
-                            if (hashResult.success) {
-                                lastFileHash.current = hashResult.hash;
-                            }
-                        } catch (hashError) {
-                            devWarn('⚠️ [HASH] Erreur lors du calcul du hash (non-critique):', hashError);
-                            devError('Hash error (non-critical):', hashError);
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ [ELECTRON] Erreur lors du chargement initial:', error);
-                    devError('Initial load error:', error);
-                }
-            } else {
-                devLog('ℹ️ [ELECTRON] Pas d\'environnement Electron détecté, mode web uniquement');
-            }
-
-            // TOUJOURS terminer le chargement, même en cas d'erreur
-            devLog('🏁 [DATA LOADING] Chargement terminé, setIsLoadingData(false)');
-            setIsLoadingData(false);
-        }
-        devLog('🎬 [DATA LOADING] Lancement de initStorage()');
-        initStorage();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Run on mount only - store setters are stable
-
-    // Auto-reload toutes les 10 secondes (détection des changements des autres utilisateurs)
-    useEffect(() => {
-        if (!window.electronAPI?.isElectron || !storagePath || isLoadingData) return;
-
-        const interval = setInterval(async () => {
-            try {
-                devLog('🔄 [AUTO-RELOAD] Vérification des changements...');
-                const filePath = storagePath + '/data.json';
-
-                // Vérifier si le fichier a changé
-                const hashResult = await window.electronAPI?.getFileHash(filePath);
-                devLog('🔍 [AUTO-RELOAD] Hash check:', {
-                    success: hashResult?.success,
-                    currentHash: hashResult?.hash?.substring(0, 8),
-                    lastHash: lastFileHash.current?.substring(0, 8),
-                    hasChanged: hashResult?.hash !== lastFileHash.current
-                });
-
-                if (!hashResult?.success) {
-                    devWarn('⚠️ [AUTO-RELOAD] Échec de récupération du hash');
-                    return;
-                }
-
-                // Si le hash est différent, le fichier a été modifié par quelqu'un d'autre
-                if (hashResult.hash && hashResult.hash !== lastFileHash.current) {
-                    devLog('📥 [AUTO-RELOAD] Fichier modifié détecté! Rechargement...');
-
-                    // IMPORTANT: Mettre à jour le hash AVANT de recharger les données
-                    // Cela évite que la sauvegarde automatique détecte un faux conflit
-                    const oldHash = lastFileHash.current;
-                    lastFileHash.current = hashResult.hash;
-                    devLog('📝 [AUTO-RELOAD] Hash mis à jour AVANT rechargement:', oldHash?.substring(0, 20), '->', hashResult.hash.substring(0, 20));
-
-                    const result = await window.electronAPI?.readData(filePath);
-                    if (result && result.success && result.data) {
-                        devLog('✅ [AUTO-RELOAD] Données rechargées:', {
-                            tasksCount: result.data.tasks?.length || 0
-                        });
-                        if (result.data.tasks) {
-                            // Migration + merge: ne jamais perdre de tâches
-                            const fileTasks: Task[] = result.data.tasks.map((t) => migrateTask(t, { fallbackUser: currentUser }));
-                            // Merger avec les tâches actuelles du store
-                            const currentTasks = useStore.getState().tasks;
-                            setTasks(mergeTasksByUpdatedAt(currentTasks, fileTasks));
                         }
                         if (result.data.directories) setDirectories(result.data.directories);
                         if (result.data.projectHistory) setProjectHistory(result.data.projectHistory);
                         if (result.data.projectColors) setProjectColors(result.data.projectColors);
                         if (result.data.notificationSettings) setNotificationSettings(result.data.notificationSettings);
-                        // Note: themeSettings ignoré depuis le fichier partagé (clé dédiée 'theme_settings')
-                        if (result.data.comments) {
-                            // Fusionner les commentaires du fichier avec les commentaires locaux
-                            // (même stratégie que les tâches) pour éviter qu'une sauvegarde
-                            // d'un autre utilisateur n'efface les commentaires locaux non encore syncés
-                            const localComments = useStore.getState().comments;
-                            const fileComments = result.data.comments as Record<string, Comment[]>;
-                            const merged: Record<string, Comment[]> = { ...fileComments };
-                            for (const taskId of Object.keys(localComments)) {
-                                const fromFile = fileComments[taskId] || [];
-                                const fromLocal = localComments[taskId] || [];
-                                const byId = new Map<string, Comment>();
-                                for (const c of fromFile) byId.set(c.id, c);
-                                for (const c of fromLocal) if (!byId.has(c.id)) byId.set(c.id, c);
-                                merged[taskId] = Array.from(byId.values()).sort((a, b) => a.createdAt - b.createdAt);
+                        if (result.data.pendingMentions) setPendingMentions(result.data.pendingMentions);
+                        // Note: themeSettings ignoré (clé dédiée 'theme_settings')
+
+                        // Hash initial de data.json
+                        const hashResult = await window.electronAPI.getFileHash(filePath);
+                        if (hashResult.success) lastFileHash.current = hashResult.hash;
+
+                        // Chargement des commentaires depuis comments.json (fichier dédié)
+                        try {
+                            const commentsResult = await window.electronAPI.readData(commentsFilePath);
+                            if (commentsResult.success && commentsResult.data.comments) {
+                                devLog('✅ [ELECTRON] Comments chargés depuis comments.json');
+                                setComments(commentsResult.data.comments);
+                            } else if (result.data.comments) {
+                                // Migration one-time : data.json → comments.json
+                                devLog('🔄 [MIGRATION] Comments migrés data.json → comments.json');
+                                setComments(result.data.comments);
+                                await window.electronAPI.saveData(commentsFilePath, { comments: result.data.comments });
                             }
-                            setComments(merged);
+                            const chash = await window.electronAPI.getFileHash(commentsFilePath);
+                            if (chash.success) lastCommentsHash.current = chash.hash;
+                        } catch {
+                            devWarn('⚠️ [COMMENTS] Erreur comments.json, fallback data.json');
+                            if (result.data.comments) setComments(result.data.comments);
+                        }
+
+                    } else {
+                        // Fichiers inexistants → initialisation
+                        devLog('📝 [ELECTRON] Fichier inexistant, initialisation...');
+                        const initialData = {
+                            tasks: [],
+                            directories: {},
+                            projectHistory: [],
+                            projectColors: {},
+                            notificationSettings,
+                        };
+                        await window.electronAPI.saveData(filePath, initialData);
+                        await window.electronAPI.saveData(commentsFilePath, { comments: {} });
+
+                        const hashResult = await window.electronAPI.getFileHash(filePath);
+                        if (hashResult.success) lastFileHash.current = hashResult.hash;
+                        const commentsHash = await window.electronAPI.getFileHash(commentsFilePath);
+                        if (commentsHash.success) lastCommentsHash.current = commentsHash.hash;
+                    }
+                } catch (error) {
+                    console.error('❌ [ELECTRON] Erreur chargement initial:', error);
+                    devError('Initial load error:', error);
+                }
+            }
+
+            devLog('🏁 [DATA LOADING] Chargement terminé, setIsLoadingData(false)');
+            setIsLoadingData(false);
+        }
+
+        devLog('🎬 [DATA LOADING] Lancement de initStorage()');
+        initStorage();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Run on mount only - store setters are stable
+
+    // ─── Auto-reload (poll data.json + comments.json toutes les 2 s) ──────────
+    useEffect(() => {
+        if (!window.electronAPI?.isElectron || !storagePath || isLoadingData) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const filePath = storagePath + '/data.json';
+                const commentsFilePath = storagePath + '/comments.json';
+
+                // --- data.json ---
+                const hashResult = await window.electronAPI?.getFileHash(filePath);
+                if (hashResult?.success && hashResult.hash && hashResult.hash !== lastFileHash.current) {
+                    devLog('📥 [AUTO-RELOAD] data.json modifié, rechargement...');
+                    lastFileHash.current = hashResult.hash;
+
+                    const result = await window.electronAPI?.readData(filePath);
+                    if (result?.success && result.data) {
+                        if (result.data.tasks) {
+                            const fileTasks: Task[] = result.data.tasks.map(
+                                (t) => migrateTask(t, { fallbackUser: currentUser })
+                            );
+                            setTasks(mergeTasksByUpdatedAt(useStore.getState().tasks, fileTasks));
+                        }
+                        if (result.data.directories) setDirectories(result.data.directories);
+                        if (result.data.projectHistory) setProjectHistory(result.data.projectHistory);
+                        if (result.data.projectColors) setProjectColors(result.data.projectColors);
+                        if (result.data.notificationSettings) setNotificationSettings(result.data.notificationSettings);
+                        // Compat backward : merge les comments si un ancien client les a écrits dans data.json
+                        if (result.data.comments) {
+                            setComments(mergeComments(
+                                useStore.getState().comments,
+                                result.data.comments as Record<string, Comment[]>
+                            ));
                         }
                         if (result.data.pendingMentions) {
-                            // Merge union par userId x commentId: ne jamais perdre une mention
-                            // non encore vue, même si un autre user a sauvegardé entretemps
                             const localMentions = useStore.getState().pendingMentions;
                             const fileMentions = result.data.pendingMentions as Record<string, PendingMention[]>;
                             const mergedM: Record<string, PendingMention[]> = { ...fileMentions };
@@ -351,65 +284,101 @@ export function useDataPersistence() {
                             }
                             setPendingMentions(mergedM);
                         }
-                        // Note: On ignore result.data.users car on utilise FIXED_USERS
-
-                        devLog('✅ [AUTO-RELOAD] Rechargement terminé');
+                        devLog('✅ [AUTO-RELOAD] data.json rechargé');
                     }
-                } else {
-                    devLog('✔️ [AUTO-RELOAD] Pas de changement détecté');
                 }
+
+                // --- comments.json ---
+                const commentsHashResult = await window.electronAPI?.getFileHash(commentsFilePath);
+                if (
+                    commentsHashResult?.success &&
+                    commentsHashResult.hash &&
+                    commentsHashResult.hash !== lastCommentsHash.current
+                ) {
+                    devLog('💬 [AUTO-RELOAD] comments.json modifié, rechargement...');
+                    lastCommentsHash.current = commentsHashResult.hash;
+
+                    const commentsResult = await window.electronAPI?.readData(commentsFilePath);
+                    if (commentsResult?.success && commentsResult.data.comments) {
+                        setComments(mergeComments(
+                            useStore.getState().comments,
+                            commentsResult.data.comments as Record<string, Comment[]>
+                        ));
+                        devLog('✅ [AUTO-RELOAD] Comments rechargés');
+                    }
+                }
+
             } catch (error) {
                 console.error('❌ [AUTO-RELOAD] Erreur:', error);
                 devError('Auto-reload error:', error);
             }
-        }, 5000); // 5 secondes - Refresh rapide pour détecter les tâches assignées par d'autres users
+        }, 2000);
 
         return () => clearInterval(interval);
-    }, [storagePath, isLoadingData, currentUser, setTasks, setDirectories, setProjectHistory, setProjectColors, setNotificationSettings]); // setUsers retiré car on utilise FIXED_USERS
+        // setUsers retiré car on utilise FIXED_USERS
+    }, [storagePath, isLoadingData, currentUser, setTasks, setDirectories, setProjectHistory, setProjectColors, setNotificationSettings]);
 
-    // Sauvegarde automatique avec débounce pour éviter les sauvegardes multiples rapides
+    // ─── Sauvegarde localStorage (full payload pour fallback web) ─────────────
     useEffect(() => {
         if (isLoadingData) return;
+        const fullPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, pendingMentions, comments };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(fullPayload));
+    }, [tasks, directories, projectHistory, projectColors, notificationSettings, pendingMentions, comments, isLoadingData]);
 
-        // localStorage mis à jour immédiatement (synchrone, pas cher)
-        // themeSettings exclu du payload partagé — sauvegardé localement via 'theme_settings'
-        const payload = { tasks, directories, projectHistory, projectColors, notificationSettings, comments, pendingMentions };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-
-        // Sauvegarde fichier Electron débounce de 500ms
+    // ─── Sauvegarde Electron data.json (sans commentaires, debounce 100ms) ────
+    useEffect(() => {
+        if (isLoadingData) return;
         const timer = setTimeout(async () => {
             if (window.electronAPI?.isElectron && storagePath) {
                 try {
                     const filePath = storagePath + '/data.json';
-                    devLog('💾 [SAVE] Début de la sauvegarde...');
-                    const saveResult = await window.electronAPI?.saveData(filePath, payload);
+                    const dataPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, pendingMentions };
+                    devLog('💾 [SAVE] data.json...');
+                    const saveResult = await window.electronAPI.saveData(filePath, dataPayload);
                     if (saveResult && !saveResult.success) {
                         throw new Error(saveResult.error || 'Sauvegarde échouée');
                     }
-                    devLog('✅ [SAVE] Sauvegarde terminée');
                     setSaveError(null);
-
-                    const newHashResult = await window.electronAPI?.getFileHash(filePath);
-                    if (newHashResult?.success) {
-                        lastFileHash.current = newHashResult.hash;
-                    }
+                    const newHash = await window.electronAPI.getFileHash(filePath);
+                    if (newHash?.success) lastFileHash.current = newHash.hash;
                 } catch (error) {
-                    devError("Save file error", error);
+                    devError('Save data.json error', error);
                     setSaveError('Échec de la sauvegarde sur le lecteur réseau. Vos données sont sauvegardées localement.');
                 }
             }
-        }, 500);
-
+        }, 100);
         return () => clearTimeout(timer);
-    }, [tasks, directories, projectHistory, projectColors, notificationSettings, comments, pendingMentions, storagePath, isLoadingData, setSaveError]);
+    }, [tasks, directories, projectHistory, projectColors, notificationSettings, pendingMentions, storagePath, isLoadingData, setSaveError]);
 
-    // Sauvegarder le thème localement (clé dédiée au poste, hors fichier partagé)
+    // ─── Sauvegarde Electron comments.json (fichier dédié, debounce 100ms) ───
+    useEffect(() => {
+        if (isLoadingData) return;
+        const timer = setTimeout(async () => {
+            if (window.electronAPI?.isElectron && storagePath) {
+                try {
+                    const commentsFilePath = storagePath + '/comments.json';
+                    const saveResult = await window.electronAPI.saveData(commentsFilePath, { comments });
+                    if (saveResult && !saveResult.success) {
+                        throw new Error(saveResult.error || 'Sauvegarde commentaires échouée');
+                    }
+                    const newHash = await window.electronAPI.getFileHash(commentsFilePath);
+                    if (newHash?.success) lastCommentsHash.current = newHash.hash;
+                    devLog('💾 [SAVE] comments.json sauvegardé');
+                } catch (error) {
+                    devError('Save comments.json error', error);
+                }
+            }
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [comments, storagePath, isLoadingData]);
+
+    // ─── Thème local (par poste, hors fichier partagé) ───────────────────────
     useEffect(() => {
         if (isLoadingData) return;
         localStorage.setItem('theme_settings', JSON.stringify(themeSettings));
     }, [themeSettings, isLoadingData]);
 
-    // Sauvegarder l'utilisateur courant dans localStorage
+    // ─── Utilisateur courant ──────────────────────────────────────────────────
     useEffect(() => {
         if (currentUser) {
             localStorage.setItem('current_user_id', currentUser);
@@ -418,4 +387,3 @@ export function useDataPersistence() {
         }
     }, [currentUser]);
 }
-

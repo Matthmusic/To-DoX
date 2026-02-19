@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.0.4",
+    "version": "2.0.5",
     "description": {
       "short": "Kanban minimaliste pour gerer les taches avec priorites et echeances.",
       "long": "To-DoX est une application Kanban minimaliste pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recherche et le filtrage par projets, ainsi que l'export et l'import des donnees. Les donnees sont stockees localement avec sauvegardes et peuvent etre synchronisees via OneDrive."
@@ -67,9 +67,17 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.0.4.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.0.5.exe"
   },
   "changelog": {
+    "2.0.5": {
+      "date": "2026-02-19",
+      "changes": [
+        "Fix: les commentaires supprimés ne réapparaissent plus après un sync (soft-delete)",
+        "Fix: notifications @mention respectent désormais les heures calmes et le son personnalisé",
+        "Refactor: commentaires séparés dans comments.json pour un sync plus rapide et indépendant des tâches"
+      ]
+    },
     "2.0.4": {
       "date": "2026-02-18",
       "changes": [

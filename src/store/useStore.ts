@@ -315,6 +315,7 @@ const useStore = create<StoreState>((set, get) => ({
             userId: currentUser,
             text: text.trim(),
             createdAt: Date.now(),
+            deletedAt: null,
         };
         set(state => ({
             comments: {
@@ -344,10 +345,13 @@ const useStore = create<StoreState>((set, get) => ({
     },
 
     deleteComment: (taskId, commentId) => {
+        const now = Date.now();
         set(state => ({
             comments: {
                 ...state.comments,
-                [taskId]: (state.comments[taskId] || []).filter(c => c.id !== commentId),
+                [taskId]: (state.comments[taskId] || []).map(c =>
+                    c.id === commentId ? { ...c, deletedAt: now } : c
+                ),
             }
         }));
     },

@@ -229,6 +229,7 @@ export interface Comment {
   userId: string;
   text: string;
   createdAt: number;
+  deletedAt: number | null; // Soft-delete pour sync multi-user
 }
 
 /**
