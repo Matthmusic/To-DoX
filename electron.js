@@ -2,7 +2,6 @@ const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog, Notification, p
 const path = require('path');
 const fsSync = require('fs');
 const fs = fsSync.promises;
-const crypto = require('crypto');
 const { pathToFileURL } = require('url');
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -512,13 +511,17 @@ ipcMain.handle('save-data', async (event, filePath, data) => {
   }
 });
 
-// Handler pour calculer le hash SHA-256 d'un fichier (détection de conflits)
+// Handler pour détecter les changements d'un fichier.
+// Utilise fs.stat (mtime + size) plutôt que SHA-256 sur le contenu :
+// sur les lecteurs réseau SMB (Z:\...), fs.readFile retourne du contenu mis en cache
+// par le client Windows, ce qui peut masquer les changements pendant plusieurs minutes.
+// fs.stat interroge directement le serveur pour les métadonnées → pas de cache contenu.
 ipcMain.handle('get-file-hash', async (event, filePath) => {
   try {
-    const content = await fs.readFile(filePath, 'utf-8');
-    const hash = crypto.createHash('sha256').update(content).digest('hex');
-    console.log('🔍 [ELECTRON MAIN] get-file-hash: SHA-256 calculé', hash.substring(0, 16) + '...');
-    return { success: true, hash };
+    const stats = await fs.stat(filePath);
+    const fingerprint = `${stats.mtimeMs}-${stats.size}`;
+    console.log('🔍 [ELECTRON MAIN] get-file-hash: stat fingerprint', fingerprint);
+    return { success: true, hash: fingerprint };
   } catch (error) {
     if (error.code === 'ENOENT') {
       console.log('ℹ️ [ELECTRON MAIN] get-file-hash: fichier n\'existe pas (ENOENT)');
