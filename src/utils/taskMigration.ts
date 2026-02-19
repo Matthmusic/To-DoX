@@ -1,4 +1,4 @@
-import type { Task, Subtask } from '../types';
+import type { Task, Subtask, GanttDay } from '../types';
 import { uid } from '../utils';
 
 export interface MigrationOptions {
@@ -29,6 +29,35 @@ const normalizeAssignedTo = (value: unknown): string[] => {
   }
   if (typeof value === 'string' && value.length > 0) return [value];
   return [];
+};
+
+const normalizeGanttDays = (value: unknown): GanttDay[] => {
+  if (!Array.isArray(value)) return [];
+  const days: GanttDay[] = [];
+  for (const item of value) {
+    if (typeof item === 'string' && item.length > 0) {
+      // Migration depuis l'ancien format string[]
+      days.push({ date: item });
+    } else if (isRecord(item) && typeof item.date === 'string' && item.date.length > 0) {
+      // Collecter les userIds depuis l'ancien userId (string) ou le nouveau userIds (string[])
+      const userIds: string[] = [];
+      if (typeof item.userId === 'string' && item.userId.length > 0) {
+        userIds.push(item.userId); // migration ancienne version mono-utilisateur
+      }
+      if (Array.isArray(item.userIds)) {
+        for (const uid of item.userIds) {
+          if (typeof uid === 'string' && uid.length > 0 && !userIds.includes(uid)) {
+            userIds.push(uid);
+          }
+        }
+      }
+      days.push({
+        date: item.date,
+        userIds: userIds.length > 0 ? userIds : undefined,
+      });
+    }
+  }
+  return days;
 };
 
 const normalizeSubtasks = (value: unknown): Subtask[] => {
@@ -81,6 +110,7 @@ export function migrateTask(raw: unknown, options: MigrationOptions): Task {
     subtasks: normalizeSubtasks(data.subtasks),
     favorite: toBoolean(data.favorite, false),
     deletedAt: typeof data.deletedAt === 'number' ? data.deletedAt : null,
+    ganttDays: normalizeGanttDays(data.ganttDays),
   };
 }
 

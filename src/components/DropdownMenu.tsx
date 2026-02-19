@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -14,11 +15,29 @@ interface DropdownMenuProps {
  */
 export function DropdownMenu({ icon: Icon, label, children, className = "" }: DropdownMenuProps) {
     const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    // Positionnement du panel via portal
+    useEffect(() => {
+        if (!isOpen || !buttonRef.current) return;
+        const rect = buttonRef.current.getBoundingClientRect();
+        setPanelStyle({
+            position: 'fixed',
+            top: rect.bottom + 8,
+            right: window.innerWidth - rect.right,
+            zIndex: 9999,
+        });
+    }, [isOpen]);
 
     useEffect(() => {
         function handleClickOutside(e: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+            const target = e.target as Node;
+            if (
+                buttonRef.current && !buttonRef.current.contains(target) &&
+                panelRef.current && !panelRef.current.contains(target)
+            ) {
                 setIsOpen(false);
             }
         }
@@ -29,8 +48,9 @@ export function DropdownMenu({ icon: Icon, label, children, className = "" }: Dr
     }, [isOpen]);
 
     return (
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative">
             <button
+                ref={buttonRef}
                 onClick={() => setIsOpen(!isOpen)}
                 className={`rounded-2xl px-4 py-2 font-semibold transition inline-flex items-center gap-2 ${className}`}
             >
@@ -38,22 +58,29 @@ export function DropdownMenu({ icon: Icon, label, children, className = "" }: Dr
                 {label}
                 <ChevronDown className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
-            {isOpen && (
+            {isOpen && createPortal(
                 <div
-                    className="absolute right-0 top-full mt-2 z-50 min-w-[200px] rounded-2xl border-2 border-theme-primary bg-theme-secondary/98 shadow-[0_20px_70px_rgba(0,0,0,0.6)] overflow-hidden"
-                    style={{ backdropFilter: 'blur(40px) saturate(180%)', WebkitBackdropFilter: 'blur(40px) saturate(180%)' }}
+                    ref={panelRef}
+                    className="min-w-[200px] rounded-2xl border-2 border-theme-primary bg-theme-secondary/98 shadow-[0_20px_70px_rgba(0,0,0,0.6)] overflow-hidden"
+                    style={{
+                        ...panelStyle,
+                        backdropFilter: 'blur(40px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                        backgroundColor: 'var(--bg-secondary)',
+                    }}
                 >
                     {/* Effet vitre teintée - Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-transparent to-purple-500/10 pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/[0.02] pointer-events-none" />
 
                     {/* Reflet lumineux en haut */}
                     <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
 
-                    {/* Content avec z-index pour être au-dessus de l'overlay */}
+                    {/* Content */}
                     <div className="relative z-10">
                         {children}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

@@ -138,6 +138,14 @@ export interface Subtask {
 }
 
 /**
+ * Jour de travail planifié pour la vue Gantt
+ */
+export interface GanttDay {
+  date: string;       // ISO YYYY-MM-DD
+  userIds?: string[]; // Utilisateurs assignés pour ce jour (multi-affectation)
+}
+
+/**
  * Structure d'une tâche
  */
 export interface Task {
@@ -158,6 +166,7 @@ export interface Task {
   subtasks: Subtask[];
   favorite: boolean;
   deletedAt: number | null;
+  ganttDays?: GanttDay[]; // Jours de travail planifiés, pour la vue Gantt
 }
 
 /**
@@ -256,4 +265,5 @@ export interface NotificationSettings {
   quietHoursEnd: string; // Heure de fin (format "HH:MM")
   sound: boolean; // Son sur les notifications
   soundFile: string; // Fichier audio à jouer (nom du fichier dans src/sounds)
+  ganttNotifications?: boolean; // Notifier les journées Gantt planifiées pour aujourd'hui
 }

@@ -96,6 +96,7 @@ const useStore = create<StoreState>((set, get) => ({
         quietHoursEnd: "08:00",
         sound: true,
         soundFile: DEFAULT_NOTIFICATION_SOUND, // Son par défaut: "Classique"
+        ganttNotifications: true,
     },
     themeSettings: {
         mode: 'dark',
@@ -161,6 +162,7 @@ const useStore = create<StoreState>((set, get) => ({
             subtasks: [],
             favorite: false,
             deletedAt: null,
+            ganttDays: [],
         };
 
         set((state) => ({ tasks: [newTask, ...state.tasks] }));

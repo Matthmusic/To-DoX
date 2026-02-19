@@ -170,6 +170,28 @@ export function useNotifications() {
         (tasksStale.length > 5 ? `\n... et ${tasksStale.length - 5} autres` : '');
       sendNotification(title, body, 'stale-tasks');
     }
+
+    // 3. Journées Gantt planifiées pour l'utilisateur courant aujourd'hui
+    if ((notificationSettings.ganttNotifications ?? true) && currentUser) {
+      const todayISO = new Date().toISOString().slice(0, 10);
+      const ganttToday: string[] = [];
+
+      activeTasks.forEach(task => {
+        const hasToday = (task.ganttDays ?? []).some(
+          d => d.date === todayISO && (d.userIds ?? []).includes(currentUser)
+        );
+        if (hasToday) ganttToday.push(`• ${task.title} (${task.project})`);
+      });
+
+      if (ganttToday.length > 0) {
+        const title = ganttToday.length === 1
+          ? '📅 1 tâche planifiée pour vous aujourd\'hui'
+          : `📅 ${ganttToday.length} tâches planifiées pour vous aujourd'hui`;
+        const body = ganttToday.slice(0, 5).join('\n') +
+          (ganttToday.length > 5 ? `\n... et ${ganttToday.length - 5} autres` : '');
+        sendNotification(title, body, `gantt-today-${todayISO}`);
+      }
+    }
   }, [tasks, notificationSettings, sendNotification, currentUser]);
 
   // Réinitialiser les tâches notifiées toutes les 24h

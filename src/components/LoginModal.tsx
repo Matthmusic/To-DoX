@@ -1,76 +1,130 @@
-import { User, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
+import { motion } from "framer-motion";
 import useStore from "../store/useStore";
+import { useTheme } from "../hooks/useTheme";
+import { GlassModal } from "./ui/GlassModal";
+
+function getUserInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  return name.substring(0, 2).toUpperCase();
+}
 
 export function LoginModal() {
   const { users, setCurrentUser } = useStore();
+  const { activeTheme } = useTheme();
+  const primary   = activeTheme.palette.primary;
+  const secondary = activeTheme.palette.secondary;
 
-  // Filtrer l'utilisateur "unassigned" pour n'afficher que les vrais utilisateurs
   const realUsers = users.filter(u => u.id !== "unassigned");
 
-  const handleSelectUser = (userId: string) => {
-    setCurrentUser(userId);
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500/10 rounded-full mb-4">
-            <User className="w-8 h-8 text-blue-400" />
-          </div>
-          <h1 className="text-2xl font-bold text-white mb-2">
-            Bienvenue sur To-DoX
-          </h1>
-          <p className="text-slate-400 text-sm">
-            Connectez-vous pour accéder à vos tâches
-          </p>
+    <GlassModal
+      isOpen={true}
+      onClose={() => {}}
+      size="sm"
+      showCloseButton={false}
+      closeOnBackdrop={false}
+    >
+      {/* Header */}
+      <div className="text-center mb-8">
+        <div
+          className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
+          style={{ backgroundColor: `${primary}20`, border: `1.5px solid ${primary}45` }}
+        >
+          <svg
+            viewBox="0 0 24 24" fill="none" strokeWidth="1.5" stroke="currentColor"
+            className="w-8 h-8"
+            style={{ color: primary }}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round"
+              d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+          </svg>
         </div>
+        <h1
+          className="text-2xl font-bold bg-clip-text text-transparent mb-2"
+          style={{ backgroundImage: `linear-gradient(to right, ${primary}, ${secondary})` }}
+        >
+          Bienvenue sur To-DoX
+        </h1>
+        <p className="text-theme-muted text-sm">
+          Connectez-vous pour accéder à vos tâches
+        </p>
+      </div>
 
-        {/* Liste des utilisateurs */}
-        <div className="space-y-4">
-          {realUsers.length > 0 ? (
-            <>
-              <p className="text-slate-300 text-sm font-medium mb-3">
-                Sélectionnez votre profil :
-              </p>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {realUsers.map((user) => (
-                  <button
+      {/* Liste utilisateurs */}
+      <div>
+        {realUsers.length > 0 ? (
+          <>
+            <p className="text-theme-secondary text-xs font-semibold uppercase tracking-wider mb-3 opacity-60">
+              Sélectionnez votre profil
+            </p>
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
+              {realUsers.map((user, i) => {
+                const avatarColor = i % 2 === 0 ? primary : secondary;
+                const initials = getUserInitials(user.name);
+                return (
+                  <motion.button
                     key={user.id}
-                    onClick={() => handleSelectUser(user.id)}
-                    className="w-full flex items-center gap-3 p-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-blue-500/50 rounded-xl transition-all group"
+                    onClick={() => setCurrentUser(user.id)}
+                    whileHover={{ scale: 1.02, x: 3 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-colors group"
+                    style={{
+                      borderColor: 'var(--border-primary)',
+                      backgroundColor: 'rgba(255,255,255,0.04)',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = `${primary}55`;
+                      e.currentTarget.style.backgroundColor = `${primary}12`;
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = 'var(--border-primary)';
+                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)';
+                    }}
                   >
-                    <div className="flex items-center justify-center w-10 h-10 bg-blue-500/10 rounded-full group-hover:bg-blue-500/20 transition-colors">
-                      <User className="w-5 h-5 text-blue-400" />
+                    {/* Avatar */}
+                    <div
+                      className="flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm text-white flex-shrink-0"
+                      style={{ backgroundColor: avatarColor }}
+                    >
+                      {initials}
                     </div>
-                    <div className="flex-1 text-left">
-                      <div className="text-white font-medium">{user.name}</div>
+
+                    {/* Infos */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-theme-primary font-semibold text-sm">{user.name}</div>
                       {user.email && (
-                        <div className="text-slate-400 text-sm">{user.email}</div>
+                        <div className="text-theme-muted text-xs truncate">{user.email}</div>
                       )}
                     </div>
-                    <LogIn className="w-5 h-5 text-slate-400 group-hover:text-blue-400 transition-colors" />
-                  </button>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-slate-400 mb-4">
-                Aucun utilisateur disponible. Contactez l'administrateur.
-              </p>
-            </div>
-          )}
-        </div>
 
-        {/* Footer */}
-        <div className="mt-8 pt-6 border-t border-slate-800 text-center">
-          <p className="text-slate-500 text-xs">
-            To-DoX v2.0.0 - Gestion multi-utilisateurs
-          </p>
-        </div>
+                    {/* Icône */}
+                    <LogIn
+                      className="w-4 h-4 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: primary }}
+                    />
+                  </motion.button>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-theme-muted text-sm">
+              Aucun utilisateur disponible.<br />
+              <span className="text-xs opacity-60">Contactez l'administrateur.</span>
+            </p>
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Footer */}
+      <div className="mt-6 pt-5 border-t border-theme-primary text-center">
+        <p className="text-theme-muted text-xs" style={{ opacity: 0.4 }}>
+          To-DoX · Gestion multi-utilisateurs
+        </p>
+      </div>
+    </GlassModal>
   );
 }
