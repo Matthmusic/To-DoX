@@ -96,7 +96,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
     return createPortal(
         <div
             ref={menuRef}
-            className="fixed z-[99999] w-64 max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/20 bg-white/5 p-3 text-slate-100 shadow-2xl backdrop-blur-xl"
+            className="fixed z-[99999] w-[32rem] max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/20 bg-white/5 p-3 text-slate-100 shadow-2xl backdrop-blur-xl"
             style={{
                 top: adjustedPosition.top,
                 left: adjustedPosition.left,

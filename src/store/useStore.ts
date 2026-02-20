@@ -146,7 +146,7 @@ const useStore = create<StoreState>((set, get) => ({
 
         const newTask: Task = {
             id: uid(),
-            title: data.title?.trim() || "Sans titre",
+            title: (data.title?.trim() || "Sans titre").toUpperCase(),
             project: projectName,
             due: data.due || todayISO(),
             priority: data.priority || "med",
@@ -180,6 +180,9 @@ const useStore = create<StoreState>((set, get) => ({
         }
 
         const updatedPatch = { ...patch };
+        if (patch.title) {
+            updatedPatch.title = patch.title.trim().toUpperCase() || patch.title;
+        }
         if (patch.status === "done") {
             updatedPatch.completedAt = Date.now();
         } else if (patch.status) {

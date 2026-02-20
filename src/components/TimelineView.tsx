@@ -143,9 +143,13 @@ interface DragState {
     taskId: string;
     startDate: string;
     currentDate: string;
-    /** 'add' if first cell was unplanned, 'remove' if it was planned */
-    mode: 'add' | 'remove';
+    /** toujours 'add' — la suppression se fait via le popover */
+    mode: 'add';
+    /** userIds hérités de la cellule source (si elle était planifiée) */
+    sourceUserIds?: string[];
     startRect: DOMRect;
+    /** Ctrl enfoncé au mousedown → sélection multiple */
+    ctrlKey: boolean;
 }
 
 // ── GanttCellPopover ──────────────────────────────────────────────────────
@@ -163,6 +167,24 @@ function GanttCellPopover({
     activeCell, filteredTasks, users, onClose, onSetGanttUsers, onRemoveGanttDay,
 }: GanttCellPopoverProps) {
     const task = filteredTasks.find(t => t.id === activeCell.taskId);
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    // Ferme sur mousedown hors du panel, et sur contextmenu hors du panel
+    // (sans preventDefault sur contextmenu → les cellules reçoivent l'event)
+    useEffect(() => {
+        const handleOutside = (e: MouseEvent) => {
+            if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+                onClose();
+            }
+        };
+        document.addEventListener('mousedown', handleOutside, true);
+        document.addEventListener('contextmenu', handleOutside, true);
+        return () => {
+            document.removeEventListener('mousedown', handleOutside, true);
+            document.removeEventListener('contextmenu', handleOutside, true);
+        };
+    }, [onClose]);
+
     if (!task) return null;
 
     const ganttDays  = task.ganttDays ?? [];
@@ -192,14 +214,14 @@ function GanttCellPopover({
 
     return createPortal(
         <>
-            {/* Backdrop */}
-            <div className="fixed inset-0 z-40" onClick={onClose} />
 
             {/* Popover */}
             <div
+                ref={panelRef}
                 className="fixed z-50 rounded-xl border border-white/15 shadow-2xl overflow-hidden"
                 style={{ left, top, width: POPOVER_W, backgroundColor: 'var(--bg-secondary)' }}
-                onClick={e => e.stopPropagation()}
+                onMouseDown={e => e.stopPropagation()}
+                onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }}
             >
                 {/* Header */}
                 <div className="px-3 pt-2.5 pb-2 border-b border-white/10">
@@ -309,6 +331,8 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
     const [offset, setOffset]             = useState(0);
     const [selectedTask, setSelectedTask] = useState<Task | null>(null);
     const [activeCell, setActiveCell]     = useState<ActiveCell | null>(null);
+    // Sélection multi-cellules : Set de clés "taskId:date"
+    const [selectedCells, setSelectedCells] = useState<Set<string>>(new Set());
 
     const todayStr = useMemo(() => toISO(new Date()), []);
 
@@ -358,8 +382,9 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
     }
 
     // ── Gantt day store actions ───────────────────────────────────────────
-    const setGanttUsers = (taskId: string, date: string, userIds: string[]) => {
-        const task = filteredTasks.find(t => t.id === taskId);
+    // Applique une affectation à une cellule (helper interne)
+    const applyGanttUsers = (taskId: string, date: string, userIds: string[]) => {
+        const task = useStore.getState().tasks.find(t => t.id === taskId);
         if (!task) return;
         const current  = task.ganttDays ?? [];
         const existing = current.find(d => d.date === date);
@@ -373,8 +398,21 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
         updateTask(taskId, { ganttDays: next });
     };
 
+    // Si la cellule cliquée fait partie d'une multi-sélection → applique à toutes
+    const setGanttUsers = (taskId: string, date: string, userIds: string[]) => {
+        const key = `${taskId}:${date}`;
+        if (selectedCells.has(key) && selectedCells.size > 1) {
+            selectedCells.forEach(k => {
+                const colonIdx = k.indexOf(':');
+                applyGanttUsers(k.slice(0, colonIdx), k.slice(colonIdx + 1), userIds);
+            });
+        } else {
+            applyGanttUsers(taskId, date, userIds);
+        }
+    };
+
     const removeGanttDay = (taskId: string, date: string) => {
-        const task = filteredTasks.find(t => t.id === taskId);
+        const task = useStore.getState().tasks.find(t => t.id === taskId);
         if (!task) return;
         updateTask(taskId, { ganttDays: (task.ganttDays ?? []).filter(d => d.date !== date) });
     };
@@ -396,30 +434,29 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
             if (!drag) return;
 
             if (drag.startDate === drag.currentDate) {
-                // No movement → single click → open assignee picker
-                setActiveCell({ taskId: drag.taskId, date: drag.startDate, rect: drag.startRect });
+                // No movement → single click → sélection (+ Ctrl = multi)
+                const key = `${drag.taskId}:${drag.startDate}`;
+                setSelectedCells(prev => {
+                    const next = drag.ctrlKey ? new Set(prev) : new Set<string>();
+                    if (next.has(key)) next.delete(key); else next.add(key);
+                    return next;
+                });
             } else {
-                // Range drag → plan or remove
-                const task = filteredTasksRef.current.find(t => t.id === drag.taskId);
+                // Range drag → plan or remove (lecture depuis le store, pas depuis filteredTasksRef stale)
+                const task = useStore.getState().tasks.find(t => t.id === drag.taskId);
                 if (task) {
                     const [minDate, maxDate] = drag.startDate < drag.currentDate
                         ? [drag.startDate, drag.currentDate]
                         : [drag.currentDate, drag.startDate];
                     const dates = dayISOsRef.current.filter(iso => iso >= minDate && iso <= maxDate);
 
-                    if (drag.mode === 'add') {
-                        const current = task.ganttDays ?? [];
-                        const newEntries: GanttDay[] = dates
-                            .filter(d => !current.some(g => g.date === d))
-                            .map(d => ({ date: d }));
-                        const updated = [...current, ...newEntries]
-                            .sort((a, b) => a.date.localeCompare(b.date));
-                        updateTask(drag.taskId, { ganttDays: updated });
-                    } else {
-                        const updated = (task.ganttDays ?? [])
-                            .filter(g => !(g.date >= minDate && g.date <= maxDate));
-                        updateTask(drag.taskId, { ganttDays: updated });
-                    }
+                    const current = task.ganttDays ?? [];
+                    const newEntries: GanttDay[] = dates
+                        .filter(d => !current.some(g => g.date === d))
+                        .map(d => ({ date: d, userIds: drag.sourceUserIds }));
+                    const updated = [...current, ...newEntries]
+                        .sort((a, b) => a.date.localeCompare(b.date));
+                    updateTask(drag.taskId, { ganttDays: updated });
                 }
             }
 
@@ -431,16 +468,41 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
         return () => document.removeEventListener('mouseup', handleMouseUp);
     }, []); // Stable — reads only refs, never stale
 
+    // Suppr / Delete → retire tous les jours gantt sélectionnés
+    const selectedCellsRef = useRef(selectedCells);
+    selectedCellsRef.current = selectedCells;
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+            const cells = selectedCellsRef.current;
+            if (cells.size === 0) return;
+            // Ne pas intercepter si le focus est dans un input
+            const tag = (document.activeElement as HTMLElement)?.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+            e.preventDefault();
+            cells.forEach(key => {
+                const [taskId, date] = key.split(':');
+                removeGanttDay(taskId, date);
+            });
+            setSelectedCells(new Set());
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
     const handleCellMouseDown = (e: React.MouseEvent<HTMLDivElement>, task: Task, iso: string) => {
         if (e.button !== 0) return;
         e.preventDefault();
         e.stopPropagation();
+        const sourceDay = (task.ganttDays ?? []).find(d => d.date === iso);
         const state: DragState = {
             taskId: task.id,
             startDate: iso,
             currentDate: iso,
-            mode: (task.ganttDays ?? []).some(d => d.date === iso) ? 'remove' : 'add',
+            mode: 'add',
+            sourceUserIds: sourceDay?.userIds,
             startRect: e.currentTarget.getBoundingClientRect(),
+            ctrlKey: e.ctrlKey || e.metaKey,
         };
         dragRef.current = state;
         setDragVisual(state);
@@ -582,7 +644,8 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
             </div>
 
             {/* ── Grid ────────────────────────────────────────────────── */}
-            <div className="flex-1 overflow-auto rounded-2xl border border-white/10 bg-theme-bg-secondary">
+            <div className="flex-1 overflow-auto rounded-2xl border border-white/10 bg-theme-bg-secondary"
+                onClick={e => { if (e.target === e.currentTarget) setSelectedCells(new Set()); }}>
                 <div style={{ minWidth: `${SIDE_W + colW * days.length}px` }}>
 
                     {/* ── Header row ── */}
@@ -758,6 +821,7 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
                                         hover:bg-white/[0.04] transition-colors"
                                     style={{ width: SIDE_W, minWidth: SIDE_W, backgroundColor: 'var(--bg-secondary)' }}
                                     onClick={() => setSelectedTask(task)}
+                                    onContextMenu={e => { e.preventDefault(); onTaskClick(task, e.clientX, e.clientY); }}
                                 >
                                     <div className="flex items-center gap-1.5 flex-shrink-0 ml-4">
                                         <span className="text-white/15 text-xs">└</span>
@@ -813,7 +877,7 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
                                     const isToday    = iso === todayStr;
                                     const isDue      = task.due === iso;
                                     const isWeekend  = days[colIdx]?.getDay() === 0 || days[colIdx]?.getDay() === 6;
-                                    const isSelected = activeCell?.taskId === task.id && activeCell?.date === iso;
+                                    const isSelected = selectedCells.has(`${task.id}:${iso}`);
 
                                     const ganttDayObj   = ganttDays.find(d => d.date === iso);
                                     const isPlanned     = !!ganttDayObj;
@@ -829,7 +893,7 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
 
                                     // Drag visual state for this cell
                                     let isDragPreview = false, isDragPreviewStart = false, isDragPreviewEnd = false;
-                                    let isDragAdd = false, isDragRemove = false;
+                                    let isDragAdd = false;
                                     if (dragVisual?.taskId === task.id && dragVisual.startDate !== dragVisual.currentDate) {
                                         const [minD, maxD] = dragVisual.startDate < dragVisual.currentDate
                                             ? [dragVisual.startDate, dragVisual.currentDate]
@@ -837,8 +901,7 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
                                         isDragPreview      = iso >= minD && iso <= maxD;
                                         isDragPreviewStart = iso === minD;
                                         isDragPreviewEnd   = iso === maxD;
-                                        isDragAdd          = isDragPreview && dragVisual.mode === 'add';
-                                        isDragRemove       = isDragPreview && dragVisual.mode === 'remove';
+                                        isDragAdd          = isDragPreview;
                                     }
 
                                     const bg  = STATUS_COLOR[task.status];
@@ -860,6 +923,7 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
                                             }}
                                             onMouseDown={e => handleCellMouseDown(e, task, iso)}
                                             onMouseEnter={() => handleCellMouseEnter(task, iso)}
+                                            onContextMenu={e => { e.preventDefault(); setActiveCell({ taskId: task.id, date: iso, rect: e.currentTarget.getBoundingClientRect() }); }}
                                             title={isPlanned
                                                 ? `Cliquer pour modifier${assignedUsers.length > 0 ? ` (${assignedUsers.map(u => u.name.split(' ')[0]).join(', ')})` : ''} · Glisser pour étendre`
                                                 : 'Cliquer pour planifier · Glisser pour une plage'}
@@ -888,7 +952,7 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
                                             )}
 
                                             {/* Hover darken on planned cell */}
-                                            {isPlanned && !isDragRemove && (
+                                            {isPlanned && (
                                                 <div className="absolute opacity-0 group-hover/gcell:opacity-100 transition-opacity pointer-events-none bg-black/20"
                                                     style={{
                                                         top:    compact ? '9px' : '7px',
@@ -915,21 +979,9 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
                                                 }} />
                                             )}
 
-                                            {/* Drag REMOVE overlay */}
-                                            {isDragRemove && isPlanned && (
-                                                <div className="pointer-events-none" style={{
-                                                    position: 'absolute',
-                                                    top:    compact ? '9px' : '7px',
-                                                    bottom: compact ? '9px' : '7px',
-                                                    left:   isSegStart ? '4px' : '0',
-                                                    right:  isSegEnd   ? '4px' : '0',
-                                                    backgroundColor: 'rgba(239,68,68,0.55)',
-                                                    borderRadius: barRadius(isSegStart, isSegEnd),
-                                                }} />
-                                            )}
 
-                                            {/* Assignee avatars on bar (start of segment, multi) */}
-                                            {isPlanned && isSegStart && assignedUsers.length > 0 && !compact && (
+                                            {/* Assignee avatars on bar (chaque cellule planifiée) */}
+                                            {isPlanned && assignedUsers.length > 0 && !compact && (
                                                 <div className="absolute top-1/2 -translate-y-1/2 z-10 flex pointer-events-none"
                                                     style={{ left: '8px' }}>
                                                     {assignedUsers.slice(0, 3).map((user, i) => (

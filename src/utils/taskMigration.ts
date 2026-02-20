@@ -94,7 +94,7 @@ export function migrateTask(raw: unknown, options: MigrationOptions): Task {
 
   return {
     id: typeof data.id === 'string' ? data.id : uid(),
-    title: toString(data.title, 'Sans titre'),
+    title: toString(data.title, 'Sans titre').toUpperCase(),
     project: toString(data.project, 'DIVERS'),
     due: typeof data.due === 'string' || data.due === null ? data.due : null,
     priority: isPriority(data.priority) ? data.priority : 'med',
