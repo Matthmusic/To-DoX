@@ -17,6 +17,7 @@ import {
     Palette,
     LayoutGrid,
     CalendarDays,
+    BarChart3,
 } from "lucide-react";
 import ToDoXLogo from "../assets/To Do X.svg";
 import { QuickAddPremium } from "./QuickAddPremium";
@@ -43,8 +44,8 @@ interface KanbanHeaderPremiumProps {
     onImport: () => void;
     onOpenHelp: () => void;
     // Vue active
-    activeView: 'kanban' | 'timeline';
-    onViewChange: (view: 'kanban' | 'timeline') => void;
+    activeView: 'kanban' | 'timeline' | 'dashboard';
+    onViewChange: (view: 'kanban' | 'timeline' | 'dashboard') => void;
     // Recherche
     filterSearch: string;
     onSearchChange: (value: string) => void;
@@ -373,6 +374,18 @@ export function KanbanHeaderPremium({
                         >
                             <CalendarDays className="h-3.5 w-3.5" />
                             <span className="hidden lg:inline">Timeline</span>
+                        </button>
+                        <button
+                            onClick={() => onViewChange('dashboard')}
+                            className="flex items-center gap-1 px-2.5 py-2 text-xs font-semibold transition-colors"
+                            style={activeView === 'dashboard'
+                                ? { backgroundColor: `${primaryColor}25`, color: primaryColor }
+                                : { color: 'rgba(255,255,255,0.35)' }
+                            }
+                            title="Dashboard KPIs"
+                        >
+                            <BarChart3 className="h-3.5 w-3.5" />
+                            <span className="hidden lg:inline">Dashboard</span>
                         </button>
                     </div>
 

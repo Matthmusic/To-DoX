@@ -5,6 +5,7 @@ import { TaskCard } from "./TaskCard";
 import { getProjectColor } from "../utils";
 import useStore from "../store/useStore";
 import type { Task } from "../types";
+import type { DropIndicator } from "../hooks/useDragAndDrop";
 
 interface ProjectCardProps {
     project: string;
@@ -17,6 +18,10 @@ interface ProjectCardProps {
     onClickTask: (task: Task) => void;
     onContextMenuTask: (e: React.MouseEvent, task: Task) => void;
     onSetProjectDirectory: (project: string) => void;
+    onDragOverTask?: (e: React.DragEvent, taskId: string, el: HTMLElement) => void;
+    onDropOnTask?: (e: React.DragEvent, taskId: string) => void;
+    onDragLeaveTask?: () => void;
+    dropIndicator?: DropIndicator | null;
 }
 
 export function ProjectCard({
@@ -31,7 +36,11 @@ export function ProjectCard({
     onDragStartTask,
     onClickTask,
     onContextMenuTask,
-    onSetProjectDirectory
+    onSetProjectDirectory,
+    onDragOverTask,
+    onDropOnTask,
+    onDragLeaveTask,
+    dropIndicator,
 }: ProjectCardProps) {
     // Note: onSetProjectDirectory is still passed down because it triggers a modal in ToDoX.jsx
 
@@ -76,6 +85,10 @@ export function ProjectCard({
                                 onClick={onClickTask}
                                 onContextMenu={onContextMenuTask}
                                 onSetProjectDirectory={() => onSetProjectDirectory(project)}
+                                onDragOverTask={onDragOverTask}
+                                onDropOnTask={onDropOnTask}
+                                onDragLeaveTask={onDragLeaveTask}
+                                dropIndicator={dropIndicator}
                             />
                         ))}
                         {/* Drop zone placeholder logic if needed */}

@@ -22,6 +22,7 @@ import {
     KanbanHeaderPremium,
     KanbanBoard,
     TimelineView,
+    DashboardView,
 } from "./components";
 import { alertModal } from "./utils/confirm";
 
@@ -73,7 +74,11 @@ export default function ToDoX() {
     const {
         handleDragStart,
         handleDragStartProject,
-        handleDrop
+        handleDrop,
+        handleDragOverTask,
+        handleDropOnTask,
+        handleDragLeaveTask,
+        dropIndicator,
     } = useDragAndDrop();
 
     // UI State Management
@@ -89,7 +94,7 @@ export default function ToDoX() {
     const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
     const [showThemesPanel, setShowThemesPanel] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
-    const [activeView, setActiveView] = useState<'kanban' | 'timeline'>('kanban');
+    const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard'>('kanban');
 
     const importFileRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<{ focus: () => void }>(null);
@@ -294,12 +299,18 @@ export default function ToDoX() {
                         onDrop={handleDrop}
                         onContextMenuTask={handleContextMenu}
                         onSetProjectDirectory={() => setShowDirPanel(true)}
+                        onDragOverTask={handleDragOverTask}
+                        onDropOnTask={handleDropOnTask}
+                        onDragLeaveTask={handleDragLeaveTask}
+                        dropIndicator={dropIndicator}
                     />
-                ) : (
+                ) : activeView === 'timeline' ? (
                     <TimelineView
                         filteredTasks={filteredTasks}
                         onTaskClick={(task, x, y) => setContextMenu({ x, y, task })}
                     />
+                ) : (
+                    <DashboardView />
                 )}
             </ErrorBoundary>
 

@@ -3,6 +3,7 @@ import { STATUSES } from '../constants';
 import type { Task } from '../types';
 import { ProjectCard } from './ProjectCard';
 import useStore from '../store/useStore';
+import type { DropIndicator } from '../hooks/useDragAndDrop';
 
 interface KanbanBoardProps {
     grouped: Record<string, Record<string, Task[]>>;
@@ -12,6 +13,10 @@ interface KanbanBoardProps {
     onDrop: (e: React.DragEvent, status: string) => void;
     onContextMenuTask: (e: React.MouseEvent, task: Task) => void;
     onSetProjectDirectory: () => void;
+    onDragOverTask?: (e: React.DragEvent, taskId: string, el: HTMLElement) => void;
+    onDropOnTask?: (e: React.DragEvent, taskId: string) => void;
+    onDragLeaveTask?: () => void;
+    dropIndicator?: DropIndicator | null;
 }
 
 /**
@@ -25,6 +30,10 @@ export function KanbanBoard({
     onDrop,
     onContextMenuTask,
     onSetProjectDirectory,
+    onDragOverTask,
+    onDropOnTask,
+    onDragLeaveTask,
+    dropIndicator,
 }: KanbanBoardProps) {
     const { toggleProjectCollapse } = useStore();
 
@@ -73,6 +82,10 @@ export function KanbanBoard({
                                         onClickTask={() => {}}
                                         onContextMenuTask={onContextMenuTask}
                                         onSetProjectDirectory={onSetProjectDirectory}
+                                        onDragOverTask={onDragOverTask}
+                                        onDropOnTask={onDropOnTask}
+                                        onDragLeaveTask={onDragLeaveTask}
+                                        dropIndicator={dropIndicator}
                                     />
                                 );
                             })}

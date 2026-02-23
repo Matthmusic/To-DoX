@@ -4,8 +4,9 @@ import { STATUSES, PRIORITIES, type StatusDef, type PriorityDef } from "../const
 import { Autocomplete } from "./Autocomplete";
 import { ProjectAutocomplete } from "./ProjectAutocomplete";
 import useStore from "../store/useStore";
-import type { Task, TaskData } from "../types";
+import type { Task, TaskData, RecurrenceType } from "../types";
 import { confirmModal } from "../utils/confirm";
+import { Repeat, BookmarkPlus } from "lucide-react";
 
 interface TaskEditPanelProps {
     task: Task;
@@ -17,7 +18,7 @@ interface TaskEditPanelProps {
  * Panneau d'édition pour clic droit sur une tâche
  */
 export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEditPanelProps) {
-    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks } = useStore();
+    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate } = useStore();
 
     // Récupérer la tâche à jour depuis le store pour refléter les changements en temps réel
     const task = tasks.find(t => t.id === initialTask.id) || initialTask;
@@ -200,6 +201,48 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
                     rows={3}
                 />
 
+                {/* Récurrence */}
+                <label className="mt-2 text-xs text-slate-400 flex items-center gap-1">
+                    <Repeat className="w-3 h-3" /> Récurrence
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                    {([null, 'daily', 'weekly', 'monthly'] as (RecurrenceType | null)[]).map(type => (
+                        <button
+                            key={type ?? 'none'}
+                            onClick={() => onUpdate(task.id, {
+                                recurrence: type ? { type } : undefined
+                            })}
+                            className={`rounded-xl px-3 py-1 text-xs transition border ${
+                                (task.recurrence?.type ?? null) === type
+                                    ? 'border-blue-400/60 bg-blue-400/20 text-blue-200'
+                                    : 'border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
+                            }`}
+                        >
+                            {type === null ? 'Aucune' : type === 'daily' ? 'Quotidien' : type === 'weekly' ? 'Hebdo' : 'Mensuel'}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Enregistrer comme template */}
+                <button
+                    onClick={() => {
+                        addTemplate({
+                            name: task.title,
+                            title: task.title,
+                            project: task.project,
+                            priority: task.priority,
+                            assignedTo: task.assignedTo,
+                            notes: task.notes || '',
+                            subtaskTitles: task.subtasks.map(s => s.title),
+                        });
+                        onClose();
+                    }}
+                    className="mt-2 flex items-center gap-2 rounded-2xl border border-violet-400/40 bg-violet-400/10 px-2 py-1 text-violet-200 transition hover:bg-violet-400/20 text-sm"
+                >
+                    <BookmarkPlus className="w-4 h-4" />
+                    Enregistrer comme template
+                </button>
+
                 {task.status === "done" && (
                     <button
                         onClick={() => {
@@ -214,7 +257,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
 
                 <button
                     onClick={async () => {
-                        if (await confirmModal(`Supprimer la t?che "${task.title}" ?`)) {
+                        if (await confirmModal(`Supprimer la tâche "${task.title}" ?`)) {
                             onDelete(task.id);
                             onClose();
                         }
@@ -223,7 +266,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
                 >
                     Supprimer
                 </button>
-            
+
             </div>
         </div>,
         document.body

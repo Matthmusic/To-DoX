@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import jsPDF from "jspdf";
-import { Printer, FileDown, CheckCircle2, Loader2, FileText } from "lucide-react";
+import { Printer, FileDown, CheckCircle2, Loader2, FileText, History, Trash2 } from "lucide-react";
 import useStore from "../store/useStore";
 import { STATUSES } from "../constants";
-import { formatTimestampToDate, getCurrentWeekRange, getPreviousWeekRange } from "../utils";
+import { formatTimestampToDate, getCurrentWeekRange, getPreviousWeekRange, getCurrentMonthRange, getPreviousMonthRange } from "../utils";
 import type { Task, SubtaskProgress } from "../types";
 import { useTheme } from "../hooks/useTheme";
 
@@ -15,7 +15,7 @@ interface WeeklyReportModalProps {
 const EXCLUDED_PROJECTS = ["DEV", "PERSO"];
 
 export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
-    const { tasks, currentUser, projectColors } = useStore();
+    const { tasks, currentUser, projectColors, saveReport, savedReports, deleteReport } = useStore();
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
     const secondaryColor = activeTheme.palette.secondary;
@@ -24,11 +24,14 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
     const [selectedTasks, setSelectedTasks] = useState<Record<string, boolean>>({});
     const [reportText, setReportText] = useState("");
     const [showReport, setShowReport] = useState(false);
-    const [reportPeriod, setReportPeriod] = useState<'current' | 'previous' | 'both' | null>(null);
+    const [showHistory, setShowHistory] = useState(false);
+    const [reportPeriod, setReportPeriod] = useState<'current' | 'previous' | 'both' | 'current_month' | 'previous_month' | null>(null);
 
     // Plages de dates
     const currentWeek = useMemo(() => getCurrentWeekRange(), []);
     const previousWeek = useMemo(() => getPreviousWeekRange(), []);
+    const currentMonth = useMemo(() => getCurrentMonthRange(), []);
+    const previousMonth = useMemo(() => getPreviousMonthRange(), []);
 
     // Récupère les tâches pour une période donnée
     const getWeeklyTasks = useCallback((allTasks: Task[], range: { start: Date; end: Date }, isCurrentWeek: boolean = false) => {
@@ -60,21 +63,21 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
         return { completed, remaining };
     }, [currentUser]);
 
-    // Tâches de la semaine en cours (inclut TOUTES les tâches restantes, même d'avant)
     const currentWeekTasks = useMemo(() => getWeeklyTasks(tasks, currentWeek, true), [tasks, currentWeek, getWeeklyTasks]);
-
-    // Tâches de la semaine précédente (uniquement les tâches créées cette semaine-là)
     const previousWeekTasks = useMemo(() => getWeeklyTasks(tasks, previousWeek, false), [tasks, previousWeek, getWeeklyTasks]);
+    const currentMonthTasks = useMemo(() => getWeeklyTasks(tasks, currentMonth, true), [tasks, currentMonth, getWeeklyTasks]);
+    const previousMonthTasks = useMemo(() => getWeeklyTasks(tasks, previousMonth, false), [tasks, previousMonth, getWeeklyTasks]);
 
-    // Initialiser la sélection avec toutes les tâches cochées par défaut
     useMemo(() => {
         const initial: Record<string, boolean> = {};
-        [...currentWeekTasks.completed, ...currentWeekTasks.remaining,
-         ...previousWeekTasks.completed, ...previousWeekTasks.remaining].forEach(t => {
-            initial[t.id] = true;
-        });
+        [
+            ...currentWeekTasks.completed, ...currentWeekTasks.remaining,
+            ...previousWeekTasks.completed, ...previousWeekTasks.remaining,
+            ...currentMonthTasks.completed, ...currentMonthTasks.remaining,
+            ...previousMonthTasks.completed, ...previousMonthTasks.remaining,
+        ].forEach(t => { initial[t.id] = true; });
         setSelectedTasks(initial);
-    }, [currentWeekTasks, previousWeekTasks]);
+    }, [currentWeekTasks, previousWeekTasks, currentMonthTasks, previousMonthTasks]);
 
     // Toggle une tâche individuelle
     const toggleTask = (taskId: string) => {
@@ -206,27 +209,22 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
         return text;
     };
 
-    // Génère le rapport complet
-    const generateReport = (period: 'current' | 'previous' | 'both') => {
-        let text = "COMPTE RENDU HEBDOMADAIRE\n";
+    const generateReport = (period: 'current' | 'previous' | 'both' | 'current_month' | 'previous_month') => {
+        const isMonthly = period === 'current_month' || period === 'previous_month';
+        let text = isMonthly ? "COMPTE RENDU MENSUEL\n" : "COMPTE RENDU HEBDOMADAIRE\n";
         text += `Généré le ${formatTimestampToDate(Date.now())}\n`;
 
         if (period === 'current' || period === 'both') {
-            text += generateWeekSection(
-                currentWeekTasks.completed,
-                currentWeekTasks.remaining,
-                currentWeek,
-                true
-            );
+            text += generateWeekSection(currentWeekTasks.completed, currentWeekTasks.remaining, currentWeek, true);
         }
-
         if (period === 'previous' || period === 'both') {
-            text += generateWeekSection(
-                previousWeekTasks.completed,
-                previousWeekTasks.remaining,
-                previousWeek,
-                false
-            );
+            text += generateWeekSection(previousWeekTasks.completed, previousWeekTasks.remaining, previousWeek, false);
+        }
+        if (period === 'current_month') {
+            text += generateWeekSection(currentMonthTasks.completed, currentMonthTasks.remaining, currentMonth, true);
+        }
+        if (period === 'previous_month') {
+            text += generateWeekSection(previousMonthTasks.completed, previousMonthTasks.remaining, previousMonth, false);
         }
 
         setReportText(text);
@@ -324,21 +322,16 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
         }> = [];
 
         if (reportPeriod === 'current' || reportPeriod === 'both') {
-            sections.push({
-                completed: currentWeekTasks.completed,
-                remaining: currentWeekTasks.remaining,
-                range: currentWeek,
-                title: "SEMAINE EN COURS"
-            });
+            sections.push({ completed: currentWeekTasks.completed, remaining: currentWeekTasks.remaining, range: currentWeek, title: "SEMAINE EN COURS" });
         }
-
         if (reportPeriod === 'previous' || reportPeriod === 'both') {
-            sections.push({
-                completed: previousWeekTasks.completed,
-                remaining: previousWeekTasks.remaining,
-                range: previousWeek,
-                title: "SEMAINE PRÉCÉDENTE"
-            });
+            sections.push({ completed: previousWeekTasks.completed, remaining: previousWeekTasks.remaining, range: previousWeek, title: "SEMAINE PRÉCÉDENTE" });
+        }
+        if (reportPeriod === 'current_month') {
+            sections.push({ completed: currentMonthTasks.completed, remaining: currentMonthTasks.remaining, range: currentMonth, title: "MOIS EN COURS" });
+        }
+        if (reportPeriod === 'previous_month') {
+            sections.push({ completed: previousMonthTasks.completed, remaining: previousMonthTasks.remaining, range: previousMonth, title: "MOIS PRÉCÉDENT" });
         }
 
         sections.forEach((section, sectionIndex) => {
@@ -596,7 +589,27 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
         doc.setFont("helvetica", "italic");
         doc.text(`Page ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
 
-        // Télécharger
+        // Auto-sauvegarder le CR dans l'app
+        if (currentUser && reportPeriod) {
+            const rangeMap: Record<string, { range: { startStr: string; endStr: string }; label: string }> = {
+                current: { range: currentWeek, label: `Semaine du ${currentWeek.startStr} au ${currentWeek.endStr}` },
+                previous: { range: previousWeek, label: `Semaine du ${previousWeek.startStr} au ${previousWeek.endStr}` },
+                both: { range: currentWeek, label: `Semaines ${previousWeek.startStr} – ${currentWeek.endStr}` },
+                current_month: { range: currentMonth, label: `Mois du ${currentMonth.startStr} au ${currentMonth.endStr}` },
+                previous_month: { range: previousMonth, label: `Mois du ${previousMonth.startStr} au ${previousMonth.endStr}` },
+            };
+            const meta = rangeMap[reportPeriod];
+            const allSelected = [...(sections.flatMap(s => [...s.completed.filter(t => selectedTasks[t.id]), ...s.remaining.filter(t => selectedTasks[t.id])]))];
+            saveReport({
+                generatedAt: Date.now(),
+                generatedBy: currentUser,
+                periodType: reportPeriod === 'current' ? 'weekly_current' : reportPeriod === 'previous' ? 'weekly_previous' : reportPeriod === 'both' ? 'weekly_both' : reportPeriod === 'current_month' ? 'monthly_current' : 'monthly_previous',
+                periodLabel: meta.label,
+                taskCount: allSelected.length,
+                reportText,
+            });
+        }
+
         const fileName = `CR_To-Do-X_${formatTimestampToDate(Date.now()).replace(/\//g, "-")}.pdf`;
         doc.save(fileName);
     };
@@ -675,21 +688,16 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
             }> = [];
 
             if (reportPeriod === 'current' || reportPeriod === 'both') {
-                sections.push({
-                    completed: currentWeekTasks.completed,
-                    remaining: currentWeekTasks.remaining,
-                    range: currentWeek,
-                    title: "SEMAINE EN COURS"
-                });
+                sections.push({ completed: currentWeekTasks.completed, remaining: currentWeekTasks.remaining, range: currentWeek, title: "SEMAINE EN COURS" });
             }
-
             if (reportPeriod === 'previous' || reportPeriod === 'both') {
-                sections.push({
-                    completed: previousWeekTasks.completed,
-                    remaining: previousWeekTasks.remaining,
-                    range: previousWeek,
-                    title: "SEMAINE PRÉCÉDENTE"
-                });
+                sections.push({ completed: previousWeekTasks.completed, remaining: previousWeekTasks.remaining, range: previousWeek, title: "SEMAINE PRÉCÉDENTE" });
+            }
+            if (reportPeriod === 'current_month') {
+                sections.push({ completed: currentMonthTasks.completed, remaining: currentMonthTasks.remaining, range: currentMonth, title: "MOIS EN COURS" });
+            }
+            if (reportPeriod === 'previous_month') {
+                sections.push({ completed: previousMonthTasks.completed, remaining: previousMonthTasks.remaining, range: previousMonth, title: "MOIS PRÉCÉDENT" });
             }
 
             sections.forEach((section, index) => {
@@ -926,7 +934,7 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                                 backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
                             }}
                         >
-                            Compte Rendu Hebdomadaire
+                            Compte Rendu
                         </h3>
                     </div>
                     <button
@@ -1157,52 +1165,71 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                 </div>
 
                 {/* Footer avec boutons de génération */}
-                <div className="relative z-10 border-t border-theme-primary p-6">
-                    <div className="flex items-center justify-between">
-                        <div className="text-sm text-slate-300">
-                            <span className="font-semibold" style={{ color: primaryColor }}>{selectedCount}</span> tâches sélectionnées
-                        </div>
+                <div className="relative z-10 border-t border-theme-primary p-4">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
                         <div className="flex items-center gap-3">
+                            <span className="text-sm text-slate-300">
+                                <span className="font-semibold" style={{ color: primaryColor }}>{selectedCount}</span> tâches sélectionnées
+                            </span>
                             <button
-                                onClick={() => generateReport('current')}
-                                disabled={selectedCount === 0}
-                                className="flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                style={{
-                                    borderColor: `${primaryColor}30`,
-                                    backgroundColor: `${primaryColor}10`,
-                                    color: `${primaryColor}cc`
-                                }}
+                                onClick={() => setShowHistory(!showHistory)}
+                                className="flex items-center gap-1 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10"
                             >
-                                <FileText className="w-4 h-4" />
-                                CR Semaine en cours
+                                <History className="w-3 h-3" />
+                                Historique ({savedReports.length})
                             </button>
-                            <button
-                                onClick={() => generateReport('previous')}
-                                disabled={selectedCount === 0}
-                                className="flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                style={{
-                                    borderColor: `${secondaryColor}30`,
-                                    backgroundColor: `${secondaryColor}10`,
-                                    color: `${secondaryColor}cc`
-                                }}
-                            >
-                                <FileText className="w-4 h-4" />
-                                CR Semaine précédente
-                            </button>
-                            <button
-                                onClick={() => generateReport('both')}
-                                disabled={selectedCount === 0}
-                                className="flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-black text-white shadow-lg transition-all hover:scale-105 hover:brightness-110 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
-                                style={{
-                                    backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`,
-                                    boxShadow: `0 10px 15px -3px ${primaryColor}30`
-                                }}
-                            >
-                                <FileText className="w-4 h-4" />
-                                CR Complet (2 semaines)
-                            </button>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {[
+                                { id: 'current' as const, label: 'S. en cours', color: primaryColor },
+                                { id: 'previous' as const, label: 'S. précédente', color: secondaryColor },
+                                { id: 'both' as const, label: '2 semaines', gradient: true },
+                                { id: 'current_month' as const, label: 'Mois en cours', color: '#10b981' },
+                                { id: 'previous_month' as const, label: 'Mois précédent', color: '#f59e0b' },
+                            ].map(btn => (
+                                <button
+                                    key={btn.id}
+                                    onClick={() => generateReport(btn.id)}
+                                    disabled={selectedCount === 0}
+                                    className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110"
+                                    style={btn.gradient
+                                        ? { backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`, color: 'white' }
+                                        : { border: `1px solid ${btn.color}30`, backgroundColor: `${btn.color}10`, color: `${btn.color}cc` }
+                                    }
+                                >
+                                    <FileText className="w-3 h-3" />
+                                    {btn.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
+
+                    {/* Historique des CRs */}
+                    {showHistory && (
+                        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3 max-h-48 overflow-y-auto">
+                            <h5 className="text-xs font-semibold text-slate-300 mb-2">CRs sauvegardés</h5>
+                            {savedReports.length === 0 && <p className="text-xs text-slate-500 italic">Aucun CR sauvegardé — exportez un PDF pour en créer un.</p>}
+                            {savedReports.map(report => (
+                                <div key={report.id} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
+                                    <div>
+                                        <div className="text-xs text-slate-200">{report.periodLabel}</div>
+                                        <div className="text-xs text-slate-500">{formatTimestampToDate(report.generatedAt)} · {report.taskCount} tâches</div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => { setReportText(report.reportText); setShowReport(true); }}
+                                            className="text-xs text-blue-400 hover:text-blue-300 transition"
+                                        >
+                                            Voir
+                                        </button>
+                                        <button onClick={() => deleteReport(report.id)} className="text-slate-500 hover:text-rose-400 transition">
+                                            <Trash2 className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

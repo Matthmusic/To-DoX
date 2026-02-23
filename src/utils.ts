@@ -154,6 +154,36 @@ export function getPreviousWeekRange(): WeekRange {
 }
 
 /**
+ * Obtient la plage de dates du mois en cours
+ */
+export function getCurrentMonthRange(): WeekRange {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    return {
+        start: first,
+        end: last,
+        startStr: formatDateShort(first.toISOString().split("T")[0]),
+        endStr: formatDateShort(last.toISOString().split("T")[0]),
+    };
+}
+
+/**
+ * Obtient la plage de dates du mois précédent
+ */
+export function getPreviousMonthRange(): WeekRange {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+    const last = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    return {
+        start: first,
+        end: last,
+        startStr: formatDateShort(first.toISOString().split("T")[0]),
+        endStr: formatDateShort(last.toISOString().split("T")[0]),
+    };
+}
+
+/**
  * Retourne la date du jour au format ISO (YYYY-MM-DD)
  */
 export function todayISO(): string {

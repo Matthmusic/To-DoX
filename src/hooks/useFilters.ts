@@ -64,13 +64,20 @@ export function useFilters(tasks: Task[], currentUser: string | null = null) {
             byStatusAndProject[t.status][projectName].push(t);
         }
 
-        // Tri des tâches par favoris puis échéance
+        // Tri : favoris en tête, puis ordre manuel, puis échéance
         for (const status in byStatusAndProject) {
             for (const project in byStatusAndProject[status]) {
                 byStatusAndProject[status][project].sort((a, b) => {
+                    // 1. Favoris en tête
                     const favDiff = (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);
                     if (favDiff !== 0) return favDiff;
 
+                    // 2. Ordre manuel (si au moins l'un des deux a un ordre non-zéro)
+                    const orderA = a.order ?? 0;
+                    const orderB = b.order ?? 0;
+                    if (orderA !== orderB) return orderA - orderB;
+
+                    // 3. Fallback : échéance
                     const daysA = businessDayDelta(a.due || "");
                     const daysB = businessDayDelta(b.due || "");
 

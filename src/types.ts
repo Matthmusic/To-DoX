@@ -67,6 +67,8 @@ export interface StoredData {
   themeSettings?: ThemeSettings;
   comments?: Record<string, Comment[]>;
   pendingMentions?: Record<string, PendingMention[]>;
+  templates?: TaskTemplate[];
+  savedReports?: SavedReport[];
 }
 
 export interface ElectronAPI {
@@ -145,6 +147,40 @@ export interface GanttDay {
   userIds?: string[]; // Utilisateurs assignés pour ce jour (multi-affectation)
 }
 
+export type RecurrenceType = 'daily' | 'weekly' | 'monthly';
+
+export interface Recurrence {
+  type: RecurrenceType;
+  endsAt?: number; // timestamp optionnel de fin de récurrence
+}
+
+/**
+ * Template de tâche réutilisable
+ */
+export interface TaskTemplate {
+  id: string;
+  name: string;
+  title: string;
+  project: string;
+  priority: 'low' | 'med' | 'high';
+  assignedTo: string[];
+  notes: string;
+  subtaskTitles: string[];
+}
+
+/**
+ * Rapport sauvegardé (CR)
+ */
+export interface SavedReport {
+  id: string;
+  generatedAt: number;
+  generatedBy: string;
+  periodType: 'weekly_current' | 'weekly_previous' | 'weekly_both' | 'monthly_current' | 'monthly_previous';
+  periodLabel: string;
+  taskCount: number;
+  reportText: string;
+}
+
 /**
  * Structure d'une tâche
  */
@@ -155,8 +191,8 @@ export interface Task {
   due: string | null;
   priority: 'low' | 'med' | 'high';
   status: 'todo' | 'doing' | 'review' | 'done';
-  createdBy: string; // ID de l'utilisateur qui a créé la tâche
-  assignedTo: string[]; // IDs des utilisateurs affectés (affectation multiple)
+  createdBy: string;
+  assignedTo: string[];
   createdAt: number;
   updatedAt: number;
   completedAt: number | null;
@@ -166,7 +202,9 @@ export interface Task {
   subtasks: Subtask[];
   favorite: boolean;
   deletedAt: number | null;
-  ganttDays?: GanttDay[]; // Jours de travail planifiés, pour la vue Gantt
+  ganttDays?: GanttDay[];
+  order?: number;          // Ordre manuel dans la colonne
+  recurrence?: Recurrence; // Récurrence automatique
 }
 
 /**

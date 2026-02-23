@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { todayISO, uid } from '../utils';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
-import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention } from '../types';
+import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention, TaskTemplate, SavedReport } from '../types';
 
 interface StoreState {
     // State
@@ -62,6 +62,9 @@ interface StoreState {
     setPendingMentions: (m: Record<string, PendingMention[]>) => void;
     clearPendingMentions: (userId: string) => void;
 
+    // Task reorder
+    reorderTask: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
+
     // Projects
     addToProjectHistory: (projectName: string) => void;
     toggleProjectCollapse: (status: string, project: string) => void;
@@ -69,6 +72,19 @@ interface StoreState {
     archiveProject: (projectName: string) => void;
     unarchiveProject: (projectName: string) => void;
     deleteArchivedProject: (projectName: string) => void;
+
+    // Templates
+    templates: TaskTemplate[];
+    setTemplates: (templates: TaskTemplate[]) => void;
+    addTemplate: (template: Omit<TaskTemplate, 'id'>) => void;
+    deleteTemplate: (id: string) => void;
+    createTaskFromTemplate: (templateId: string) => void;
+
+    // Saved Reports (CRs)
+    savedReports: SavedReport[];
+    setSavedReports: (reports: SavedReport[]) => void;
+    saveReport: (report: Omit<SavedReport, 'id'>) => void;
+    deleteReport: (id: string) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -77,14 +93,16 @@ const useStore = create<StoreState>((set, get) => ({
     directories: {},
     projectHistory: [],
     projectColors: {},
-    users: FIXED_USERS, // Liste fixe d'utilisateurs, non modifiable
-    currentUser: null, // Par défaut, aucun utilisateur connecté (sera défini plus tard)
+    users: FIXED_USERS,
+    currentUser: null,
     collapsedProjects: {},
     storagePath: null,
     isLoadingData: true,
     saveError: null,
     comments: {},
     pendingMentions: {},
+    templates: [],
+    savedReports: [],
 
     notificationSettings: {
         enabled: true,
@@ -146,7 +164,7 @@ const useStore = create<StoreState>((set, get) => ({
 
         const newTask: Task = {
             id: uid(),
-            title: (data.title?.trim() || "Sans titre").toUpperCase(),
+            title: data.title?.trim() || "Sans titre",
             project: projectName,
             due: data.due || todayISO(),
             priority: data.priority || "med",
@@ -163,6 +181,7 @@ const useStore = create<StoreState>((set, get) => ({
             favorite: false,
             deletedAt: null,
             ganttDays: [],
+            order: 0,
         };
 
         set((state) => ({ tasks: [newTask, ...state.tasks] }));
@@ -181,7 +200,7 @@ const useStore = create<StoreState>((set, get) => ({
 
         const updatedPatch = { ...patch };
         if (patch.title) {
-            updatedPatch.title = patch.title.trim().toUpperCase() || patch.title;
+            updatedPatch.title = patch.title.trim() || patch.title;
         }
         if (patch.status === "done") {
             updatedPatch.completedAt = Date.now();
@@ -189,12 +208,43 @@ const useStore = create<StoreState>((set, get) => ({
             updatedPatch.completedAt = null;
         }
 
-        // Mise à jour optimiste locale
         const now = Date.now();
         set((state) => ({
             tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updatedPatch, updatedAt: now } : t))
         }));
 
+        // Récurrence : si la tâche passe en "done" et a une récurrence, créer la prochaine occurrence
+        if (patch.status === "done") {
+            const task = get().tasks.find(t => t.id === id);
+            if (task?.recurrence) {
+                const { type, endsAt } = task.recurrence;
+                if (!endsAt || now < endsAt) {
+                    // Calculer la prochaine date d'échéance
+                    const baseDate = task.due ? new Date(task.due) : new Date();
+                    const nextDate = new Date(baseDate);
+                    if (type === 'daily') nextDate.setDate(nextDate.getDate() + 1);
+                    else if (type === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+                    else if (type === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+                    const nextISO = nextDate.toISOString().split('T')[0];
+
+                    const nextTask: Task = {
+                        ...task,
+                        id: uid(),
+                        status: 'todo',
+                        completedAt: null,
+                        due: nextISO,
+                        createdAt: now,
+                        updatedAt: now,
+                        archived: false,
+                        archivedAt: null,
+                        deletedAt: null,
+                        order: 0,
+                        subtasks: task.subtasks.map(st => ({ ...st, completed: false, completedAt: null })),
+                    };
+                    set(state => ({ tasks: [nextTask, ...state.tasks] }));
+                }
+            }
+        }
     },
 
     removeTask: (id) => {
@@ -416,7 +466,74 @@ const useStore = create<StoreState>((set, get) => ({
                     : t
             )
         }));
-    }
+    },
+
+    // Task reorder
+    reorderTask: (draggedId, targetId, position) => {
+        const { tasks } = get();
+        const dragged = tasks.find(t => t.id === draggedId);
+        const target = tasks.find(t => t.id === targetId);
+        if (!dragged || !target || dragged.project !== target.project || dragged.status !== target.status) return;
+
+        // Groupe trié par ordre actuel
+        const group = tasks
+            .filter(t => t.project === dragged.project && t.status === dragged.status && !t.archived && !t.deletedAt)
+            .sort((a, b) => {
+                const favDiff = (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);
+                if (favDiff !== 0) return favDiff;
+                return (a.order ?? 0) - (b.order ?? 0);
+            });
+
+        const withoutDragged = group.filter(t => t.id !== draggedId);
+        const targetIdx = withoutDragged.findIndex(t => t.id === targetId);
+        const insertIdx = position === 'before' ? targetIdx : targetIdx + 1;
+        withoutDragged.splice(insertIdx, 0, dragged);
+
+        const now = Date.now();
+        const orderMap = new Map<string, number>();
+        withoutDragged.forEach((t, i) => orderMap.set(t.id, i * 1000));
+
+        set(state => ({
+            tasks: state.tasks.map(t => orderMap.has(t.id) ? { ...t, order: orderMap.get(t.id)!, updatedAt: now } : t)
+        }));
+    },
+
+    // Templates
+    setTemplates: (templates) => set({ templates }),
+    addTemplate: (template) => {
+        const newTemplate: TaskTemplate = { ...template, id: uid() };
+        set(state => ({ templates: [...state.templates, newTemplate] }));
+    },
+    deleteTemplate: (id) => {
+        set(state => ({ templates: state.templates.filter(t => t.id !== id) }));
+    },
+    createTaskFromTemplate: (templateId) => {
+        const { templates, currentUser } = get();
+        const tpl = templates.find(t => t.id === templateId);
+        if (!tpl || !currentUser) return;
+        get().addTask({
+            title: tpl.title,
+            project: tpl.project,
+            priority: tpl.priority,
+            assignedTo: tpl.assignedTo.length > 0 ? tpl.assignedTo : [currentUser],
+            notes: tpl.notes,
+        });
+        // Ajouter les sous-tâches après création
+        const newTask = get().tasks[0];
+        if (newTask && tpl.subtaskTitles.length > 0) {
+            tpl.subtaskTitles.forEach(title => get().addSubtask(newTask.id, title));
+        }
+    },
+
+    // Saved Reports
+    setSavedReports: (savedReports) => set({ savedReports }),
+    saveReport: (report) => {
+        const newReport: SavedReport = { ...report, id: uid() };
+        set(state => ({ savedReports: [newReport, ...state.savedReports] }));
+    },
+    deleteReport: (id) => {
+        set(state => ({ savedReports: state.savedReports.filter(r => r.id !== id) }));
+    },
 }));
 
 export default useStore;

@@ -1,4 +1,4 @@
-import type { Task, Subtask, GanttDay } from '../types';
+import type { Task, Subtask, GanttDay, Recurrence, RecurrenceType } from '../types';
 import { uid } from '../utils';
 
 export interface MigrationOptions {
@@ -13,6 +13,18 @@ const isStatus = (value: unknown): value is Task['status'] =>
 
 const isPriority = (value: unknown): value is Task['priority'] =>
   value === 'low' || value === 'med' || value === 'high';
+
+const isRecurrenceType = (value: unknown): value is RecurrenceType =>
+  value === 'daily' || value === 'weekly' || value === 'monthly';
+
+const normalizeRecurrence = (value: unknown): Recurrence | undefined => {
+  if (!isRecord(value)) return undefined;
+  if (!isRecurrenceType(value.type)) return undefined;
+  return {
+    type: value.type,
+    endsAt: typeof value.endsAt === 'number' ? value.endsAt : undefined,
+  };
+};
 
 const toNumber = (value: unknown, fallback: number): number =>
   typeof value === 'number' && Number.isFinite(value) ? value : fallback;
@@ -94,7 +106,7 @@ export function migrateTask(raw: unknown, options: MigrationOptions): Task {
 
   return {
     id: typeof data.id === 'string' ? data.id : uid(),
-    title: toString(data.title, 'Sans titre').toUpperCase(),
+    title: toString(data.title, 'Sans titre'),
     project: toString(data.project, 'DIVERS'),
     due: typeof data.due === 'string' || data.due === null ? data.due : null,
     priority: isPriority(data.priority) ? data.priority : 'med',
@@ -111,6 +123,8 @@ export function migrateTask(raw: unknown, options: MigrationOptions): Task {
     favorite: toBoolean(data.favorite, false),
     deletedAt: typeof data.deletedAt === 'number' ? data.deletedAt : null,
     ganttDays: normalizeGanttDays(data.ganttDays),
+    order: toNumber(data.order, 0),
+    recurrence: normalizeRecurrence(data.recurrence),
   };
 }
 

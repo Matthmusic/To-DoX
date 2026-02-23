@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import type { DropIndicator } from "../hooks/useDragAndDrop";
 import { motion } from "framer-motion";
 import {
     ClipboardList, AlertTriangle, Paperclip, MoreHorizontal,
@@ -16,6 +17,10 @@ interface TaskCardProps {
     onClick: (task: Task) => void;
     onContextMenu: (e: React.MouseEvent, task: Task) => void;
     onSetProjectDirectory: () => void;
+    onDragOverTask?: (e: React.DragEvent, taskId: string, el: HTMLElement) => void;
+    onDropOnTask?: (e: React.DragEvent, taskId: string) => void;
+    onDragLeaveTask?: () => void;
+    dropIndicator?: DropIndicator | null;
 }
 
 /**
@@ -24,10 +29,13 @@ interface TaskCardProps {
 export function TaskCard({
     task,
     onDragStart,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onClick: _onClick,
+    onClick,
     onContextMenu,
-    onSetProjectDirectory
+    onSetProjectDirectory,
+    onDragOverTask,
+    onDropOnTask,
+    onDragLeaveTask,
+    dropIndicator,
 }: TaskCardProps) {
     const { directories, users, projectColors, updateTask } = useStore();
     const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
@@ -37,6 +45,11 @@ export function TaskCard({
     const userButtonRef = useRef<HTMLButtonElement>(null);
     const userPopoverRef = useRef<HTMLDivElement>(null);
     const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
+    const cardRef = useRef<HTMLDivElement>(null);
+
+    const isDropTarget = dropIndicator?.taskId === task.id;
+    const showLineBefore = isDropTarget && dropIndicator?.position === 'before';
+    const showLineAfter = isDropTarget && dropIndicator?.position === 'after';
 
     // Calcul des indicateurs visuels
     const remainingDays = task.due ? businessDayDelta(task.due) : null;
@@ -161,15 +174,19 @@ export function TaskCard({
     };
 
     return (
+        <div className="relative">
+            {showLineBefore && <div className="absolute -top-1.5 left-0 right-0 h-0.5 rounded-full bg-blue-400 z-20 pointer-events-none" />}
         <motion.div
+            ref={cardRef}
             draggable
             onDragStart={(e: any) => onDragStart(e as React.DragEvent, task.id)}
-            onClick={() => {
-                setIsSubtasksExpanded((prev) => !prev);
-            }}
+            onDragOver={(e: any) => cardRef.current && onDragOverTask?.(e as React.DragEvent, task.id, cardRef.current)}
+            onDrop={(e: any) => onDropOnTask?.(e as React.DragEvent, task.id)}
+            onDragLeave={() => onDragLeaveTask?.()}
+            onClick={() => onClick(task)}
             onContextMenu={(e) => onContextMenu(e, task)}
             className={`group relative mb-3 flex flex-col gap-3 rounded-2xl border border-white/5 bg-[#161b2e] p-4 shadow-lg transition-all hover:border-white/20 ${urgencyGlowClass} ${isDueToday ? "pulse-glow" : isOverdue ? "ring-1 ring-rose-500/50" : ""
-                } ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"}`}
+                } ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"} ${isDropTarget ? "ring-1 ring-blue-400/50" : ""}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -465,5 +482,7 @@ export function TaskCard({
             </div>
             {/* Popover retiré - les initiales sont maintenant affichées directement sur les badges */}
         </motion.div>
+            {showLineAfter && <div className="absolute -bottom-1.5 left-0 right-0 h-0.5 rounded-full bg-blue-400 z-20 pointer-events-none" />}
+        </div>
     );
 }
