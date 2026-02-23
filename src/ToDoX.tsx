@@ -303,6 +303,7 @@ export default function ToDoX() {
                         onDragStartProject={handleDragStartProject}
                         onDragStartTask={handleDragStart}
                         onDrop={handleDrop}
+                        onClickTask={(task) => setContextMenu({ x: window.innerWidth, y: 48, task })}
                         onContextMenuTask={handleContextMenu}
                         onSetProjectDirectory={() => setShowDirPanel(true)}
                         onDragOverTask={handleDragOverTask}

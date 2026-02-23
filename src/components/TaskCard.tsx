@@ -3,7 +3,7 @@ import type { DropIndicator } from "../hooks/useDragAndDrop";
 import { motion } from "framer-motion";
 import {
     ClipboardList, AlertTriangle, Paperclip, MoreHorizontal,
-    FolderOpen, ChevronDown, ChevronRight, Star, User, ExternalLink, Edit3
+    FolderOpen, ChevronDown, ChevronRight, Star, User, ExternalLink, Edit3, MessageCircle
 } from "lucide-react";
 import { businessDayDelta, getProjectColor, getInitials } from "../utils";
 import { SubtaskList, parseFilePaths } from "./SubtaskList";
@@ -14,7 +14,7 @@ import type { Task } from "../types";
 interface TaskCardProps {
     task: Task;
     onDragStart: (e: React.DragEvent, taskId: string) => void;
-    onClick: (task: Task) => void;
+    onClick: (task: Task, x: number, y: number) => void;
     onContextMenu: (e: React.MouseEvent, task: Task) => void;
     onSetProjectDirectory: () => void;
     onDragOverTask?: (e: React.DragEvent, taskId: string, el: HTMLElement) => void;
@@ -37,7 +37,7 @@ export function TaskCard({
     onDragLeaveTask,
     dropIndicator,
 }: TaskCardProps) {
-    const { directories, users, projectColors, updateTask } = useStore();
+    const { directories, users, projectColors, updateTask, comments, currentUser } = useStore();
     const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
     const [showUserPopover, setShowUserPopover] = useState(false);
     const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -70,6 +70,12 @@ export function TaskCard({
         : 0;
     const showStagnationAlert = task.status === "doing" && daysInColumn > 3;
     const isDueToday = remainingDays === 0;
+
+    // Compteur de commentaires + mention de l'utilisateur courant
+    const taskComments = (comments[task.id] || []).filter(c => !c.deletedAt);
+    const commentCount = taskComments.length;
+    const currentUserName = currentUser ? users.find(u => u.id === currentUser)?.name : null;
+    const hasMention = !!currentUserName && taskComments.some(c => c.text.includes(`@${currentUserName}`));
 
     // Subtask Progress Calculation
     const subtasks = task.subtasks || [];
@@ -183,7 +189,7 @@ export function TaskCard({
             onDragOver={(e: any) => cardRef.current && onDragOverTask?.(e as React.DragEvent, task.id, cardRef.current)}
             onDrop={(e: any) => onDropOnTask?.(e as React.DragEvent, task.id)}
             onDragLeave={() => onDragLeaveTask?.()}
-            onClick={() => onClick(task)}
+            onClick={() => setIsSubtasksExpanded(v => !v)}
             onContextMenu={(e) => onContextMenu(e, task)}
             className={`group relative mb-3 flex flex-col gap-3 rounded-2xl border border-white/5 bg-[#161b2e] p-4 shadow-lg transition-all hover:border-white/20 ${urgencyGlowClass} ${isDueToday ? "pulse-glow" : isOverdue ? "ring-1 ring-rose-500/50" : ""
                 } ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"} ${isDropTarget ? "ring-1 ring-blue-400/50" : ""}`}
@@ -207,7 +213,7 @@ export function TaskCard({
                 </h4>
                 <div className="flex items-center gap-1">
                     <button
-                        onClick={handleToggleFavorite}
+                        onClick={(e) => { e.stopPropagation(); handleToggleFavorite(e); }}
                         className={`rounded-lg p-1.5 transition ${task.favorite
                             ? "text-amber-400 hover:bg-amber-400/20"
                             : "text-slate-400 hover:bg-white/10 hover:text-amber-400"
@@ -218,7 +224,7 @@ export function TaskCard({
                     </button>
                     {task.project && (
                         <button
-                            onClick={handleOpenFolder}
+                            onClick={(e) => { e.stopPropagation(); handleOpenFolder(e); }}
                             className={`rounded-lg p-1.5 transition ${projectDir ? "text-indigo-400 hover:bg-indigo-400/20" : "text-slate-600 hover:text-slate-300"}`}
                             title={projectDir ? `Ouvrir : ${projectDir}` : "Configurer le dossier"}
                         >
@@ -270,6 +276,17 @@ export function TaskCard({
                                 {getInitials(user!.name)}
                             </button>
                         ))
+                    )}
+                    {/* Commentaires */}
+                    {commentCount > 0 && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setIsSubtasksExpanded(true); }}
+                            className={`flex items-center gap-0.5 rounded-lg p-1.5 transition hover:bg-white/10 ${hasMention ? "animate-pulse text-amber-400 hover:text-amber-300" : "text-slate-400 hover:text-white"}`}
+                            title={hasMention ? `Vous êtes mentionné(e) — ${commentCount} commentaire(s)` : `${commentCount} commentaire(s)`}
+                        >
+                            <MessageCircle className="h-3.5 w-3.5" />
+                            <span className="text-[9px] font-bold">{commentCount}</span>
+                        </button>
                     )}
                     <button
                         className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"

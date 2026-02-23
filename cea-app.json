@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.0.9",
+    "version": "2.0.10",
     "description": {
       "short": "Kanban minimaliste pour gerer les taches avec priorites et echeances.",
       "long": "To-DoX est une application Kanban minimaliste pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop manuel, la recurrence des taches, des templates reutilisables, un dashboard KPIs, une vue Timeline/Gantt, la recherche et le filtrage par projets, ainsi que l'export et l'import des donnees. Les donnees sont stockees localement avec sauvegardes et peuvent etre synchronisees via OneDrive."
@@ -70,9 +70,18 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.0.9.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.0.10.exe"
   },
   "changelog": {
+    "2.0.10": {
+      "date": "2026-02-23",
+      "changes": [
+        "Clic gauche sur une tâche — expand inline (sous-tâches, notes, commentaires) comme le bouton sous-tâches",
+        "Icône commentaires dans l'en-tête des tâches — visible uniquement si commentaires existants",
+        "Icône commentaires clignote en amber si l'utilisateur courant est mentionné dans un commentaire",
+        "Fix: correction de la chaîne onClickTask (KanbanBoard → ProjectCard → TaskCard) qui était no-op"
+      ]
+    },
     "2.0.9": {
       "date": "2026-02-23",
       "changes": [

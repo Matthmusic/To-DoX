@@ -15,7 +15,7 @@ interface ProjectCardProps {
     onToggleCollapse: (project: string) => void;
     onDragStartProject: (e: React.DragEvent, project: string) => void;
     onDragStartTask: (e: React.DragEvent, taskId: string) => void;
-    onClickTask: (task: Task) => void;
+    onClickTask: (task: Task, x: number, y: number) => void;
     onContextMenuTask: (e: React.MouseEvent, task: Task) => void;
     onSetProjectDirectory: (project: string) => void;
     onDragOverTask?: (e: React.DragEvent, taskId: string, el: HTMLElement) => void;

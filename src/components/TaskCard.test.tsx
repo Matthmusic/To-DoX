@@ -42,9 +42,11 @@ describe('TaskCard', () => {
         expect(screen.getByText('MOYENNE')).toBeInTheDocument();
     });
 
-    it('should call onClick when clicked', () => {
+    it('should expand inline content when clicked', () => {
         render(<TaskCard {...mockProps} />);
         fireEvent.click(screen.getByText('Test Task'));
-        expect(mockProps.onClick).toHaveBeenCalledWith(mockTask);
+        // Le clic sur la card toggle l'expand inline (sous-tâches + commentaires)
+        // onClick n'est plus déclenché par le clic sur la card
+        expect(mockProps.onClick).not.toHaveBeenCalled();
     });
 });
