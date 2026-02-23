@@ -4,10 +4,10 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.0.6",
+    "version": "2.0.9",
     "description": {
       "short": "Kanban minimaliste pour gerer les taches avec priorites et echeances.",
-      "long": "To-DoX est une application Kanban minimaliste pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recherche et le filtrage par projets, ainsi que l'export et l'import des donnees. Les donnees sont stockees localement avec sauvegardes et peuvent etre synchronisees via OneDrive."
+      "long": "To-DoX est une application Kanban minimaliste pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop manuel, la recurrence des taches, des templates reutilisables, un dashboard KPIs, une vue Timeline/Gantt, la recherche et le filtrage par projets, ainsi que l'export et l'import des donnees. Les donnees sont stockees localement avec sauvegardes et peuvent etre synchronisees via OneDrive."
     }
   },
   "resources": {
@@ -52,7 +52,10 @@
       "taches",
       "productivite",
       "priorites",
-      "onedrive"
+      "onedrive",
+      "templates",
+      "dashboard",
+      "timeline"
     ],
     "repository": {
       "type": "github",
@@ -67,9 +70,38 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.0.6.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.0.9.exe"
   },
   "changelog": {
+    "2.0.9": {
+      "date": "2026-02-23",
+      "changes": [
+        "Drag & drop manuel dans le Kanban — réordonnancement des tâches dans les colonnes (favoris épinglés en haut)",
+        "Récurrence des tâches (quotidien/hebdo/mensuel) — une nouvelle occurrence est créée automatiquement à la complétion",
+        "Comptes-rendus mensuels et historique des CRs sauvegardés dans l'application",
+        "Templates de tâches — sauvegarde depuis le panneau d'édition, utilisation depuis QuickAdd",
+        "Dashboard KPIs — vue synthétique avec statistiques, tendance 4 semaines, répartition par projet et utilisateur",
+        "Fix: le clic sur une tâche ouvre à nouveau le panneau d'édition",
+        "Fix: les titres de tâches ne sont plus forcés en majuscules (seuls les projets le sont)"
+      ]
+    },
+    "2.0.8": {
+      "date": "2026-02-20",
+      "changes": [
+        "Vue Timeline/Gantt multi-utilisateurs — assignation par jour, navigation libre 4 semaines / mois",
+        "Système de commentaires avec mentions @utilisateur et notifications en temps réel",
+        "Thèmes visuels personnalisables (14 thèmes préinstallés + création de thèmes custom)",
+        "Corbeille des tâches supprimées avec restauration possible",
+        "Storybook pour la documentation visuelle des composants"
+      ]
+    },
+    "2.0.7": {
+      "date": "2026-02-18",
+      "changes": [
+        "Amélioration des performances de synchronisation multi-utilisateurs",
+        "Fix: stabilité du rechargement automatique des données"
+      ]
+    },
     "2.0.6": {
       "date": "2026-02-19",
       "changes": [
