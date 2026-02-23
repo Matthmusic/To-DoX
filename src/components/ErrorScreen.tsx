@@ -39,7 +39,7 @@ export function ErrorScreen({ error, errorInfo, onReset, boundaryName }: ErrorSc
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-[#0a0e1a] via-[#1a1f35] to-[#0a0e1a] p-6">
+    <div className="flex items-center justify-center min-h-screen pt-8 bg-gradient-to-br from-[#0a0e1a] via-[#1a1f35] to-[#0a0e1a] p-6">
       <div className="max-w-2xl w-full">
         {/* Card d'erreur principale */}
         <div className="rounded-2xl border border-red-500/30 bg-[#161b2e]/90 backdrop-blur-xl p-8 shadow-2xl">

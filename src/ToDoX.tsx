@@ -60,7 +60,9 @@ interface ContextMenuData {
 export default function ToDoX() {
     // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser, pendingMentions, clearPendingMentions } = useStore();
+
+    const mentionCount = currentUser ? (pendingMentions[currentUser] || []).length : 0;
 
     const {
         filterProject,
@@ -270,7 +272,11 @@ export default function ToDoX() {
                 onOpenWeeklyReport={() => setShowWeeklyReportPanel(true)}
                 onOpenStorage={() => setShowStoragePanel(true)}
                 onOpenUsers={() => setShowUsersPanel(true)}
-                onOpenNotifications={() => setShowNotificationsPanel(true)}
+                mentionCount={mentionCount}
+                onOpenNotifications={() => {
+                    setShowNotificationsPanel(true);
+                    if (currentUser) clearPendingMentions(currentUser);
+                }}
                 onOpenThemes={() => setShowThemesPanel(true)}
                 onOpenArchive={() => setShowArchivePanel(true)}
                 onOpenDirPanel={() => setShowDirPanel(true)}

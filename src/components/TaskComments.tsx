@@ -24,7 +24,7 @@ function getInitials(name: string): string {
 }
 
 /** Rend le texte avec les @mentions en surbrillance */
-function renderText(text: string, userNames: string[], primary: string) {
+function renderText(text: string, userNames: string[], primary: string, currentUserName?: string) {
     // Trie par longueur décroissante pour éviter les correspondances partielles
     const sorted = [...userNames].sort((a, b) => b.length - a.length);
     const parts: { type: 'text' | 'mention'; content: string }[] = [];
@@ -54,11 +54,13 @@ function renderText(text: string, userNames: string[], primary: string) {
         }
     }
 
-    return parts.map((p, i) =>
-        p.type === 'mention'
-            ? <span key={i} className="font-bold rounded px-0.5" style={{ color: primary, backgroundColor: `${primary}20` }}>@{p.content}</span>
-            : <span key={i}>{p.content}</span>
-    );
+    return parts.map((p, i) => {
+        if (p.type !== 'mention') return <span key={i}>{p.content}</span>;
+        const isSelf = currentUserName && p.content === currentUserName;
+        return isSelf
+            ? <span key={i} className="font-black rounded-md px-1 py-0.5 border" style={{ color: '#1c1917', backgroundColor: '#f59e0b', borderColor: '#d97706' }}>@{p.content}</span>
+            : <span key={i} className="font-bold rounded px-1" style={{ color: primary, backgroundColor: `${primary}35`, border: `1px solid ${primary}50` }}>@{p.content}</span>;
+    });
 }
 
 export function TaskComments({ taskId }: TaskCommentsProps) {
@@ -68,6 +70,8 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
 
     const taskComments = (comments[taskId] || []).filter(c => !c.deletedAt);
     const userNames = users.map(u => u.name);
+    const currentUserObj = users.find(u => u.id === currentUser);
+    const currentUserName = currentUserObj?.name;
 
     const [text, setText] = useState('');
     const [mentionQuery, setMentionQuery] = useState<string | null>(null); // null = dropdown fermé
@@ -179,6 +183,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                     {taskComments.map(comment => {
                         const name = getUserName(comment.userId);
                         const isOwn = comment.userId === currentUser;
+                        const mentionsMe = currentUserName && comment.text.includes(`@${currentUserName}`);
                         return (
                             <div key={comment.id} className="flex gap-2 group">
                                 {/* Avatar */}
@@ -204,8 +209,14 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                                             </button>
                                         )}
                                     </div>
-                                    <p className="text-[11px] text-white/80 leading-snug break-words bg-white/5 rounded-lg px-2.5 py-1.5 border border-white/5">
-                                        {renderText(comment.text, userNames, primary)}
+                                    <p
+                                        className="text-[11px] text-white/80 leading-snug break-words rounded-lg px-2.5 py-1.5 border"
+                                        style={mentionsMe
+                                            ? { backgroundColor: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.35)', borderLeft: '3px solid #f59e0b' }
+                                            : { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.05)' }
+                                        }
+                                    >
+                                        {renderText(comment.text, userNames, primary, currentUserName)}
                                     </p>
                                 </div>
                             </div>

@@ -43,6 +43,8 @@ interface KanbanHeaderPremiumProps {
     onExport: () => void;
     onImport: () => void;
     onOpenHelp: () => void;
+    // Mentions non lues
+    mentionCount: number;
     // Vue active
     activeView: 'kanban' | 'timeline' | 'dashboard';
     onViewChange: (view: 'kanban' | 'timeline' | 'dashboard') => void;
@@ -75,6 +77,7 @@ export function KanbanHeaderPremium({
     onExport,
     onImport,
     onOpenHelp,
+    mentionCount,
     activeView,
     onViewChange,
     filterSearch,
@@ -328,6 +331,24 @@ export function KanbanHeaderPremium({
                     >
                         <Archive className="h-3.5 w-3.5" />
                     </button>
+                    {/* Notifications / Mentions badge */}
+                    <button
+                        onClick={onOpenNotifications}
+                        className="relative flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs transition-all hover:scale-105"
+                        style={mentionCount > 0
+                            ? { borderColor: 'rgba(245,158,11,0.45)', backgroundColor: 'rgba(245,158,11,0.15)', color: '#fcd34d' }
+                            : { borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }
+                        }
+                        title={mentionCount > 0 ? `${mentionCount} mention(s) non lue(s)` : 'Notifications'}
+                    >
+                        <Bell className="h-3.5 w-3.5" />
+                        {mentionCount > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 animate-pulse items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black">
+                                {mentionCount > 9 ? '9+' : mentionCount}
+                            </span>
+                        )}
+                    </button>
+
                     {/* More Menu */}
                     <DropdownMenu
                         icon={Settings}
