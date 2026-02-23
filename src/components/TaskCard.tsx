@@ -29,7 +29,8 @@ interface TaskCardProps {
 export function TaskCard({
     task,
     onDragStart,
-    onClick,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    onClick: _onClick,
     onContextMenu,
     onSetProjectDirectory,
     onDragOverTask,
