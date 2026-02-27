@@ -30,7 +30,7 @@ function App() {
           <button onClick={() => setSaveError(null)} className="ml-4 text-rose-400 hover:text-rose-200 transition-colors">✕</button>
         </div>
       )}
-      <div className="flex-1 flex flex-col overflow-hidden pt-8">
+      <div className={`flex-1 flex flex-col overflow-hidden ${window.electronAPI?.isElectron ? 'pt-8' : ''}`}>
         {/* Afficher l'app seulement si un utilisateur est connecté */}
         {currentUser && !isLoadingData && <ToDoX />}
         {/* Écran de chargement si les données chargent */}

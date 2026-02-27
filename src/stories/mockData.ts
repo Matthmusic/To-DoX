@@ -1,0 +1,141 @@
+import type { Task } from '../types';
+
+const now = Date.now();
+const day = 86400000;
+
+/** Tâches de démo pour toutes les stories Storybook */
+export const mockTasks: Task[] = [
+  // ── TODO ─────────────────────────────────────────────────────────────────
+  {
+    id: 'task-1',
+    title: 'Réviser les specs techniques du module authentification',
+    project: 'PROJET ALPHA',
+    status: 'todo',
+    priority: 'high',
+    due: null,
+    createdBy: 'matthieu',
+    assignedTo: ['matthieu', 'william'],
+    createdAt: now - day * 3,
+    updatedAt: now - day,
+    completedAt: null,
+    notes: '',
+    archived: false,
+    archivedAt: null,
+    subtasks: [],
+    favorite: false,
+    deletedAt: null,
+  },
+  {
+    id: 'task-5',
+    title: 'Corriger le bug de synchronisation OneDrive',
+    project: 'PROJET ALPHA',
+    status: 'todo',
+    priority: 'low',
+    due: null,
+    createdBy: 'laurent',
+    assignedTo: [],
+    createdAt: now - day,
+    updatedAt: now - day,
+    completedAt: null,
+    notes: '',
+    archived: false,
+    archivedAt: null,
+    subtasks: [],
+    favorite: false,
+    deletedAt: null,
+  },
+
+  // ── DOING ─────────────────────────────────────────────────────────────────
+  {
+    id: 'task-2',
+    title: 'Intégrer les retours client sur le dashboard',
+    project: 'PROJET ALPHA',
+    status: 'doing',
+    priority: 'med',
+    due: new Date(now + day * 2).toISOString().split('T')[0], // dans 2 jours
+    createdBy: 'william',
+    assignedTo: ['matthieu'],
+    createdAt: now - day * 7,
+    updatedAt: now - day * 5,
+    completedAt: null,
+    notes: 'Voir les commentaires dans le doc partagé.',
+    archived: false,
+    archivedAt: null,
+    subtasks: [
+      { id: 'sub-1', title: 'Modifier les graphiques', completed: true, createdAt: now, completedAt: now },
+      { id: 'sub-2', title: 'Mettre à jour les filtres', completed: false, createdAt: now, completedAt: null },
+      { id: 'sub-3', title: 'Tester sur mobile', completed: false, createdAt: now, completedAt: null },
+    ],
+    favorite: true,
+    deletedAt: null,
+  },
+  {
+    id: 'task-6',
+    title: 'Migrer la base de données vers PostgreSQL',
+    project: 'PROJET BETA',
+    status: 'doing',
+    priority: 'high',
+    due: new Date(now + day * 7).toISOString().split('T')[0],
+    createdBy: 'sandro',
+    assignedTo: ['sandro', 'matteo'],
+    createdAt: now - day * 10,
+    updatedAt: now - day * 8, // Stagnante depuis 8 jours
+    completedAt: null,
+    notes: '',
+    archived: false,
+    archivedAt: null,
+    subtasks: [
+      { id: 'sub-6', title: 'Écrire les scripts de migration', completed: true, createdAt: now, completedAt: now },
+      { id: 'sub-7', title: 'Tester en staging', completed: false, createdAt: now, completedAt: null },
+      { id: 'sub-8', title: 'Valider avec le client', completed: false, createdAt: now, completedAt: null },
+      { id: 'sub-9', title: 'Déployer en production', completed: false, createdAt: now, completedAt: null },
+    ],
+    favorite: false,
+    deletedAt: null,
+  },
+
+  // ── REVIEW ────────────────────────────────────────────────────────────────
+  {
+    id: 'task-3',
+    title: 'Audit des performances de l\'API REST',
+    project: 'PROJET BETA',
+    status: 'review',
+    priority: 'high',
+    due: new Date(now - day).toISOString().split('T')[0], // hier → en retard
+    createdBy: 'matthieu',
+    assignedTo: ['sandro'],
+    createdAt: now - day * 14,
+    updatedAt: now - day * 2,
+    completedAt: null,
+    notes: '"Z:\\B - PROJETS\\115 - BETA\\audit.xlsx"',
+    archived: false,
+    archivedAt: null,
+    subtasks: [
+      { id: 'sub-4', title: 'Mesurer les temps de réponse', completed: true, createdAt: now, completedAt: now },
+      { id: 'sub-5', title: 'Identifier les bottlenecks', completed: true, createdAt: now, completedAt: now },
+    ],
+    favorite: false,
+    deletedAt: null,
+  },
+
+  // ── DONE ──────────────────────────────────────────────────────────────────
+  {
+    id: 'task-4',
+    title: 'Déploiement en production v2.0',
+    project: 'REFONTE UI',
+    status: 'done',
+    priority: 'high',
+    due: null,
+    createdBy: 'matthieu',
+    assignedTo: ['matthieu', 'william', 'matteo'],
+    createdAt: now - day * 30,
+    updatedAt: now - day,
+    completedAt: now - day,
+    notes: '',
+    archived: false,
+    archivedAt: null,
+    subtasks: [],
+    favorite: false,
+    deletedAt: null,
+  },
+];

@@ -619,6 +619,68 @@ ipcMain.handle('request-notification-permission', async () => {
   }
 });
 
+// ============================================
+// CAST — Google Home / Chromecast integration
+// ============================================
+const castService = require('./cast-service');
+
+// Découverte des appareils Cast sur le réseau local (mDNS)
+ipcMain.handle('cast:discover', async () => {
+  try {
+    const devices = await castService.discoverDevices(5000);
+    return { success: true, devices };
+  } catch (error) {
+    console.error('[CAST] Erreur découverte:', error);
+    return { success: false, devices: [], error: error.message };
+  }
+});
+
+// Lancement du cast vers un appareil (host, port, appId?)
+ipcMain.handle('cast:launch', async (_event, host, port, appId) => {
+  try {
+    const localIP = castService.getLocalIP();
+    let appUrl;
+
+    if (isDev) {
+      appUrl = `http://${localIP}:5173`;
+    } else {
+      const distPath = path.join(__dirname, 'dist');
+      const castPort = await castService.startCastServer(distPath);
+      appUrl = `http://${localIP}:${castPort}`;
+    }
+
+    console.log(`[CAST] → ${host}:${port || 8009}  URL: ${appUrl}  appId: ${appId || 'défaut'}`);
+    const result = await castService.castUrl(host, port, appUrl, appId || null);
+    return { success: true, url: appUrl, ...result };
+  } catch (error) {
+    console.error('[CAST] Erreur lancement:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Retourne l'URL du receiver pour l'enregistrement Google Cast
+ipcMain.handle('cast:get-receiver-url', async () => {
+  try {
+    const localIP = castService.getLocalIP();
+    let receiverUrl;
+    if (isDev) {
+      receiverUrl = `http://${localIP}:5173/cast-receiver.html`;
+    } else {
+      const distPath = path.join(__dirname, 'dist');
+      const castPort = await castService.startCastServer(distPath);
+      receiverUrl = `http://${localIP}:${castPort}/cast-receiver.html`;
+    }
+    return { success: true, receiverUrl };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Arrêter le serveur Cast HTTP (utile quand l'app se ferme)
+app.on('before-quit', () => {
+  castService.stopCastServer();
+});
+
 // Handler pour logger les erreurs dans un fichier
 ipcMain.handle('log-error', async (_event, errorLog) => {
   try {

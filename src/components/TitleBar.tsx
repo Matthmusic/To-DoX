@@ -1,12 +1,23 @@
-import { useState, useEffect } from 'react';
-import { Minus, Square, X } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { Minus, Square, X, Bell } from 'lucide-react';
 import logoSvg from '../assets/To Do X.svg';
 import { UserProfile } from './UserProfile';
+import { NotificationDropdown } from './NotificationDropdown';
 import { useTheme } from '../hooks/useTheme';
+import useStore from '../store/useStore';
 
-export function TitleBar() {
+interface TitleBarProps {
+    onTaskClick?: (taskId: string) => void;
+}
+
+export function TitleBar({ onTaskClick }: TitleBarProps) {
   const [isMaximized, setIsMaximized] = useState(false);
+  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const bellRef = useRef<HTMLButtonElement>(null);
   const { activeTheme } = useTheme();
+  const { currentUser, appNotifications } = useStore();
+
+  const unreadCount = appNotifications.filter(n => n.toUserId === currentUser && !n.readAt).length;
 
   useEffect(() => {
     // Vérifier l'état initial
@@ -61,6 +72,40 @@ export function TitleBar() {
         <div style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <UserProfile />
         </div>
+      </div>
+
+      {/* Bell notifications */}
+      <div className="flex-1 flex justify-center">
+        <button
+          ref={bellRef}
+          onClick={() => setShowNotifDropdown(v => !v)}
+          className="relative h-8 w-10 flex items-center justify-center transition-colors"
+          style={{ color: activeTheme.palette.textSecondary, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${activeTheme.palette.primary}20`}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          aria-label="Notifications"
+        >
+          <Bell className="h-3.5 w-3.5" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white leading-none">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </button>
+        {showNotifDropdown && (
+          <NotificationDropdown
+            onClose={() => setShowNotifDropdown(false)}
+            onTaskClick={(taskId) => {
+              setShowNotifDropdown(false);
+              if (onTaskClick) {
+                onTaskClick(taskId);
+              } else {
+                window.dispatchEvent(new CustomEvent('todox:openTask', { detail: { taskId } }));
+              }
+            }}
+            anchorRef={bellRef as React.RefObject<HTMLElement>}
+          />
+        )}
       </div>
 
       {/* Boutons de contrôle */}

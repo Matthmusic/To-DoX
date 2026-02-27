@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, CalendarDays, Calendar, X, MousePointerClick } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, Calendar, X, MousePointerClick, Monitor } from 'lucide-react';
 import type { Task, GanttDay, User } from '../types';
 import useStore from '../store/useStore';
 import { useTheme } from '../hooks/useTheme';
@@ -580,7 +580,28 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
     // ── Render ────────────────────────────────────────────────────────────
     return (
         <>
-        <div className="flex flex-col h-full gap-3 p-4 overflow-hidden">
+        {/* ── MOBILE : vue non disponible ── */}
+        <div className="md:hidden flex-1 flex flex-col items-center justify-center gap-4 p-6 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                <Monitor className="h-8 w-8 text-white/30" />
+            </div>
+            <div>
+                <p className="text-base font-bold text-white/60">Vue Gantt</p>
+                <p className="mt-1 text-sm text-white/30">
+                    Cette vue nécessite un écran plus large.<br />
+                    Utilisez le Kanban ou le Dashboard sur mobile.
+                </p>
+            </div>
+            <div
+                className="mt-1 rounded-xl border px-3 py-1.5 text-xs font-semibold text-white/50"
+                style={{ borderColor: `${primaryColor}30`, backgroundColor: `${primaryColor}08` }}
+            >
+                ≥ 768px requis
+            </div>
+        </div>
+
+        {/* ── DESKTOP GANTT (≥ md) ── */}
+        <div className="hidden md:flex flex-col h-full gap-3 p-4 overflow-hidden">
 
             {/* ── Toolbar ─────────────────────────────────────────────── */}
             <div className="flex items-center gap-3 flex-shrink-0 flex-wrap">
@@ -644,7 +665,7 @@ export function TimelineView({ filteredTasks, onTaskClick }: TimelineViewProps) 
             </div>
 
             {/* ── Grid ────────────────────────────────────────────────── */}
-            <div className="flex-1 overflow-auto rounded-2xl border border-white/10 bg-theme-bg-secondary"
+            <div className="flex-1 overflow-auto rounded-2xl border border-white/10 bg-theme-secondary"
                 onClick={e => { if (e.target === e.currentTarget) setSelectedCells(new Set()); }}>
                 <div style={{ minWidth: `${SIDE_W + colW * days.length}px` }}>
 

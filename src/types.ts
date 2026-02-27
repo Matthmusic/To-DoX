@@ -69,6 +69,7 @@ export interface StoredData {
   pendingMentions?: Record<string, PendingMention[]>;
   templates?: TaskTemplate[];
   savedReports?: SavedReport[];
+  appNotifications?: AppNotification[];
 }
 
 export interface ElectronAPI {
@@ -101,6 +102,17 @@ export interface ElectronAPI {
   setNativeTheme: (source: 'light' | 'dark' | 'system') => Promise<boolean>;
   getSystemTheme: () => Promise<'light' | 'dark'>;
   onSystemThemeChanged: (callback: (data: { shouldUseDarkColors: boolean }) => void) => void;
+  // Cast — Google Home / Chromecast
+  castDiscover: () => Promise<{ success: boolean; devices: CastDevice[]; error?: string }>;
+  castLaunch: (host: string, port: number, appId?: string) => Promise<{ success: boolean; url?: string; warning?: string; error?: string }>;
+  castGetReceiverUrl: () => Promise<{ success: boolean; receiverUrl?: string; error?: string }>;
+}
+
+export interface CastDevice {
+  name: string;
+  host: string;
+  port: number;
+  model: string;
 }
 
 export interface ErrorLog {
@@ -182,6 +194,30 @@ export interface SavedReport {
 }
 
 /**
+ * Type de notification in-app
+ */
+export type AppNotifType =
+  | 'review_requested'   // Assigné comme réviseur
+  | 'review_validated'   // Tâche validée
+  | 'review_rejected'    // Corrections demandées
+  | 'review_stale';      // En révision depuis trop longtemps
+
+/**
+ * Notification in-app (workflow de révision)
+ */
+export interface AppNotification {
+  id: string;
+  type: AppNotifType;
+  taskId: string;
+  taskTitle: string;
+  fromUserId: string;
+  toUserId: string;
+  message: string;
+  createdAt: number;
+  readAt?: number;
+}
+
+/**
  * Structure d'une tâche
  */
 export interface Task {
@@ -203,8 +239,15 @@ export interface Task {
   favorite: boolean;
   deletedAt: number | null;
   ganttDays?: GanttDay[];
-  order?: number;          // Ordre manuel dans la colonne
-  recurrence?: Recurrence; // Récurrence automatique
+  order?: number;               // Ordre manuel dans la colonne
+  recurrence?: Recurrence;      // Récurrence automatique
+  // ── Workflow de révision ─────────────────────────────────────
+  reviewers?: string[];         // IDs des réviseurs désignés
+  reviewValidatedBy?: string;   // ID de celui qui a validé
+  reviewValidatedAt?: number;   // Timestamp de validation
+  reviewRejectedBy?: string;    // ID de celui qui a demandé des corrections
+  reviewRejectedAt?: number;    // Timestamp du rejet
+  rejectionComment?: string;    // Commentaire obligatoire au rejet
 }
 
 /**

@@ -14,14 +14,15 @@ export interface StatusDef {
     label: string;
     Icon: LucideIcon;
     color?: string;
+    kanban: boolean; // Visible dans le Kanban (false = seulement dans la vue Terminées)
 }
 
 // Statuts des tâches
 export const STATUSES: StatusDef[] = [
-    { id: "todo", label: "À faire", Icon: ClipboardList },
-    { id: "doing", label: "En cours", Icon: Loader2 },
-    { id: "review", label: "À réviser", Icon: SearchCheck },
-    { id: "done", label: "Fait", Icon: CheckCircle2 },
+    { id: "todo",   label: "À faire",   Icon: ClipboardList, kanban: true  },
+    { id: "doing",  label: "En cours",  Icon: Loader2,       kanban: true  },
+    { id: "review", label: "À réviser", Icon: SearchCheck,   kanban: true  },
+    { id: "done",   label: "Terminé",   Icon: CheckCircle2,  kanban: false },
 ];
 
 export interface PriorityDef {

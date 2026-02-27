@@ -3,7 +3,8 @@ import type { DropIndicator } from "../hooks/useDragAndDrop";
 import { motion } from "framer-motion";
 import {
     ClipboardList, AlertTriangle, Paperclip, MoreHorizontal,
-    FolderOpen, ChevronDown, ChevronRight, Star, User, ExternalLink, Edit3, MessageCircle
+    FolderOpen, ChevronDown, ChevronRight, Star, User, ExternalLink, Edit3, MessageCircle,
+    CheckCircle2, RotateCcw
 } from "lucide-react";
 import { businessDayDelta, getProjectColor, getInitials } from "../utils";
 import { SubtaskList, parseFilePaths } from "./SubtaskList";
@@ -38,10 +39,12 @@ export function TaskCard({
     onDragLeaveTask,
     dropIndicator,
 }: TaskCardProps) {
-    const { directories, users, projectColors, updateTask, comments, currentUser } = useStore();
+    const { directories, users, projectColors, updateTask, comments, currentUser, validateTask, requestCorrections } = useStore();
     const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
     const [showUserPopover, setShowUserPopover] = useState(false);
     const [isEditingNotes, setIsEditingNotes] = useState(false);
+    const [showCorrectionInput, setShowCorrectionInput] = useState(false);
+    const [correctionText, setCorrectionText] = useState("");
     const [localNotes, setLocalNotes] = useState(task.notes || "");
     const userButtonRef = useRef<HTMLButtonElement>(null);
     const userPopoverRef = useRef<HTMLDivElement>(null);
@@ -69,7 +72,7 @@ export function TaskCard({
     const daysInColumn = task.updatedAt
         ? Math.floor((Date.now() - task.updatedAt) / (1000 * 60 * 60 * 24))
         : 0;
-    const showStagnationAlert = task.status === "doing" && daysInColumn > 3;
+    const showStagnationAlert = (task.status === "doing" || task.status === "review") && daysInColumn > 3;
     const isDueToday = remainingDays === 0;
 
     // Compteur de commentaires + mention de l'utilisateur courant
@@ -99,6 +102,11 @@ export function TaskCard({
     const assignedUsers = useMemo(() => {
         return task.assignedTo.map(userId => users.find(u => u.id === userId)).filter(Boolean);
     }, [task.assignedTo, users]);
+
+    // Find reviewer users
+    const reviewerUsers = useMemo(() => {
+        return (task.reviewers || []).map(userId => users.find(u => u.id === userId)).filter(Boolean);
+    }, [task.reviewers, users]);
 
     // Find creator user
     const creatorUser = useMemo(() => {
@@ -413,6 +421,94 @@ export function TaskCard({
                     </p>
                 )}
             </div>
+
+            {/* ── Workflow de révision ─────────────────────────────── */}
+            {task.status === "review" && (
+                <div onClick={e => e.stopPropagation()} className="space-y-2">
+                    {/* Avatars des réviseurs désignés */}
+                    {reviewerUsers.length > 0 && (
+                        <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] text-slate-400">Réviseurs :</span>
+                            {reviewerUsers.map(user => (
+                                <span
+                                    key={user!.id}
+                                    className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-violet-400/40 bg-violet-400/15 text-violet-200 text-[9px] font-bold"
+                                    title={user!.name}
+                                >
+                                    {getInitials(user!.name)}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                    {/* Boutons d'action de révision */}
+                    {!showCorrectionInput ? (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    validateTask(task.id);
+                                }}
+                                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/25 hover:text-emerald-200"
+                                title="Valider cette tâche"
+                            >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                Valider
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowCorrectionInput(true);
+                                }}
+                                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-300 transition hover:bg-amber-500/25 hover:text-amber-200"
+                                title="Demander des corrections"
+                            >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                Corrections
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-1.5">
+                            <textarea
+                                autoFocus
+                                value={correctionText}
+                                onChange={e => setCorrectionText(e.target.value)}
+                                onKeyDown={e => {
+                                    if (e.key === 'Escape') { setShowCorrectionInput(false); setCorrectionText(""); }
+                                    if (e.key === 'Enter' && e.ctrlKey && correctionText.trim().length >= 5) {
+                                        requestCorrections(task.id, correctionText.trim());
+                                        setShowCorrectionInput(false);
+                                        setCorrectionText("");
+                                    }
+                                }}
+                                placeholder="Motif des corrections... (Ctrl+Enter pour envoyer)"
+                                className="w-full rounded-xl border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-xs text-amber-100 placeholder-amber-400/50 focus:outline-none focus:border-amber-400 resize-none"
+                                rows={2}
+                            />
+                            <div className="flex gap-1.5">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (correctionText.trim().length < 5) return;
+                                        requestCorrections(task.id, correctionText.trim());
+                                        setShowCorrectionInput(false);
+                                        setCorrectionText("");
+                                    }}
+                                    disabled={correctionText.trim().length < 5}
+                                    className="flex-1 rounded-xl border border-amber-500/40 bg-amber-500/20 px-2 py-1 text-xs font-bold text-amber-200 transition hover:bg-amber-500/30 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    Envoyer
+                                </button>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setShowCorrectionInput(false); setCorrectionText(""); }}
+                                    className="rounded-xl border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-400 transition hover:bg-white/10"
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Expanded Content: Notes + Subtasks */}
             {isSubtasksExpanded && (

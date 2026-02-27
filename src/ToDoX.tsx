@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { todayISO } from "./utils";
 import { migrateTask } from "./utils/taskMigration";
 
@@ -24,6 +24,7 @@ import {
     TimelineView,
     DashboardView,
 } from "./components";
+import { TermineesView } from "./components/TermineesView";
 import { alertModal } from "./utils/confirm";
 
 // Hooks personnalisés
@@ -53,6 +54,63 @@ interface ContextMenuData {
     task: Task;
 }
 
+interface ReviewerPickerDialogProps {
+    taskId: string;
+    onConfirm: (reviewerIds: string[]) => void;
+    onDismiss: () => void;
+}
+
+function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDialogProps) {
+    const { tasks, users } = useStore();
+    const task = tasks.find(t => t.id === taskId);
+    const [selected, setSelected] = useState<string[]>(task?.reviewers || []);
+
+    if (!task) return null;
+
+    return (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="w-80 rounded-2xl border border-violet-400/30 bg-[#0f1629] p-5 shadow-2xl">
+                <h3 className="mb-1 text-sm font-bold text-white">Désigner un réviseur</h3>
+                <p className="mb-4 text-xs text-slate-400 leading-relaxed">
+                    La tâche <span className="text-violet-300 font-semibold">"{task.title}"</span> est en révision.
+                    Choisissez un ou plusieurs réviseurs.
+                </p>
+                <div className="space-y-1 max-h-48 overflow-y-auto mb-4">
+                    {users.map(user => (
+                        <label key={user.id} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-white/5 cursor-pointer transition">
+                            <input
+                                type="checkbox"
+                                checked={selected.includes(user.id)}
+                                onChange={(e) => setSelected(e.target.checked
+                                    ? [...selected, user.id]
+                                    : selected.filter(id => id !== user.id)
+                                )}
+                                className="h-4 w-4 rounded accent-violet-400"
+                            />
+                            <span className="text-sm text-slate-100">{user.name}</span>
+                        </label>
+                    ))}
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => onConfirm(selected)}
+                        disabled={selected.length === 0}
+                        className="flex-1 rounded-xl bg-violet-500/80 px-3 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        Confirmer
+                    </button>
+                    <button
+                        onClick={onDismiss}
+                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-400 transition hover:bg-white/10"
+                    >
+                        Plus tard
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 /**
  * To Do X — Application Kanban minimaliste et intelligente
  * Composant principal orchestrant l'interface et la logique métier
@@ -60,7 +118,7 @@ interface ContextMenuData {
 export default function ToDoX() {
     // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser, pendingMentions, clearPendingMentions } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser, pendingMentions, clearPendingMentions, appNotifications, setReviewers } = useStore();
 
     const mentionCount = currentUser ? (pendingMentions[currentUser] || []).length : 0;
 
@@ -96,7 +154,8 @@ export default function ToDoX() {
     const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
     const [showThemesPanel, setShowThemesPanel] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
-    const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard'>('kanban');
+    const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard' | 'terminées'>('kanban');
+    const [pendingReviewTaskId, setPendingReviewTaskId] = useState<string | null>(null);
 
     const importFileRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<{ focus: () => void }>(null);
@@ -106,6 +165,58 @@ export default function ToDoX() {
     useEffect(() => {
         localStorage.setItem('todox_collapsed_projects', JSON.stringify(collapsedProjects));
     }, [collapsedProjects]);
+
+    // Détecter les tâches en révision sans réviseur → ouvrir le sélecteur
+    const prevTaskStatusRef = useRef<Record<string, string>>({});
+    useEffect(() => {
+        for (const task of tasks) {
+            const prevStatus = prevTaskStatusRef.current[task.id];
+            if (prevStatus !== undefined && prevStatus !== 'review' && task.status === 'review' && !(task.reviewers?.length)) {
+                setPendingReviewTaskId(task.id);
+                break;
+            }
+            prevTaskStatusRef.current[task.id] = task.status;
+        }
+        // Initialisation des statuts connus
+        for (const task of tasks) {
+            if (prevTaskStatusRef.current[task.id] === undefined) {
+                prevTaskStatusRef.current[task.id] = task.status;
+            }
+        }
+    }, [tasks]);
+
+    // Desktop notifications pour les nouvelles AppNotifications
+    const appNotifsInitializedRef = useRef(false);
+    const prevUnreadNotifIdsRef = useRef<Set<string>>(new Set());
+    useEffect(() => {
+        const myUnread = appNotifications.filter(n => n.toUserId === currentUser && !n.readAt);
+        const myUnreadIds = new Set(myUnread.map(n => n.id));
+        if (!appNotifsInitializedRef.current) {
+            prevUnreadNotifIdsRef.current = myUnreadIds;
+            appNotifsInitializedRef.current = true;
+            return;
+        }
+        for (const notif of myUnread) {
+            if (!prevUnreadNotifIdsRef.current.has(notif.id)) {
+                window.electronAPI?.sendNotification('To-Do X', notif.message, `review-${notif.id}`);
+            }
+        }
+        prevUnreadNotifIdsRef.current = myUnreadIds;
+    }, [appNotifications, currentUser]);
+
+    // Écouter l'event custom déclenché depuis TitleBar (clic sur notif)
+    const handleOpenTaskById = useCallback((taskId: string) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) setContextMenu({ x: window.innerWidth, y: 48, task });
+    }, [tasks]);
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const taskId = (e as CustomEvent<{ taskId: string }>).detail?.taskId;
+            if (taskId) handleOpenTaskById(taskId);
+        };
+        window.addEventListener('todox:openTask', handler);
+        return () => window.removeEventListener('todox:openTask', handler);
+    }, [handleOpenTaskById]);
 
     // Import/Export Handlers
     const handleExport = () => {
@@ -316,6 +427,10 @@ export default function ToDoX() {
                         filteredTasks={filteredTasks}
                         onTaskClick={(task, x, y) => setContextMenu({ x, y, task })}
                     />
+                ) : activeView === 'terminées' ? (
+                    <TermineesView
+                        onTaskClick={(task, x, y) => setContextMenu({ x, y, task })}
+                    />
                 ) : (
                     <DashboardView />
                 )}
@@ -389,6 +504,18 @@ export default function ToDoX() {
             {showThemesPanel && (
                 <ThemePanel
                     onClose={() => setShowThemesPanel(false)}
+                />
+            )}
+
+            {/* Sélecteur de réviseurs — s'ouvre quand une tâche passe en révision sans réviseur */}
+            {pendingReviewTaskId && (
+                <ReviewerPickerDialog
+                    taskId={pendingReviewTaskId}
+                    onConfirm={(reviewerIds) => {
+                        setReviewers(pendingReviewTaskId, reviewerIds);
+                        setPendingReviewTaskId(null);
+                    }}
+                    onDismiss={() => setPendingReviewTaskId(null)}
                 />
             )}
             </ErrorBoundary>

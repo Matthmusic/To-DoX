@@ -326,7 +326,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
                             {showProjectPicker && (
                                 <div
                                     ref={projectPickerRef}
-                                    className="absolute right-0 top-full z-[10000] mt-2 w-80 rounded-2xl border border-white/10 p-3 shadow-2xl"
+                                    className="absolute right-0 top-full z-[10000] mt-2 w-[min(20rem,calc(100vw-1rem))] rounded-2xl border border-white/10 p-3 shadow-2xl"
                                     style={{ backgroundColor: 'var(--bg-tertiary)' }}
                                     onClick={(e) => e.stopPropagation()}
                                 >
@@ -412,7 +412,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
                             {showUserPicker && (
                                 <div
                                     ref={userPickerRef}
-                                    className="absolute right-0 top-full z-[10000] mt-2 w-64 rounded-2xl border border-white/10 p-3 shadow-2xl"
+                                    className="absolute right-0 top-full z-[10000] mt-2 w-[min(16rem,calc(100vw-1rem))] rounded-2xl border border-white/10 p-3 shadow-2xl"
                                     style={{ backgroundColor: 'var(--bg-tertiary)' }}
                                 >
                                     <Autocomplete<User, string>

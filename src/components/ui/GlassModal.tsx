@@ -89,7 +89,7 @@ export function GlassModal({
           </motion.div>
 
           {/* Modal Container */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 pointer-events-none">
             <motion.div
               variants={modalVariants}
               initial="hidden"
@@ -103,7 +103,7 @@ export function GlassModal({
             >
               {/* Glass Card avec bordures lumineuses */}
               <div
-                className="relative overflow-hidden rounded-3xl border-2 border-theme-primary bg-theme-secondary shadow-2xl"
+                className="relative overflow-y-auto max-h-[90vh] rounded-3xl border-2 border-theme-primary bg-theme-secondary shadow-2xl"
                 style={{
                   backdropFilter: 'blur(40px) saturate(180%)',
                   WebkitBackdropFilter: 'blur(40px) saturate(180%)',
@@ -137,10 +137,10 @@ export function GlassModal({
 
                 {/* Header */}
                 {(title || showCloseButton) && (
-                  <div className="relative flex items-center justify-between px-8 py-6 border-b border-theme-primary">
+                  <div className="relative flex items-center justify-between px-4 py-4 sm:px-8 sm:py-6 border-b border-theme-primary">
                     {title && (
                       <h2
-                        className="text-2xl font-bold bg-clip-text text-transparent"
+                        className="text-lg sm:text-2xl font-bold bg-clip-text text-transparent"
                         style={{
                           backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
                         }}
@@ -162,7 +162,7 @@ export function GlassModal({
                 )}
 
                 {/* Content */}
-                <div className="relative px-8 py-6 text-theme-primary">
+                <div className="relative px-4 py-4 sm:px-8 sm:py-6 text-theme-primary">
                   {children}
                 </div>
 

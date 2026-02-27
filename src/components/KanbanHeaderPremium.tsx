@@ -18,6 +18,9 @@ import {
     LayoutGrid,
     CalendarDays,
     BarChart3,
+    CheckCircle2,
+    Menu,
+    X,
 } from "lucide-react";
 import ToDoXLogo from "../assets/To Do X.svg";
 import { QuickAddPremium } from "./QuickAddPremium";
@@ -46,8 +49,8 @@ interface KanbanHeaderPremiumProps {
     // Mentions non lues
     mentionCount: number;
     // Vue active
-    activeView: 'kanban' | 'timeline' | 'dashboard';
-    onViewChange: (view: 'kanban' | 'timeline' | 'dashboard') => void;
+    activeView: 'kanban' | 'timeline' | 'dashboard' | 'terminées';
+    onViewChange: (view: 'kanban' | 'timeline' | 'dashboard' | 'terminées') => void;
     // Recherche
     filterSearch: string;
     onSearchChange: (value: string) => void;
@@ -61,6 +64,7 @@ interface KanbanHeaderPremiumProps {
  * Header Premium avec design "Floating Command Bar"
  * Row 1: Logo + Projets actifs en circular badges + Menu actions
  * Row 2: QuickAdd Premium avec auto-détection #projet @user
+ * Mobile: Barre compacte + burger menu
  */
 export function KanbanHeaderPremium({
     filterProject,
@@ -89,8 +93,12 @@ export function KanbanHeaderPremium({
     const { tasks, projectColors, currentUser } = useStore();
     const { activeTheme } = useTheme();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
+    const [showBurgerMenu, setShowBurgerMenu] = useState(false);
     const quickAddContainerRef = useRef<HTMLDivElement>(null);
     const toggleButtonRef = useRef<HTMLButtonElement>(null);
+    const mobileToggleButtonRef = useRef<HTMLButtonElement>(null);
+    const burgerButtonRef = useRef<HTMLButtonElement>(null);
+    const burgerMenuRef = useRef<HTMLDivElement>(null);
 
     // Couleurs du thème actif pour le header
     const primaryColor = activeTheme.palette.primary;
@@ -102,15 +110,13 @@ export function KanbanHeaderPremium({
 
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as Node;
-
-            // Ne pas fermer si on clique sur le bouton toggle ou sur le QuickAdd lui-même
             if (
                 toggleButtonRef.current?.contains(target) ||
+                mobileToggleButtonRef.current?.contains(target) ||
                 quickAddContainerRef.current?.contains(target)
             ) {
                 return;
             }
-
             setShowQuickAdd(false);
         };
 
@@ -121,12 +127,33 @@ export function KanbanHeaderPremium({
     // Focus automatique sur l'input QuickAdd quand il s'ouvre
     useEffect(() => {
         if (showQuickAdd) {
-            // Petit délai pour laisser l'animation se terminer
             setTimeout(() => {
                 quickAddRef?.current?.focus();
             }, 100);
         }
     }, [showQuickAdd, quickAddRef]);
+
+    // Fermer le burger menu lors d'un clic à l'extérieur
+    useEffect(() => {
+        if (!showBurgerMenu) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
+            if (
+                burgerButtonRef.current?.contains(target) ||
+                burgerMenuRef.current?.contains(target)
+            ) {
+                return;
+            }
+            setShowBurgerMenu(false);
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showBurgerMenu]);
+
+    // Helper : appelle une action et ferme le burger
+    const burgerAction = (fn: () => void) => () => { fn(); setShowBurgerMenu(false); };
 
     // Statistiques des projets (FILTRÉES par utilisateur courant)
     const projectStats = useMemo(() => {
@@ -134,7 +161,6 @@ export function KanbanHeaderPremium({
         for (const t of tasks) {
             if (t.archived || !t.project) continue;
 
-            // FILTRE: Afficher les projets avec des tâches assignées à toi OU créées par toi
             if (currentUser && currentUser !== "unassigned") {
                 const isAssigned = t.assignedTo.includes(currentUser);
                 const isCreator = t.createdBy === currentUser;
@@ -163,24 +189,210 @@ export function KanbanHeaderPremium({
             .sort((a, b) => b.total - a.total);
     }, [tasks, currentUser]);
 
+    const viewButtons = [
+        { id: 'kanban' as const, Icon: LayoutGrid, label: 'Kanban' },
+        { id: 'timeline' as const, Icon: CalendarDays, label: 'Timeline' },
+        { id: 'dashboard' as const, Icon: BarChart3, label: 'Dashboard' },
+        { id: 'terminées' as const, Icon: CheckCircle2, label: 'Terminées' },
+    ];
+
+    const commandBarStyle = {
+        backgroundColor: 'var(--bg-tertiary)',
+        borderColor: `${primaryColor}30`,
+        boxShadow: `0 0 0 1px ${primaryColor}33, 0 0 20px ${primaryColor}26, 0 4px 12px -2px rgba(0, 0, 0, 0.4)`
+    };
 
     return (
         <header
-            className="kanban-header relative z-10 flex flex-col gap-2 px-4 sm:px-6 py-2 sm:py-3 border-b-2 border-theme-primary"
+            className="kanban-header relative z-10 flex flex-col gap-2 px-2 sm:px-4 md:px-6 py-2 sm:py-3 border-b-2 border-theme-primary"
         >
-            {/* Row 1: Command Strip */}
+            <style>{`
+                @keyframes glow-pulse {
+                    0%, 100% { box-shadow: 0 0 15px ${primaryColor}40, 0 0 30px ${primaryColor}20; }
+                    50% { box-shadow: 0 0 20px ${primaryColor}60, 0 0 40px ${primaryColor}30, 0 0 60px ${primaryColor}15; }
+                }
+                .animate-glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
+            `}</style>
+
+            {/* ── MOBILE BAR (< md) ── */}
             <div
-                className="relative flex items-center justify-between gap-4 rounded-3xl border-2 px-4 sm:px-6 py-2"
-                style={{
-                    backgroundColor: 'var(--bg-tertiary)',
-                    borderColor: `${primaryColor}30`,
-                    boxShadow: `0 0 0 1px ${primaryColor}33, 0 0 20px ${primaryColor}26, 0 4px 12px -2px rgba(0, 0, 0, 0.4)`
-                }}
+                className="md:hidden flex items-center gap-1.5 rounded-2xl border-2 px-2 py-1.5"
+                style={commandBarStyle}
+            >
+                {/* Logo icon */}
+                <div
+                    className="h-7 w-7 shrink-0"
+                    style={{
+                        WebkitMaskImage: `url(${ToDoXLogo})`,
+                        maskImage: `url(${ToDoXLogo})`,
+                        WebkitMaskSize: 'contain',
+                        maskSize: 'contain',
+                        WebkitMaskRepeat: 'no-repeat',
+                        maskRepeat: 'no-repeat',
+                        WebkitMaskPosition: 'center',
+                        maskPosition: 'center',
+                        backgroundColor: primaryColor,
+                        filter: `drop-shadow(0 0 6px ${primaryColor}99)`
+                    }}
+                />
+
+                {/* View toggle — icônes seulement */}
+                <div className="flex rounded-xl overflow-hidden border border-white/10">
+                    {viewButtons.map(({ id, Icon, label }) => (
+                        <button
+                            key={id}
+                            onClick={() => onViewChange(id)}
+                            className="flex items-center justify-center px-2 py-2 transition-colors"
+                            style={
+                                activeView === id
+                                    ? id === 'terminées'
+                                        ? { backgroundColor: 'rgba(52,211,153,0.15)', color: 'rgb(52,211,153)' }
+                                        : { backgroundColor: `${primaryColor}25`, color: primaryColor }
+                                    : { color: 'rgba(255,255,255,0.35)' }
+                            }
+                            title={label}
+                        >
+                            <Icon className="h-3.5 w-3.5" />
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex-1" />
+
+                {/* Notifications */}
+                <button
+                    onClick={onOpenNotifications}
+                    className="relative flex items-center justify-center rounded-xl border px-2 py-2 text-xs transition-all"
+                    style={mentionCount > 0
+                        ? { borderColor: 'rgba(245,158,11,0.45)', backgroundColor: 'rgba(245,158,11,0.15)', color: '#fcd34d' }
+                        : { borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }
+                    }
+                    title="Notifications"
+                >
+                    <Bell className="h-4 w-4" />
+                    {mentionCount > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 animate-pulse items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black">
+                            {mentionCount > 9 ? '9+' : mentionCount}
+                        </span>
+                    )}
+                </button>
+
+                {/* Nouvelle tâche */}
+                <button
+                    ref={mobileToggleButtonRef}
+                    onClick={() => setShowQuickAdd(!showQuickAdd)}
+                    className="flex items-center justify-center rounded-xl border px-2 py-2 animate-glow-pulse"
+                    style={{
+                        borderColor: `${primaryColor}30`,
+                        backgroundColor: `${primaryColor}10`,
+                        color: `${primaryColor}e6`,
+                    }}
+                    title="Nouvelle tâche"
+                >
+                    <Plus className="h-4 w-4" />
+                </button>
+
+                {/* Burger button */}
+                <button
+                    ref={burgerButtonRef}
+                    onClick={() => setShowBurgerMenu(!showBurgerMenu)}
+                    className="flex items-center justify-center rounded-xl border border-theme-primary bg-white/5 px-2 py-2 text-theme-secondary transition-all hover:bg-white/10 hover:text-theme-primary"
+                    title={showBurgerMenu ? 'Fermer le menu' : 'Menu'}
+                >
+                    {showBurgerMenu ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                </button>
+            </div>
+
+            {/* ── BURGER MENU DROPDOWN (mobile only) ── */}
+            {showBurgerMenu && (
+                <div
+                    ref={burgerMenuRef}
+                    className="md:hidden rounded-2xl border-2 overflow-hidden"
+                    style={{
+                        backgroundColor: 'var(--bg-tertiary)',
+                        borderColor: `${primaryColor}30`,
+                        boxShadow: `0 8px 30px rgba(0,0,0,0.5), 0 0 0 1px ${primaryColor}22`
+                    }}
+                >
+                    {/* CR Semaine — mis en avant */}
+                    <button
+                        onClick={burgerAction(onOpenWeeklyReport)}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-white transition-colors hover:brightness-110"
+                        style={{
+                            backgroundImage: `linear-gradient(to right, ${primaryColor}22, ${secondaryColor}22)`,
+                            borderBottom: `1px solid rgba(255,255,255,0.06)`
+                        }}
+                    >
+                        <Printer className="h-4 w-4" style={{ color: primaryColor }} />
+                        CR Semaine
+                    </button>
+
+                    {/* Grille 3 colonnes — actions principales */}
+                    <div className="grid grid-cols-3">
+                        {[
+                            { icon: HardDrive, label: 'Stockage', action: onOpenStorage },
+                            { icon: Users, label: 'Utilisateurs', action: onOpenUsers },
+                            { icon: Archive, label: 'Archives', action: onOpenArchive },
+                            { icon: Bell, label: 'Notifs', action: onOpenNotifications },
+                            { icon: Palette, label: 'Thèmes', action: onOpenThemes },
+                            { icon: HelpCircle, label: 'Aide', action: onOpenHelp },
+                        ].map(({ icon: Icon, label, action }) => (
+                            <button
+                                key={label}
+                                onClick={burgerAction(action)}
+                                className="flex flex-col items-center gap-1.5 px-3 py-3 text-[11px] text-theme-secondary transition-colors hover:bg-white/5 hover:text-theme-primary border-b border-r border-white/5 last:border-r-0"
+                            >
+                                <Icon className="h-4 w-4" />
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Grille 3 colonnes — gestion */}
+                    <div className="grid grid-cols-3 border-t border-white/5">
+                        {[
+                            { icon: FolderPlus, label: 'Dossiers', action: onOpenDirPanel },
+                            { icon: List, label: 'Projets', action: onOpenProjectsList },
+                            { icon: Trash2, label: 'Corbeille', action: onOpenTaskArchive },
+                        ].map(({ icon: Icon, label, action }) => (
+                            <button
+                                key={label}
+                                onClick={burgerAction(action)}
+                                className="flex flex-col items-center gap-1.5 px-3 py-3 text-[11px] text-theme-secondary transition-colors hover:bg-white/5 hover:text-theme-primary border-r border-white/5 last:border-r-0"
+                            >
+                                <Icon className="h-4 w-4" />
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Export / Import */}
+                    <div className="grid grid-cols-2 border-t border-white/5">
+                        {[
+                            { icon: Download, label: 'Export JSON', action: onExport },
+                            { icon: Upload, label: 'Import JSON', action: onImport },
+                        ].map(({ icon: Icon, label, action }) => (
+                            <button
+                                key={label}
+                                onClick={burgerAction(action)}
+                                className="flex items-center gap-2 px-4 py-3 text-xs text-theme-secondary transition-colors hover:bg-white/5 hover:text-theme-primary border-r border-white/5 last:border-r-0"
+                            >
+                                <Icon className="h-4 w-4" />
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* ── DESKTOP ROW 1 (≥ md) ── */}
+            <div
+                className="relative hidden md:flex items-center justify-between gap-2 sm:gap-4 rounded-3xl border-2 px-2 sm:px-4 md:px-6 py-2"
+                style={commandBarStyle}
             >
                 {/* Logo - Ultra Compact */}
-                <div className="group flex items-center gap-2 sm:gap-3">
+                <div className="group flex items-center gap-2 shrink-0">
                     <div className="relative flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center transition-all duration-300 hover:scale-110 hover:rotate-3">
-                        {/* Logo avec couleur dynamique */}
                         <div
                             className="h-8 w-8 sm:h-10 sm:w-10 transition-transform duration-300 group-hover:rotate-[-3deg]"
                             style={{
@@ -196,7 +408,6 @@ export function KanbanHeaderPremium({
                                 filter: `drop-shadow(0 0 8px ${primaryColor}99)`
                             }}
                         />
-                        {/* Rotating glow on hover */}
                         <div
                             className="absolute inset-0 rounded-xl opacity-0 blur-lg transition-opacity duration-300 group-hover:opacity-50 group-hover:animate-spin-slow"
                             style={{
@@ -204,7 +415,7 @@ export function KanbanHeaderPremium({
                             }}
                         />
                     </div>
-                    <div className="flex flex-col">
+                    <div className="hidden sm:flex flex-col">
                         <h1
                             className="header-title text-xl sm:text-2xl font-black tracking-tight bg-clip-text text-transparent bg-[length:200%_100%] animate-gradient-x"
                             style={{
@@ -242,23 +453,10 @@ export function KanbanHeaderPremium({
                     <span className="hidden sm:inline">Nouvelle tâche</span>
                     <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showQuickAdd ? 'rotate-180' : ''}`} />
                 </button>
-                <style>{`
-                    @keyframes glow-pulse {
-                        0%, 100% {
-                            box-shadow: 0 0 15px ${primaryColor}40, 0 0 30px ${primaryColor}20;
-                        }
-                        50% {
-                            box-shadow: 0 0 20px ${primaryColor}60, 0 0 40px ${primaryColor}30, 0 0 60px ${primaryColor}15;
-                        }
-                    }
-                    .animate-glow-pulse {
-                        animation: glow-pulse 3s ease-in-out infinite;
-                    }
-                `}</style>
 
                 {/* Search Input - Compact (appear on Ctrl+F) */}
                 {showSearch && (
-                    <div className="hidden md:block w-64">
+                    <div className="w-full md:w-64 md:block">
                         <SearchInput
                             ref={searchInputRef}
                             value={filterSearch}
@@ -270,7 +468,6 @@ export function KanbanHeaderPremium({
 
                 {/* Projects - Circular Progress Badges */}
                 <div className="relative flex-1 overflow-hidden">
-                    {/* Scrollable container with fade mask */}
                     <div
                         className="flex items-center gap-3 overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-cyan-400/30 scroll-smooth pb-1 px-4"
                         style={{
@@ -331,6 +528,7 @@ export function KanbanHeaderPremium({
                     >
                         <Archive className="h-3.5 w-3.5" />
                     </button>
+
                     {/* Notifications / Mentions badge */}
                     <button
                         onClick={onOpenNotifications}
@@ -370,44 +568,26 @@ export function KanbanHeaderPremium({
                         <DropdownItem icon={Upload} label="Import JSON" onClick={onImport} />
                     </DropdownMenu>
 
-                    {/* View Toggle (Kanban / Timeline) */}
-                    <div className="flex rounded-xl overflow-hidden border border-white/10">
-                        <button
-                            onClick={() => onViewChange('kanban')}
-                            className="flex items-center gap-1 px-2.5 py-2 text-xs font-semibold transition-colors"
-                            style={activeView === 'kanban'
-                                ? { backgroundColor: `${primaryColor}25`, color: primaryColor }
-                                : { color: 'rgba(255,255,255,0.35)' }
-                            }
-                            title="Vue Kanban"
-                        >
-                            <LayoutGrid className="h-3.5 w-3.5" />
-                            <span className="hidden lg:inline">Kanban</span>
-                        </button>
-                        <button
-                            onClick={() => onViewChange('timeline')}
-                            className="flex items-center gap-1 px-2.5 py-2 text-xs font-semibold transition-colors"
-                            style={activeView === 'timeline'
-                                ? { backgroundColor: `${primaryColor}25`, color: primaryColor }
-                                : { color: 'rgba(255,255,255,0.35)' }
-                            }
-                            title="Vue Timeline"
-                        >
-                            <CalendarDays className="h-3.5 w-3.5" />
-                            <span className="hidden lg:inline">Timeline</span>
-                        </button>
-                        <button
-                            onClick={() => onViewChange('dashboard')}
-                            className="flex items-center gap-1 px-2.5 py-2 text-xs font-semibold transition-colors"
-                            style={activeView === 'dashboard'
-                                ? { backgroundColor: `${primaryColor}25`, color: primaryColor }
-                                : { color: 'rgba(255,255,255,0.35)' }
-                            }
-                            title="Dashboard KPIs"
-                        >
-                            <BarChart3 className="h-3.5 w-3.5" />
-                            <span className="hidden lg:inline">Dashboard</span>
-                        </button>
+                    {/* View Toggle (Kanban / Timeline / Dashboard / Terminées) */}
+                    <div className="flex rounded-xl overflow-hidden border border-white/10 overflow-x-auto">
+                        {viewButtons.map(({ id, Icon, label }) => (
+                            <button
+                                key={id}
+                                onClick={() => onViewChange(id)}
+                                className="flex items-center gap-1 px-2.5 py-2 text-xs font-semibold transition-colors"
+                                style={
+                                    activeView === id
+                                        ? id === 'terminées'
+                                            ? { backgroundColor: 'rgba(52,211,153,0.15)', color: 'rgb(52,211,153)' }
+                                            : { backgroundColor: `${primaryColor}25`, color: primaryColor }
+                                        : { color: 'rgba(255,255,255,0.35)' }
+                                }
+                                title={`Vue ${label}`}
+                            >
+                                <Icon className="h-3.5 w-3.5" />
+                                <span className="hidden lg:inline">{label}</span>
+                            </button>
+                        ))}
                     </div>
 
                     {/* Help Button */}
@@ -432,7 +612,7 @@ export function KanbanHeaderPremium({
             <div
                 ref={quickAddContainerRef}
                 className={`mx-auto w-full px-2 sm:px-0 sm:w-[95%] lg:w-[90%] xl:w-[85%] 2xl:w-[80%] overflow-visible transition-all duration-300 ${
-                    showQuickAdd ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
+                    showQuickAdd ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
                 }`}
             >
                 <QuickAddPremium ref={quickAddRef} />

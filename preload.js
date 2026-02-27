@@ -56,6 +56,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('system-theme-changed', (event, data) => callback(data));
   },
 
+  // Cast — Google Home / Chromecast
+  castDiscover: () => ipcRenderer.invoke('cast:discover'),
+  castLaunch: (host, port, appId) => ipcRenderer.invoke('cast:launch', host, port, appId),
+  castGetReceiverUrl: () => ipcRenderer.invoke('cast:get-receiver-url'),
+
   // Vérifier si on est dans Electron
   isElectron: true
 });

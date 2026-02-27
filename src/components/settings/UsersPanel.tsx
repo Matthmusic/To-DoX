@@ -98,33 +98,33 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                 {localUsers.map((user) => (
                     <div
                         key={user.id}
-                        className="grid grid-cols-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-3"
+                        className="flex flex-col sm:grid sm:grid-cols-12 items-stretch sm:items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-3"
                     >
-                        <div className="col-span-4">
+                        <div className="w-full sm:col-span-4">
                             <input
                                 type="text"
                                 value={user.name}
                                 onChange={(e) => updateUser(user.id, "name", e.target.value)}
                                 disabled={user.id === "unassigned"}
-                                className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1 text-sm text-theme-primary disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                                className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-theme-primary disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                                 placeholder="Nom"
                             />
                         </div>
-                        <div className="col-span-6">
+                        <div className="w-full sm:col-span-6">
                             <input
                                 type="email"
                                 value={user.email}
                                 onChange={(e) => updateUser(user.id, "email", e.target.value.toLowerCase())}
                                 disabled={user.id === "unassigned"}
-                                className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1 text-sm text-theme-primary disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                                className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-theme-primary disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                                 placeholder="email@exemple.com"
                             />
                         </div>
-                        <div className="col-span-2">
+                        <div className="w-full sm:col-span-2">
                             {user.id !== "unassigned" && (
                                 <button
                                     onClick={() => removeUser(user.id)}
-                                    className="w-full rounded-xl border border-rose-400/40 bg-rose-400/10 px-2 py-1 text-xs text-rose-100 transition hover:bg-rose-400/20"
+                                    className="w-full rounded-xl border border-rose-400/40 bg-rose-400/10 px-2 py-1.5 text-xs text-rose-100 transition hover:bg-rose-400/20"
                                 >
                                     Supprimer
                                 </button>
@@ -137,24 +137,24 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
             {/* Ajout d'un nouvel utilisateur */}
             <div className="mt-6 rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-4">
                 <h4 className="text-sm font-semibold text-emerald-200">Ajouter un utilisateur</h4>
-                <div className="mt-3 grid grid-cols-12 gap-2">
+                <div className="mt-3 flex flex-col sm:grid sm:grid-cols-12 gap-2">
                     <input
                         type="text"
                         value={newUserName}
                         onChange={(e) => setNewUserName(e.target.value)}
-                        className="col-span-4 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                        className="w-full sm:col-span-4 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                         placeholder="Nom complet"
                     />
                     <input
                         type="email"
                         value={newUserEmail}
                         onChange={(e) => setNewUserEmail(e.target.value)}
-                        className="col-span-6 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                        className="w-full sm:col-span-6 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                         placeholder="email@exemple.com"
                     />
                     <button
                         onClick={addUser}
-                        className="col-span-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-3 py-2 text-sm font-semibold text-slate-900 transition hover:brightness-110"
+                        className="w-full sm:col-span-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-3 py-2 text-sm font-semibold text-slate-900 transition hover:brightness-110"
                     >
                         Ajouter
                     </button>

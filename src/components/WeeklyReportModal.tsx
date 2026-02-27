@@ -828,11 +828,11 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                     </div>
 
                     {/* Header */}
-                    <div className="relative z-10 flex items-center justify-between p-6 border-b border-theme-primary">
+                    <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 p-3 sm:p-6 border-b border-theme-primary">
                         <div className="flex items-center gap-3">
-                            <FileText className="w-6 h-6" style={{ color: primaryColor }} />
+                            <FileText className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: primaryColor }} />
                             <h3
-                                className="text-xl font-black bg-clip-text text-transparent"
+                                className="text-base sm:text-xl font-black bg-clip-text text-transparent"
                                 style={{
                                     backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
                                 }}
@@ -840,41 +840,41 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                                 Compte Rendu Généré
                             </h3>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                             <button
                                 onClick={() => setShowReport(false)}
-                                className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-slate-100 transition-all hover:bg-white/10"
+                                className="rounded-xl border border-white/20 bg-white/5 px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-100 transition-all hover:bg-white/10"
                             >
                                 Retour
                             </button>
                             <button
                                 onClick={printToPDF}
-                                className="flex items-center gap-2 rounded-xl border px-4 py-2 text-sm transition-all"
+                                className="flex items-center gap-1.5 rounded-xl border px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm transition-all"
                                 style={{
                                     borderColor: `${secondaryColor}30`,
                                     backgroundColor: `${secondaryColor}10`,
                                     color: `${secondaryColor}cc`
                                 }}
                             >
-                                <Printer className="w-4 h-4" />
-                                Imprimer
+                                <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                <span className="hidden sm:inline">Imprimer</span>
                             </button>
                             <button
                                 onClick={exportToPDF}
-                                className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-black text-white shadow-lg transition-all hover:scale-105 hover:brightness-110"
+                                className="flex items-center gap-1.5 rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-black text-white shadow-lg transition-all hover:scale-105 hover:brightness-110"
                                 style={{
                                     backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`,
                                     boxShadow: `0 10px 15px -3px ${primaryColor}30`
                                 }}
                             >
-                                <FileDown className="w-4 h-4" />
-                                Exporter en PDF
+                                <FileDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                <span className="hidden xs:inline sm:inline">PDF</span>
                             </button>
                         </div>
                     </div>
 
                     {/* Contenu du rapport */}
-                    <div className="relative z-10 flex-1 overflow-y-auto p-6">
+                    <div className="relative z-10 flex-1 overflow-y-auto p-3 sm:p-6">
                         <pre className="font-mono text-sm text-slate-200 whitespace-pre-wrap">
                             {reportText}
                         </pre>
@@ -925,11 +925,11 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                 </div>
 
                 {/* Header */}
-                <div className="relative z-10 flex items-center justify-between p-6 border-b border-theme-primary">
+                <div className="relative z-10 flex items-center justify-between p-3 sm:p-6 border-b border-theme-primary">
                     <div className="flex items-center gap-3">
-                        <FileText className="w-6 h-6" style={{ color: primaryColor }} />
+                        <FileText className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: primaryColor }} />
                         <h3
-                            className="text-xl font-black bg-clip-text text-transparent"
+                            className="text-base sm:text-xl font-black bg-clip-text text-transparent"
                             style={{
                                 backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
                             }}
@@ -946,7 +946,7 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                 </div>
 
                 {/* Contenu */}
-                <div className="relative z-10 flex-1 overflow-y-auto p-6">
+                <div className="relative z-10 flex-1 overflow-y-auto p-3 sm:p-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Semaine en cours */}
                         <div

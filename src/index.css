@@ -92,6 +92,38 @@ body {
   }
 }
 
+/* ── Mobile UX ─────────────────────────────────────────────────────────── */
+
+/* Scroll mobile fluide */
+.overflow-y-auto,
+.overflow-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-x;
+}
+
+/* Empêcher les cartes draggables de bloquer le scroll vertical sur mobile */
+@media (max-width: 767px) {
+  [draggable="true"] {
+    touch-action: pan-y;
+  }
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .kanban-header {
+    width: 100%;
+  }
+}
+
 /* Scrollbar glassmorphism - Webkit (Chrome, Edge, Safari) */
 ::-webkit-scrollbar {
   width: 10px;

@@ -6,7 +6,7 @@ import { ProjectAutocomplete } from "./ProjectAutocomplete";
 import useStore from "../store/useStore";
 import type { Task, TaskData, RecurrenceType } from "../types";
 import { confirmModal } from "../utils/confirm";
-import { Repeat, BookmarkPlus } from "lucide-react";
+import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw } from "lucide-react";
 
 interface TaskEditPanelProps {
     task: Task;
@@ -18,7 +18,7 @@ interface TaskEditPanelProps {
  * Panneau d'édition pour clic droit sur une tâche
  */
 export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEditPanelProps) {
-    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate } = useStore();
+    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate, setReviewers } = useStore();
 
     // Récupérer la tâche à jour depuis le store pour refléter les changements en temps réel
     const task = tasks.find(t => t.id === initialTask.id) || initialTask;
@@ -97,7 +97,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
     return createPortal(
         <div
             ref={menuRef}
-            className="fixed z-[99999] w-[32rem] max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/20 bg-white/5 p-3 text-slate-100 shadow-2xl backdrop-blur-xl"
+            className="fixed z-[99999] w-[calc(100vw-1rem)] sm:w-[32rem] max-h-[85vh] sm:max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/20 bg-white/5 p-3 text-slate-100 shadow-2xl backdrop-blur-xl"
             style={{
                 top: adjustedPosition.top,
                 left: adjustedPosition.left,
@@ -191,6 +191,58 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
                         </label>
                     ))}
                 </div>
+
+                <label className="mt-2 text-xs text-violet-400">Réviseurs</label>
+                <div className="w-full rounded-2xl border border-violet-400/20 bg-violet-400/5 p-2 space-y-1 max-h-32 overflow-y-auto">
+                    {users.map(user => (
+                        <label key={user.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 cursor-pointer transition">
+                            <input
+                                type="checkbox"
+                                checked={(task.reviewers || []).includes(user.id)}
+                                onChange={(e) => {
+                                    const newReviewers = e.target.checked
+                                        ? [...(task.reviewers || []), user.id]
+                                        : (task.reviewers || []).filter(id => id !== user.id);
+                                    setReviewers(task.id, newReviewers);
+                                }}
+                                className="h-4 w-4 rounded accent-violet-400 cursor-pointer"
+                            />
+                            <span className="text-sm text-slate-100">{user.name}</span>
+                        </label>
+                    ))}
+                </div>
+
+                {/* Historique de révision */}
+                {(task.reviewValidatedBy || task.reviewRejectedBy) && (
+                    <>
+                        <label className="mt-2 text-xs text-slate-400">Historique révision</label>
+                        <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2">
+                            {task.reviewValidatedBy && (
+                                <div className="flex items-center gap-2 text-xs text-emerald-400">
+                                    <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+                                    <span>
+                                        Validé par {users.find(u => u.id === task.reviewValidatedBy)?.name ?? task.reviewValidatedBy}
+                                        {task.reviewValidatedAt && ` · ${new Date(task.reviewValidatedAt).toLocaleDateString('fr-FR')}`}
+                                    </span>
+                                </div>
+                            )}
+                            {task.reviewRejectedBy && (
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-xs text-amber-400">
+                                        <RotateCcw className="h-3.5 w-3.5 flex-shrink-0" />
+                                        <span>
+                                            Corrections demandées par {users.find(u => u.id === task.reviewRejectedBy)?.name ?? task.reviewRejectedBy}
+                                            {task.reviewRejectedAt && ` · ${new Date(task.reviewRejectedAt).toLocaleDateString('fr-FR')}`}
+                                        </span>
+                                    </div>
+                                    {task.rejectionComment && (
+                                        <p className="ml-5 text-xs text-slate-400 italic">"{task.rejectionComment}"</p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
 
                 <label className="mt-2 text-xs text-slate-400">Notes</label>
                 <textarea

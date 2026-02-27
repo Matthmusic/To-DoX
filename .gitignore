@@ -31,6 +31,7 @@ Thumbs.db
 *.deb
 *.snap
 release/
+storybook-static/
 
 # Local env files
 *.local

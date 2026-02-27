@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { todayISO, uid } from '../utils';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
-import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention, TaskTemplate, SavedReport } from '../types';
+import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention, TaskTemplate, SavedReport, AppNotification } from '../types';
 
 interface StoreState {
     // State
@@ -85,6 +85,19 @@ interface StoreState {
     setSavedReports: (reports: SavedReport[]) => void;
     saveReport: (report: Omit<SavedReport, 'id'>) => void;
     deleteReport: (id: string) => void;
+
+    // In-app notifications (workflow de révision)
+    appNotifications: AppNotification[];
+    setAppNotifications: (notifs: AppNotification[]) => void;
+    addAppNotification: (notif: Omit<AppNotification, 'id' | 'createdAt'>) => void;
+    markNotificationRead: (notifId: string) => void;
+    markAllNotificationsRead: (userId: string) => void;
+
+    // Review workflow
+    setReviewers: (taskId: string, reviewers: string[]) => void;
+    validateTask: (taskId: string) => void;
+    requestCorrections: (taskId: string, comment: string) => void;
+    reopenTask: (taskId: string) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -103,6 +116,7 @@ const useStore = create<StoreState>((set, get) => ({
     pendingMentions: {},
     templates: [],
     savedReports: [],
+    appNotifications: [],
 
     notificationSettings: {
         enabled: true,
@@ -206,6 +220,26 @@ const useStore = create<StoreState>((set, get) => ({
             updatedPatch.completedAt = Date.now();
         } else if (patch.status) {
             updatedPatch.completedAt = null;
+        }
+
+        // Workflow review : si la tâche passe en "review" avec des réviseurs déjà définis → notifier
+        if (patch.status === 'review') {
+            const existingTask = get().tasks.find(t => t.id === id);
+            if (existingTask && existingTask.reviewers?.length) {
+                const { currentUser, users } = get();
+                const fromUser = users.find(u => u.id === currentUser);
+                const fromUserName = fromUser?.name || currentUser || '';
+                existingTask.reviewers.forEach(reviewerId => {
+                    get().addAppNotification({
+                        type: 'review_requested',
+                        taskId: id,
+                        taskTitle: existingTask.title,
+                        fromUserId: currentUser || '',
+                        toUserId: reviewerId,
+                        message: `${fromUserName} t'a assigné comme réviseur sur ${existingTask.title}`,
+                    });
+                });
+            }
         }
 
         const now = Date.now();
@@ -533,6 +567,128 @@ const useStore = create<StoreState>((set, get) => ({
     },
     deleteReport: (id) => {
         set(state => ({ savedReports: state.savedReports.filter(r => r.id !== id) }));
+    },
+
+    // ── In-app notifications ────────────────────────────────────────────────
+    setAppNotifications: (appNotifications) => set({ appNotifications }),
+
+    addAppNotification: (notif) => {
+        const full: AppNotification = { ...notif, id: uid(), createdAt: Date.now() };
+        set(state => ({ appNotifications: [full, ...state.appNotifications] }));
+    },
+
+    markNotificationRead: (notifId) => {
+        set(state => ({
+            appNotifications: state.appNotifications.map(n =>
+                n.id === notifId ? { ...n, readAt: Date.now() } : n
+            )
+        }));
+    },
+
+    markAllNotificationsRead: (userId) => {
+        set(state => ({
+            appNotifications: state.appNotifications.map(n =>
+                n.toUserId === userId && !n.readAt ? { ...n, readAt: Date.now() } : n
+            )
+        }));
+    },
+
+    // ── Review workflow ─────────────────────────────────────────────────────
+    setReviewers: (taskId, reviewers) => {
+        const { currentUser, users, tasks } = get();
+        const task = tasks.find(t => t.id === taskId);
+        if (!task || !currentUser) return;
+
+        const fromUser = users.find(u => u.id === currentUser);
+        const fromUserName = fromUser?.name || currentUser;
+        const now = Date.now();
+
+        set(state => ({
+            tasks: state.tasks.map(t => t.id === taskId ? { ...t, reviewers, updatedAt: now } : t)
+        }));
+
+        reviewers.forEach(reviewerId => {
+            get().addAppNotification({
+                type: 'review_requested',
+                taskId,
+                taskTitle: task.title,
+                fromUserId: currentUser,
+                toUserId: reviewerId,
+                message: `${fromUserName} t'a assigné comme réviseur sur ${task.title}`,
+            });
+        });
+    },
+
+    validateTask: (taskId) => {
+        const { currentUser, users, tasks } = get();
+        const task = tasks.find(t => t.id === taskId);
+        if (!task || !currentUser) return;
+
+        const fromUser = users.find(u => u.id === currentUser);
+        const fromUserName = fromUser?.name || currentUser;
+        const now = Date.now();
+
+        // Utilise updateTask pour déclencher la logique de récurrence automatiquement
+        get().updateTask(taskId, {
+            status: 'done',
+            reviewValidatedBy: currentUser,
+            reviewValidatedAt: now,
+        });
+
+        // Notifier tous les assignés
+        task.assignedTo.forEach(assigneeId => {
+            get().addAppNotification({
+                type: 'review_validated',
+                taskId,
+                taskTitle: task.title,
+                fromUserId: currentUser,
+                toUserId: assigneeId,
+                message: `${fromUserName} a validé la tâche ${task.title} ✅`,
+            });
+        });
+    },
+
+    requestCorrections: (taskId, comment) => {
+        const { currentUser, users, tasks } = get();
+        const task = tasks.find(t => t.id === taskId);
+        if (!task || !currentUser) return;
+
+        const fromUser = users.find(u => u.id === currentUser);
+        const fromUserName = fromUser?.name || currentUser;
+        const now = Date.now();
+
+        get().updateTask(taskId, {
+            status: 'doing',
+            reviewRejectedBy: currentUser,
+            reviewRejectedAt: now,
+            rejectionComment: comment,
+        });
+
+        // Ajouter comme commentaire visible dans le fil
+        get().addComment(taskId, `↩️ Corrections demandées : ${comment}`);
+
+        // Notifier tous les assignés
+        task.assignedTo.forEach(assigneeId => {
+            get().addAppNotification({
+                type: 'review_rejected',
+                taskId,
+                taskTitle: task.title,
+                fromUserId: currentUser,
+                toUserId: assigneeId,
+                message: `${fromUserName} demande des corrections sur ${task.title} : ${comment}`,
+            });
+        });
+    },
+
+    reopenTask: (taskId) => {
+        get().updateTask(taskId, {
+            status: 'doing',
+            reviewValidatedBy: undefined,
+            reviewValidatedAt: undefined,
+            reviewRejectedBy: undefined,
+            reviewRejectedAt: undefined,
+            rejectionComment: undefined,
+        });
     },
 }));
 

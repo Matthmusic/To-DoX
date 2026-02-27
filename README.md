@@ -1,6 +1,6 @@
 # To-DoX
 
-Une application Kanban minimaliste et intelligente pour la gestion de tâches avec indicateurs visuels de priorité et deadlines.
+Une application Kanban intelligente et moderne pour la gestion de tâches, avec indicateurs visuels de priorité, deadlines, workflow de révision et support mobile complet.
 
 ![To-DoX Logo](src/assets/To%20Do%20X.svg)
 
@@ -8,12 +8,13 @@ Une application Kanban minimaliste et intelligente pour la gestion de tâches av
 
 [![Download Latest Release](https://img.shields.io/github/v/release/Matthmusic/To-DoX?label=Télécharger&style=for-the-badge&logo=github)](https://github.com/Matthmusic/To-DoX/releases/latest)
 
-**Version actuelle : 2.0.2**
+**Version actuelle : 2.1.0**
 
 Téléchargez simplement le fichier `.exe` depuis la [page des releases](https://github.com/Matthmusic/To-DoX/releases/latest) et lancez-le !
 
 - ✅ Mises à jour automatiques intégrées
 - ✅ Interface moderne et fluide
+- ✅ Support mobile-first (≥ 375px)
 - ✅ Aucune installation complexe requise
 
 ## ✨ Fonctionnalités
@@ -21,60 +22,86 @@ Téléchargez simplement le fichier `.exe` depuis la [page des releases](https:/
 ### 📋 Gestion de tâches Kanban
 - **4 colonnes de statut** : À faire, En cours, À réviser, Fait
 - **Drag & Drop natif** : Déplacez facilement vos tâches entre les colonnes
-- **Ajout rapide** : Formulaire intuitif pour créer des tâches avec titre, projet, échéance et priorité
+- **Ajout rapide** : Formulaire intuitif avec auto-détection `#projet` et `@utilisateur`
+- **Tâches récurrentes** : Répétition quotidienne, hebdomadaire, mensuelle
+- **Sous-tâches** : Décomposez vos tâches en étapes
+
+### ✅ Vue "Terminées" ✨ **Nouveau dans v2.1.0**
+- **Vue dédiée** aux tâches avec statut "Fait"
+- **Tri et filtres** : par projet, priorité, date de complétion
+- **Historique complet** avec indicateurs visuels de délai
+
+### 📱 Interface responsive mobile-first ✨ **Nouveau dans v2.1.0**
+- **Support complet ≥ 375px** — fonctionne sur smartphone et tablette
+- **Barre mobile compacte** avec accès rapide aux vues et actions
+- **Burger menu** : toutes les actions accessibles en un tap
+- **Kanban tabulé** sur mobile : une colonne à la fois avec navigation par onglets
+- **Modales adaptées** : GlassModal, TaskEditPanel et panneaux s'adaptent à l'écran
+
+### 🔍 Workflow de révision
+- **Demande de révision** : assignez une tâche en `review` à un collègue
+- **Validation / Rejet** : le reviewer accepte ou renvoie en `doing`
+- **Notifications in-app** : badge en temps réel sur la cloche de notifications
+- **Stale review alert** : alerte si la révision n'a pas bougé depuis plus de 2 jours
+
+### 🔔 Notifications intelligentes
+- **Dropdown centré** dans la barre de titre Electron
+- **Filtrage par utilisateur** : uniquement vos tâches assignées
+- **Alertes deadlines** : notifications pour les échéances proches
+- **Alertes tâches stagnantes** : avertissement si une tâche "En cours" stagne depuis 3 jours
+- **Sons personnalisables** : 6 sons de notification différents
+  - 💧 Goutte d'eau | 🎵 Accord musical | ✨ Pop-up | 🔔 Classique | 😮 Gasp UI | 📱 Message
+- **Heures silencieuses** : plages horaires sans notifications
 
 ### 🎯 Indicateurs visuels intelligents
-- **Échéances visuelles** : Code couleur dynamique selon l'urgence (J-X, en retard)
-- **Badge "⚠ À relancer"** : Alerte automatique si une tâche est "En cours" sans mouvement depuis plus de 3 jours
+- **Échéances visuelles** : code couleur dynamique selon l'urgence (J-X, en retard)
+- **Badge "⚠ À relancer"** : alerte automatique si une tâche est "En cours" sans mouvement depuis plus de 3 jours
 - **Priorités colorées** : Haute (rouge-orange), Moyenne (jaune-ambre), Basse (vert-lime)
+- **Badges de progression circulaires** : pourcentage de complétion par projet
 
 ### 📁 Organisation par projet
-- **Statistiques par projet** : Barres de progression avec pourcentage de complétion
-- **Liens vers dossiers projets** : Configuration de chemins locaux pour ouvrir rapidement les dossiers de travail via Electron
-- **Filtrage avancé** : Recherche par titre, projet, notes, avec filtres combinables (projet, priorité, statut)
+- **Badges circulaires** de progression dans le header, avec défilement horizontal
+- **Filtrage par projet** : cliquez sur un badge pour filtrer les tâches
+- **Liens vers dossiers projets** : ouvrez vos dossiers de travail directement depuis l'app
+- **Couleurs de projet** : personnalisez la couleur de chaque projet
 
-### 🔔 Notifications intelligentes ✨ **Nouveau dans v2.0.2**
-- **Filtrage par utilisateur** : Recevez uniquement les notifications pour vos tâches assignées
-- **Alertes deadlines** : Notifications automatiques pour les tâches qui approchent de leur échéance
-- **Alertes tâches stagnantes** : Avertissement si une tâche "En cours" n'a pas bougé depuis 3 jours
-- **Sons personnalisables** : Choisissez parmi 6 sons de notification différents
-  - 💧 Goutte d'eau | 🎵 Accord musical | ✨ Pop-up | 🔔 Classique | 😮 Gasp UI | 📱 Message
-- **Heures silencieuses** : Configurez des plages horaires sans notifications
-- **Aperçu audio** : Testez les sons avant de choisir
+### 🎨 Thèmes et personnalisation
+- **14 thèmes préinstallés** : du minimaliste au cyberpunk
+- **TitleBar thématique** : la barre de titre suit les couleurs du thème actif
+- **Animations glow** : effets lumineux adaptatifs selon le thème
+- **"Floating Command Bar"** : header premium avec design glassmorphism
 
-### 🎨 Thèmes et personnalisation ✨ **Nouveau dans v2.0.2**
-- **14 thèmes préinstallés** : Du minimaliste au cyberpunk
-- **TitleBar thématique** : La barre de titre suit les couleurs du thème actif
-- **Mode clair/sombre** : Basculez entre les modes selon vos préférences
-- **Personnalisation complète** : Couleurs, bordures, opacités
-
-### 💾 Persistance et export
-- **Stockage local** : Sauvegarde automatique dans localStorage
-- **Export/Import JSON** : Sauvegardez et partagez vos données facilement
-- **Aucune dépendance backend** : Fonctionne entièrement en local
+### 💾 Persistance et synchronisation
+- **Dual-mode** : localStorage (web) ou fichier JSON (Electron — `~/OneDrive/DATA/To-Do-X/data.json`)
+- **Sauvegarde auto** : debounce 1s + backups automatiques
+- **Export/Import JSON** : sauvegardez et partagez vos données
+- **Verrouillage fichier** : protection contre les écritures simultanées
 
 ### 💻 Interface moderne
-- **Barre de titre personnalisée** : Design cohérent avec contrôles Windows intégrés
-- **Design fluide** : Animations et transitions soignées
-- **Responsive** : S'adapte à toutes les tailles d'écran
-- **Performance optimisée** : Compilation React et optimisations Vite
+- **Barre de titre personnalisée** : drag-to-move, contrôles Windows intégrés
+- **Header "Command Bar"** : logo animé, badges de projets, accès rapide
+- **Animations Framer Motion** : transitions fluides
+- **Storybook** : bibliothèque de composants documentée
 
 ## 🛠️ Technologies utilisées
 
 ### Frontend
-- ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=white) - Hooks modernes et React Compiler
-- ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white) - Sécurité du typage
-- ![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=flat&logo=vite&logoColor=white) - Build ultra-rapide
-- ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?style=flat&logo=tailwindcss&logoColor=white) - Design moderne et responsive
+- ![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=white) — Hooks modernes et React Compiler
+- ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat&logo=typescript&logoColor=white) — Sécurité du typage
+- ![Vite](https://img.shields.io/badge/Vite-7-646CFF?style=flat&logo=vite&logoColor=white) — Build ultra-rapide
+- ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?style=flat&logo=tailwindcss&logoColor=white) — Design moderne et responsive
+- ![Zustand](https://img.shields.io/badge/Zustand-5-FF6B35?style=flat) — State management léger
+- ![Framer Motion](https://img.shields.io/badge/Framer_Motion-12-EE4B96?style=flat) — Animations fluides
 
 ### Desktop
-- ![Electron](https://img.shields.io/badge/Electron-39-47848F?style=flat&logo=electron&logoColor=white) - Application desktop multi-plateforme
-- **electron-builder** - Packaging et distribution
-- **electron-updater** - Mises à jour automatiques
+- ![Electron](https://img.shields.io/badge/Electron-32-47848F?style=flat&logo=electron&logoColor=white) — Application desktop multi-plateforme
+- **electron-builder** — Packaging et distribution
+- **electron-updater** — Mises à jour automatiques
 
 ### DevOps
-- **GitHub Actions** - CI/CD automatisé
-- **NSIS** - Installateur Windows personnalisé
+- **GitHub Actions** — CI/CD automatisé
+- **NSIS** — Installateur Windows personnalisé
+- **Storybook** — Développement et documentation des composants
 
 ## 💻 Installation
 
@@ -88,51 +115,6 @@ Téléchargez simplement le fichier `.exe` depuis la [page des releases](https:/
 
 L'application vérifie automatiquement les mises à jour au démarrage et vous notifie quand une nouvelle version est disponible.
 
-## Utilisation
-
-### Créer une tâche
-1. Remplissez le formulaire "Ajout rapide" avec :
-   - Titre de la tâche
-   - Code projet (ex: ACME-2025-001)
-   - Date d'échéance
-   - Priorité (Basse, Moyenne, Haute)
-2. Cliquez sur "Ajouter"
-
-### Déplacer une tâche
-- **Par drag & drop** : Glissez-déposez la carte dans une autre colonne
-- **Par le menu** : Cliquez sur ⋯ et changez le statut
-
-### Modifier une tâche
-1. Cliquez sur le bouton ⋯ sur la carte
-2. Modifiez les champs (titre, projet, échéance, priorité, notes)
-3. Les changements sont automatiquement sauvegardés
-
-### Configurer les dossiers projets
-1. Cliquez sur "Dossiers projets"
-2. Saisissez le chemin local pour chaque projet :
-   - Windows : `C:\Projets\MonProjet`
-   - macOS/Linux : `/Users/toi/Projets/MonProjet`
-3. Cliquez sur "Enregistrer"
-4. Un bouton "Ouvrir dossier" apparaîtra sur les tâches concernées
-
-### Filtrer les tâches
-- Utilisez la barre de recherche pour chercher dans les titres, projets et notes
-- Sélectionnez un projet spécifique dans le menu déroulant
-- Filtrez par priorité ou statut
-- Cliquez sur "Réinitialiser filtres" pour tout effacer
-
-### Exporter/Importer
-- **Export** : Cliquez sur "Export JSON" pour télécharger vos données
-- **Import** : Cliquez sur "Import JSON" et sélectionnez un fichier JSON précédemment exporté
-
-### Mises à jour automatiques (version desktop)
-
-L'application Electron vérifie automatiquement les mises à jour au démarrage :
-- Une notification apparaît quand une nouvelle version est disponible
-- Vous pouvez télécharger et installer la mise à jour en un clic
-- L'installation se fait au redémarrage de l'application
-- Le système utilise GitHub Releases de manière sécurisée
-
 ## 📂 Structure du projet
 
 ```
@@ -140,36 +122,23 @@ To-DoX/
 ├── src/
 │   ├── assets/           # Images et logos
 │   ├── components/       # Composants React réutilisables
-│   ├── hooks/            # Hooks personnalisés (useFilters, useDragAndDrop, etc.)
+│   │   ├── settings/     # Panneaux de configuration
+│   │   ├── ui/           # Composants UI génériques (GlassModal…)
+│   │   └── archive/      # Panneaux d'archives
+│   ├── hooks/            # Hooks personnalisés (useFilters, useDragAndDrop…)
 │   ├── store/            # Store Zustand centralisé
+│   ├── stories/          # Stories Storybook
 │   ├── ToDoX.tsx         # Composant principal
 │   └── types.ts          # Définitions TypeScript
-├── docs/                 # 📚 Documentation complète
-│   ├── deployment/       # Guides de déploiement et releases
-│   ├── setup/            # Configuration initiale
-│   ├── migration/        # Guides de migration backend
-│   └── archive/          # Historique des refactorings
+├── docs/                 # Documentation complète
+├── cast-service.js       # Service Chromecast/Google Home (infrastructure)
 ├── electron.js           # Application Electron
 ├── preload.js            # Preload script (sécurité)
 ├── package.json          # Configuration et dépendances
-├── README.md             # Ce fichier
 └── CLAUDE.md             # Documentation développeur complète
 ```
 
-## 👨‍💻 Documentation développeur
-
-Vous êtes développeur et souhaitez contribuer au projet ? Consultez la documentation complète :
-
-### Documentation principale
-- **[CLAUDE.md](CLAUDE.md)** - Guide complet du développeur (architecture, patterns, hooks, store Zustand)
-- **[docs/](docs/)** - Documentation organisée par thème
-
-### Guides spécifiques
-- **[Déploiement](docs/deployment/)** - Comment déployer une nouvelle version
-- **[Setup](docs/setup/)** - Configuration Electron et multi-utilisateurs
-- **[Migration](docs/migration/)** - Guides de migration backend (PostgreSQL, JSON)
-
-### Commandes de développement
+## 👨‍💻 Développement
 
 ```bash
 # Mode développement (web uniquement)
@@ -181,20 +150,22 @@ npm run dev:electron
 # Build production
 npm run build
 
-# Build et package Electron
-npm run build:electron
+# Storybook
+npm run storybook
 
 # Tests
-npm run test
+npm run test -- --run
 
-# Linter
-npm run lint
+# Release locale Windows
+npm run electron:build:win
 ```
+
+Consultez [CLAUDE.md](CLAUDE.md) pour l'architecture complète et les patterns de développement.
 
 ## ⚠️ Limitations connues
 
-- **Stockage local** : Les données sont stockées localement. Pensez à exporter régulièrement vos données importantes via "Export JSON"
-- **Multi-utilisateurs** : Pour utilisation multi-utilisateurs, consultez [docs/setup/MULTI_USER_SETUP.md](docs/setup/MULTI_USER_SETUP.md)
+- **Stockage local** : données stockées localement. Exportez régulièrement via "Export JSON"
+- **Multi-utilisateurs** : pour utilisation partagée, configurez un dossier OneDrive commun via "Stockage"
 
 ## Licence
 

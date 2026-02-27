@@ -58,7 +58,7 @@ export function ProjectCard({
             >
                 <div className="flex items-center gap-2">
                     {isCollapsed ? <ChevronRight className={`h-4 w-4 ${projectColor.text}`} /> : <ChevronDown className={`h-4 w-4 ${projectColor.text}`} />}
-                    <span className={`font-semibold ${projectColor.text}`}>{project}</span>
+                    <span className={`font-semibold truncate max-w-[120px] sm:max-w-xs ${projectColor.text}`}>{project}</span>
                     <span className={`rounded-full border px-2 py-0.5 text-xs ${projectColor.bg} ${projectColor.border} ${projectColor.text}`}>
                         {tasks.length}
                     </span>

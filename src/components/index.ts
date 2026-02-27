@@ -15,6 +15,8 @@ export { KanbanHeaderPremium } from './KanbanHeaderPremium';
 export { KanbanBoard } from './KanbanBoard';
 export { TimelineView } from './TimelineView';
 export { DashboardView } from './DashboardView';
+export { TermineesView } from './TermineesView';
+export { NotificationDropdown } from './NotificationDropdown';
 
 export { SubtaskItem, SubtaskList } from './SubtaskList';
 export { TaskEditPanel } from './TaskEditPanel';
