@@ -4,6 +4,9 @@ import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
 import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention, TaskTemplate, SavedReport, AppNotification } from '../types';
 
+// Tracks task IDs moved to 'review' by LOCAL user action (not via file sync)
+export const localReviewQueue = new Set<string>();
+
 interface StoreState {
     // State
     tasks: Task[];
@@ -288,7 +291,10 @@ const useStore = create<StoreState>((set, get) => ({
         }));
     },
 
-    moveTask: (id, status) => get().updateTask(id, { status: status as Task['status'] }),
+    moveTask: (id, status) => {
+        if (status === 'review') localReviewQueue.add(id);
+        get().updateTask(id, { status: status as Task['status'] });
+    },
 
     archiveTask: (id) => get().updateTask(id, { archived: true, archivedAt: Date.now() }),
     unarchiveTask: (id) => get().updateTask(id, { archived: false, archivedAt: null }),

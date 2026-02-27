@@ -3,7 +3,7 @@ import { todayISO } from "./utils";
 import { migrateTask } from "./utils/taskMigration";
 
 // Store and Types
-import useStore from "./store/useStore";
+import useStore, { localReviewQueue } from "./store/useStore";
 import type { StoredData, Task } from "./types";
 
 type StoredDataRaw = Omit<StoredData, 'tasks'> & { tasks?: unknown[] };
@@ -167,13 +167,17 @@ export default function ToDoX() {
     }, [collapsedProjects]);
 
     // Détecter les tâches en révision sans réviseur → ouvrir le sélecteur
+    // Uniquement pour les actions locales (localReviewQueue), pas pour les syncs distants
     const prevTaskStatusRef = useRef<Record<string, string>>({});
     useEffect(() => {
         for (const task of tasks) {
             const prevStatus = prevTaskStatusRef.current[task.id];
             if (prevStatus !== undefined && prevStatus !== 'review' && task.status === 'review' && !(task.reviewers?.length)) {
-                setPendingReviewTaskId(task.id);
-                break;
+                if (localReviewQueue.has(task.id)) {
+                    localReviewQueue.delete(task.id);
+                    setPendingReviewTaskId(task.id);
+                    break;
+                }
             }
             prevTaskStatusRef.current[task.id] = task.status;
         }
