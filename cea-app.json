@@ -4,10 +4,10 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.0.10",
+    "version": "2.1.0",
     "description": {
-      "short": "Kanban minimaliste pour gerer les taches avec priorites et echeances.",
-      "long": "To-DoX est une application Kanban minimaliste pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop manuel, la recurrence des taches, des templates reutilisables, un dashboard KPIs, une vue Timeline/Gantt, la recherche et le filtrage par projets, ainsi que l'export et l'import des donnees. Les donnees sont stockees localement avec sauvegardes et peuvent etre synchronisees via OneDrive."
+      "short": "Kanban intelligent avec interface mobile-first, workflow de revision et notifications.",
+      "long": "To-DoX est une application Kanban moderne pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recurrence, des templates, un dashboard KPIs, une vue Timeline/Gantt, un workflow de revision complet, une vue Terminees, des notifications in-app, une interface responsive mobile-first (burger menu, onglets Kanban), ainsi que l'export et l'import des donnees. Les donnees sont stockees localement et peuvent etre synchronisees via OneDrive."
     }
   },
   "resources": {
@@ -70,9 +70,23 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.0.10.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.0.exe"
   },
   "changelog": {
+    "2.1.0": {
+      "date": "2026-02-27",
+      "changes": [
+        "Interface responsive mobile-first (≥375px) : burger menu, Kanban tabulé sur mobile (une colonne à la fois)",
+        "Vue 'Terminées' dédiée aux tâches complétées avec tri et filtres",
+        "Workflow de révision complet : demande, validation, rejet, alertes stale",
+        "Notifications redesign : dropdown centré dans la barre de titre",
+        "Badges de progression circulaires par projet dans le header",
+        "TitleBar : fix drag-to-move (webkit-app-region)",
+        "GlassModal, TaskEditPanel, UsersPanel : adaptation aux petits écrans",
+        "Storybook : bibliothèque de composants documentée",
+        "Infrastructure Chromecast/Google Home (backend, UI non exposée)"
+      ]
+    },
     "2.0.10": {
       "date": "2026-02-23",
       "changes": [
