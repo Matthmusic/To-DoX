@@ -149,6 +149,7 @@ export interface Subtask {
   completed: boolean;
   createdAt: number;
   completedAt: number | null;
+  completedBy: string | null;
 }
 
 /**
@@ -248,6 +249,7 @@ export interface Task {
   reviewRejectedBy?: string;    // ID de celui qui a demandé des corrections
   reviewRejectedAt?: number;    // Timestamp du rejet
   rejectionComment?: string;    // Commentaire obligatoire au rejet
+  convertedFromSubtask?: { parentTaskId: string; parentTaskTitle: string };
 }
 
 /**
@@ -263,6 +265,7 @@ export interface TaskData {
   assignedTo?: string[]; // IDs des utilisateurs affectés (affectation multiple)
   notes?: string;
   folderPath?: string;
+  convertedFromSubtask?: { parentTaskId: string; parentTaskTitle: string };
 }
 
 /**

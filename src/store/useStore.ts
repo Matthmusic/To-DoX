@@ -4,9 +4,6 @@ import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
 import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention, TaskTemplate, SavedReport, AppNotification } from '../types';
 
-// Tracks task IDs moved to 'review' by LOCAL user action (not via file sync)
-export const localReviewQueue = new Set<string>();
-
 interface StoreState {
     // State
     tasks: Task[];
@@ -42,6 +39,7 @@ interface StoreState {
     addTask: (data: TaskData) => void;
     updateTask: (id: string, patch: Partial<Task>) => void;
     removeTask: (id: string) => void;
+    convertSubtaskBack: (taskId: string) => void;
     moveTask: (id: string, status: string) => void;
     archiveTask: (id: string) => void;
     unarchiveTask: (id: string) => void;
@@ -101,6 +99,10 @@ interface StoreState {
     validateTask: (taskId: string) => void;
     requestCorrections: (taskId: string, comment: string) => void;
     reopenTask: (taskId: string) => void;
+
+    // Ephemeral UI state — dialog d'assignation réviseur (action locale uniquement, non persisté)
+    pendingReviewDialogTaskId: string | null;
+    setPendingReviewDialogTaskId: (taskId: string | null) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -120,6 +122,7 @@ const useStore = create<StoreState>((set, get) => ({
     templates: [],
     savedReports: [],
     appNotifications: [],
+    pendingReviewDialogTaskId: null,
 
     notificationSettings: {
         enabled: true,
@@ -199,6 +202,7 @@ const useStore = create<StoreState>((set, get) => ({
             deletedAt: null,
             ganttDays: [],
             order: 0,
+            ...(data.convertedFromSubtask ? { convertedFromSubtask: data.convertedFromSubtask } : {}),
         };
 
         set((state) => ({ tasks: [newTask, ...state.tasks] }));
@@ -291,10 +295,28 @@ const useStore = create<StoreState>((set, get) => ({
         }));
     },
 
+    convertSubtaskBack: (taskId) => {
+        const task = get().tasks.find(t => t.id === taskId);
+        if (!task?.convertedFromSubtask) return;
+        const { parentTaskId } = task.convertedFromSubtask;
+        const parentExists = get().tasks.some(t => t.id === parentTaskId && !t.deletedAt && !t.archived);
+        if (parentExists) {
+            get().addSubtask(parentTaskId, task.title);
+        }
+        get().removeTask(taskId);
+    },
+
     moveTask: (id, status) => {
-        if (status === 'review') localReviewQueue.add(id);
+        if (status === 'review') {
+            const task = get().tasks.find(t => t.id === id);
+            if (task && !(task.reviewers?.length)) {
+                set({ pendingReviewDialogTaskId: id });
+            }
+        }
         get().updateTask(id, { status: status as Task['status'] });
     },
+
+    setPendingReviewDialogTaskId: (taskId) => set({ pendingReviewDialogTaskId: taskId }),
 
     archiveTask: (id) => get().updateTask(id, { archived: true, archivedAt: Date.now() }),
     unarchiveTask: (id) => get().updateTask(id, { archived: false, archivedAt: null }),
@@ -326,6 +348,7 @@ const useStore = create<StoreState>((set, get) => ({
             completed: false,
             createdAt: now,
             completedAt: null,
+            completedBy: null,
         };
         set(state => ({
             tasks: state.tasks.map(t => {
@@ -346,12 +369,13 @@ const useStore = create<StoreState>((set, get) => ({
         const task = get().tasks.find(t => t.id === taskId);
         const sub = task?.subtasks?.find(s => s.id === subtaskId);
         const newCompleted = sub ? !sub.completed : true;
+        const completedBy = newCompleted ? (get().currentUser || null) : null;
 
         // Optimiste
         set(state => ({
             tasks: state.tasks.map(t => {
                 if (t.id === taskId) {
-                    const sts = (t.subtasks || []).map(st => st.id === subtaskId ? { ...st, completed: newCompleted, completedAt: newCompleted ? Date.now() : null } : st);
+                    const sts = (t.subtasks || []).map(st => st.id === subtaskId ? { ...st, completed: newCompleted, completedAt: newCompleted ? Date.now() : null, completedBy } : st);
                     return { ...t, subtasks: sts, updatedAt: Date.now() };
                 }
                 return t;

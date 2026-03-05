@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.1.1",
+    "version": "2.1.2",
     "description": {
       "short": "Kanban intelligent avec interface mobile-first, workflow de revision et notifications.",
       "long": "To-DoX est une application Kanban moderne pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recurrence, des templates, un dashboard KPIs, une vue Timeline/Gantt, un workflow de revision complet, une vue Terminees, des notifications in-app, une interface responsive mobile-first (burger menu, onglets Kanban), ainsi que l'export et l'import des donnees. Les donnees sont stockees localement et peuvent etre synchronisees via OneDrive."
@@ -64,15 +64,28 @@
     },
     "license": "MIT",
     "compatibility": {
-      "os": ["windows"],
+      "os": [
+        "windows"
+      ],
       "minVersion": "Windows 10"
     }
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.1.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.2.exe"
   },
   "changelog": {
+    "2.1.2": {
+      "date": "2026-03-05",
+      "changes": [
+        "Tracking de la validation des sous-tâches : completedBy + date/heure dans le tooltip",
+        "Clic droit sur une sous-tâche pour la convertir en tâche (hérite projet, priorité, assignés)",
+        "Badge indigo sur la tâche issue d'une sous-tâche — clic droit pour reconvertir en sous-tâche",
+        "Auto-assignation du créateur lors de la création d'une tâche",
+        "Sélecteur de date en dropdown (plus de modale plein écran) dans QuickAdd et TaskEditPanel",
+        "Fix: clic sur le calendrier ne ferme plus le TaskEditPanel"
+      ]
+    },
     "2.1.1": {
       "date": "2026-02-27",
       "changes": [

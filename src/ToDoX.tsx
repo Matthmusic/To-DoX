@@ -3,7 +3,7 @@ import { todayISO } from "./utils";
 import { migrateTask } from "./utils/taskMigration";
 
 // Store and Types
-import useStore, { localReviewQueue } from "./store/useStore";
+import useStore from "./store/useStore";
 import type { StoredData, Task } from "./types";
 
 type StoredDataRaw = Omit<StoredData, 'tasks'> & { tasks?: unknown[] };
@@ -118,7 +118,7 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
 export default function ToDoX() {
     // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser, pendingMentions, clearPendingMentions, appNotifications, setReviewers } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser, pendingMentions, clearPendingMentions, appNotifications, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId } = useStore();
 
     const mentionCount = currentUser ? (pendingMentions[currentUser] || []).length : 0;
 
@@ -155,8 +155,6 @@ export default function ToDoX() {
     const [showThemesPanel, setShowThemesPanel] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
     const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard' | 'terminées'>('kanban');
-    const [pendingReviewTaskId, setPendingReviewTaskId] = useState<string | null>(null);
-
     const importFileRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<{ focus: () => void }>(null);
     const quickAddRef = useRef<{ focus: () => void }>(null);
@@ -165,29 +163,6 @@ export default function ToDoX() {
     useEffect(() => {
         localStorage.setItem('todox_collapsed_projects', JSON.stringify(collapsedProjects));
     }, [collapsedProjects]);
-
-    // Détecter les tâches en révision sans réviseur → ouvrir le sélecteur
-    // Uniquement pour les actions locales (localReviewQueue), pas pour les syncs distants
-    const prevTaskStatusRef = useRef<Record<string, string>>({});
-    useEffect(() => {
-        for (const task of tasks) {
-            const prevStatus = prevTaskStatusRef.current[task.id];
-            if (prevStatus !== undefined && prevStatus !== 'review' && task.status === 'review' && !(task.reviewers?.length)) {
-                if (localReviewQueue.has(task.id)) {
-                    localReviewQueue.delete(task.id);
-                    setPendingReviewTaskId(task.id);
-                    break;
-                }
-            }
-            prevTaskStatusRef.current[task.id] = task.status;
-        }
-        // Initialisation des statuts connus
-        for (const task of tasks) {
-            if (prevTaskStatusRef.current[task.id] === undefined) {
-                prevTaskStatusRef.current[task.id] = task.status;
-            }
-        }
-    }, [tasks]);
 
     // Desktop notifications pour les nouvelles AppNotifications
     const appNotifsInitializedRef = useRef(false);
@@ -511,15 +486,15 @@ export default function ToDoX() {
                 />
             )}
 
-            {/* Sélecteur de réviseurs — s'ouvre quand une tâche passe en révision sans réviseur */}
-            {pendingReviewTaskId && (
+            {/* Sélecteur de réviseurs — s'ouvre quand une tâche passe en révision sans réviseur (action locale uniquement) */}
+            {pendingReviewDialogTaskId && (
                 <ReviewerPickerDialog
-                    taskId={pendingReviewTaskId}
+                    taskId={pendingReviewDialogTaskId}
                     onConfirm={(reviewerIds) => {
-                        setReviewers(pendingReviewTaskId, reviewerIds);
-                        setPendingReviewTaskId(null);
+                        setReviewers(pendingReviewDialogTaskId, reviewerIds);
+                        setPendingReviewDialogTaskId(null);
                     }}
-                    onDismiss={() => setPendingReviewTaskId(null)}
+                    onDismiss={() => setPendingReviewDialogTaskId(null)}
                 />
             )}
             </ErrorBoundary>

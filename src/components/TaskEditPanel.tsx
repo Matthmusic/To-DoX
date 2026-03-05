@@ -3,10 +3,12 @@ import { createPortal } from "react-dom";
 import { STATUSES, PRIORITIES, type StatusDef, type PriorityDef } from "../constants";
 import { Autocomplete } from "./Autocomplete";
 import { ProjectAutocomplete } from "./ProjectAutocomplete";
+import { DatePickerDropdown } from "./DatePickerModal";
 import useStore from "../store/useStore";
 import type { Task, TaskData, RecurrenceType } from "../types";
 import { confirmModal } from "../utils/confirm";
-import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw } from "lucide-react";
+import { formatDateFull } from "../utils";
+import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw, Calendar } from "lucide-react";
 
 interface TaskEditPanelProps {
     task: Task;
@@ -35,6 +37,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
     const [localTitle, setLocalTitle] = useState(task.title);
     const [localProject, setLocalProject] = useState(task.project);
     const [localNotes, setLocalNotes] = useState(task.notes || "");
+    const [showDateDropdown, setShowDateDropdown] = useState(false);
 
     // Synchroniser les états locaux quand la tâche change (pour les champs texte)
     useEffect(() => {
@@ -143,12 +146,22 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
                 />
 
                 <label className="mt-2 text-xs text-slate-400">Échéance</label>
-                <input
-                    type="date"
-                    value={task.due || ""}
-                    onChange={(e) => onUpdate(task.id, { due: e.target.value })}
-                    className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-                />
+                <div className="relative">
+                    <button
+                        type="button"
+                        onClick={() => setShowDateDropdown(v => !v)}
+                        className="flex w-full items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-slate-100 transition hover:bg-white/10"
+                    >
+                        <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
+                        <span>{task.due ? formatDateFull(task.due) : 'Aucune date'}</span>
+                    </button>
+                    <DatePickerDropdown
+                        isOpen={showDateDropdown}
+                        value={task.due || new Date().toISOString().split('T')[0]}
+                        onSelect={(iso) => { onUpdate(task.id, { due: iso }); }}
+                        onClose={() => setShowDateDropdown(false)}
+                    />
+                </div>
 
                 <label className="mt-2 text-xs text-slate-400">Priorité</label>
                 <Autocomplete<PriorityDef, 'low' | 'med' | 'high'>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { GripVertical, Trash2, CheckSquare, Plus, ExternalLink } from "lucide-react";
+import { createPortal } from "react-dom";
+import { GripVertical, Trash2, CheckSquare, Plus, ExternalLink, ArrowUpFromLine } from "lucide-react";
 import useStore from "../store/useStore";
 import type { Task, Subtask } from "../types";
 
@@ -47,19 +48,56 @@ export function parseFilePaths(text: string): Array<{ type: 'text' | 'path', con
     return parts.length > 0 ? parts : [{ type: 'text', content: text }];
 }
 
+interface ContextMenuProps {
+    x: number;
+    y: number;
+    onConvert: () => void;
+    onClose: () => void;
+}
+
+function SubtaskContextMenu({ x, y, onConvert, onClose }: ContextMenuProps) {
+    useEffect(() => {
+        const handleClick = () => onClose();
+        window.addEventListener('mousedown', handleClick);
+        return () => window.removeEventListener('mousedown', handleClick);
+    }, [onClose]);
+
+    // Ajuster pour ne pas sortir de l'écran
+    const adjustedX = Math.min(x, window.innerWidth - 180);
+    const adjustedY = Math.min(y, window.innerHeight - 60);
+
+    return createPortal(
+        <div
+            style={{ top: adjustedY, left: adjustedX }}
+            className="fixed z-[99999] min-w-[160px] rounded-lg border border-white/10 bg-slate-800 py-1 shadow-xl"
+            onMouseDown={(e) => e.stopPropagation()}
+        >
+            <button
+                onClick={() => { onConvert(); onClose(); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+            >
+                <ArrowUpFromLine className="h-4 w-4 text-blue-400" />
+                Convertir en tâche
+            </button>
+        </div>,
+        document.body
+    );
+}
+
 interface SubtaskItemProps {
     subtask: Subtask;
-    taskId: string;
+    task: Task;
     isDragging: boolean;
 }
 
 /**
  * Item individuel d'une sous-tâche
  */
-export function SubtaskItem({ subtask, taskId, isDragging }: SubtaskItemProps) {
-    const { toggleSubtask, deleteSubtask, updateSubtaskTitle } = useStore();
+export function SubtaskItem({ subtask, task, isDragging }: SubtaskItemProps) {
+    const { toggleSubtask, deleteSubtask, updateSubtaskTitle, addTask, users } = useStore();
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(subtask.title);
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -71,7 +109,7 @@ export function SubtaskItem({ subtask, taskId, isDragging }: SubtaskItemProps) {
 
     const handleSave = () => {
         if (editTitle.trim() && editTitle !== subtask.title) {
-            updateSubtaskTitle(taskId, subtask.id, editTitle);
+            updateSubtaskTitle(task.id, subtask.id, editTitle);
         }
         setIsEditing(false);
     };
@@ -85,67 +123,110 @@ export function SubtaskItem({ subtask, taskId, isDragging }: SubtaskItemProps) {
         }
     };
 
+    const handleContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleConvertToTask = () => {
+        addTask({
+            title: subtask.title,
+            project: task.project,
+            priority: task.priority,
+            assignedTo: task.assignedTo,
+            status: 'todo',
+            convertedFromSubtask: { parentTaskId: task.id, parentTaskTitle: task.title },
+        });
+        deleteSubtask(task.id, subtask.id);
+    };
+
     return (
-        <div
-            className={`flex items-center gap-2 rounded-lg bg-white/5 p-2 transition ${isDragging ? "opacity-50" : ""
-                }`}
-        >
-            <GripVertical className="h-4 w-4 cursor-grab text-slate-400" />
-            <input
-                type="checkbox"
-                checked={subtask.completed}
-                onChange={() => toggleSubtask(taskId, subtask.id)}
-                className="h-4 w-4 rounded accent-emerald-400"
-            />
-            {isEditing ? (
-                <input
-                    ref={inputRef}
-                    type="text"
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    onBlur={handleSave}
-                    onKeyDown={handleKeyDown}
-                    className="flex-1 rounded bg-white/10 px-2 py-1 text-sm text-slate-100 outline-none focus:bg-white/20"
-                />
-            ) : (
-                <span
-                    onDoubleClick={() => setIsEditing(true)}
-                    className={`flex-1 text-sm ${subtask.completed ? "text-slate-400 line-through" : "text-slate-200"
-                        } cursor-text`}
-                    title="Double-cliquer pour éditer"
-                >
-                    {parseFilePaths(subtask.title).map((part, idx) =>
-                        part.type === 'path' ? (
-                            <button
-                                key={idx}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (window.electronAPI?.openFolder) {
-                                        window.electronAPI.openFolder(part.content);
-                                    } else {
-                                        alert(`Chemin détecté: ${part.content}\n(Disponible uniquement en mode Electron)`);
-                                    }
-                                }}
-                                className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
-                                title={`Ouvrir: ${part.content}`}
-                            >
-                                <ExternalLink className="h-3 w-3" />
-                                {part.content}
-                            </button>
-                        ) : (
-                            <span key={idx}>{part.content}</span>
-                        )
-                    )}
-                </span>
-            )}
-            <button
-                onClick={() => deleteSubtask(taskId, subtask.id)}
-                className="rounded p-1 text-slate-400 transition hover:bg-red-500/20 hover:text-red-400"
-                title="Supprimer"
+        <>
+            <div
+                onContextMenu={handleContextMenu}
+                className={`flex items-center gap-2 rounded-lg bg-white/5 p-2 transition ${isDragging ? "opacity-50" : ""}`}
             >
-                <Trash2 className="h-3 w-3" />
-            </button>
-        </div>
+                <GripVertical className="h-4 w-4 cursor-grab text-slate-400" />
+                <input
+                    type="checkbox"
+                    checked={subtask.completed}
+                    onChange={() => toggleSubtask(task.id, subtask.id)}
+                    className="h-4 w-4 rounded accent-emerald-400"
+                />
+                {isEditing ? (
+                    <input
+                        ref={inputRef}
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onBlur={handleSave}
+                        onKeyDown={handleKeyDown}
+                        className="flex-1 rounded bg-white/10 px-2 py-1 text-sm text-slate-100 outline-none focus:bg-white/20"
+                    />
+                ) : (
+                    <span
+                        onDoubleClick={() => setIsEditing(true)}
+                        className={`flex-1 text-sm ${subtask.completed ? "text-slate-400 line-through" : "text-slate-200"} cursor-text`}
+                        title="Double-cliquer pour éditer"
+                    >
+                        {parseFilePaths(subtask.title).map((part, idx) =>
+                            part.type === 'path' ? (
+                                <button
+                                    key={idx}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (window.electronAPI?.openFolder) {
+                                            window.electronAPI.openFolder(part.content);
+                                        } else {
+                                            alert(`Chemin détecté: ${part.content}\n(Disponible uniquement en mode Electron)`);
+                                        }
+                                    }}
+                                    className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
+                                    title={`Ouvrir: ${part.content}`}
+                                >
+                                    <ExternalLink className="h-3 w-3" />
+                                    {part.content}
+                                </button>
+                            ) : (
+                                <span key={idx}>{part.content}</span>
+                            )
+                        )}
+                    </span>
+                )}
+                {subtask.completed && subtask.completedBy && (() => {
+                    const completer = users.find(u => u.id === subtask.completedBy);
+                    if (!completer) return null;
+                    const initials = completer.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+                    const dateStr = subtask.completedAt
+                        ? new Date(subtask.completedAt).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : '';
+                    return (
+                        <span
+                            className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400"
+                            title={`Validé par ${completer.name}${dateStr ? ` — ${dateStr}` : ''}`}
+                        >
+                            {initials}
+                        </span>
+                    );
+                })()}
+                <button
+                    onClick={() => deleteSubtask(task.id, subtask.id)}
+                    className="rounded p-1 text-slate-400 transition hover:bg-red-500/20 hover:text-red-400"
+                    title="Supprimer"
+                >
+                    <Trash2 className="h-3 w-3" />
+                </button>
+            </div>
+            {contextMenu && (
+                <SubtaskContextMenu
+                    x={contextMenu.x}
+                    y={contextMenu.y}
+                    onConvert={handleConvertToTask}
+                    onClose={() => setContextMenu(null)}
+                />
+            )}
+        </>
     );
 }
 
@@ -210,7 +291,7 @@ export function SubtaskList({ task }: SubtaskListProps) {
                     >
                         <SubtaskItem
                             subtask={subtask}
-                            taskId={task.id}
+                            task={task}
                             isDragging={draggedIndex === index}
                         />
                     </div>

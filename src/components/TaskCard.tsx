@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { DropIndicator } from "../hooks/useDragAndDrop";
 import { motion } from "framer-motion";
 import {
-    ClipboardList, AlertTriangle, Paperclip, MoreHorizontal,
+    ClipboardList, AlertTriangle, Paperclip, FileText, MoreHorizontal,
     FolderOpen, ChevronDown, ChevronRight, Star, User, ExternalLink, Edit3, MessageCircle,
-    CheckCircle2, RotateCcw
+    CheckCircle2, RotateCcw, ArrowDownToLine
 } from "lucide-react";
+import { createPortal } from "react-dom";
 import { businessDayDelta, getProjectColor, getInitials } from "../utils";
 import { SubtaskList, parseFilePaths } from "./SubtaskList";
 import { TaskComments } from "./TaskComments";
@@ -39,9 +40,10 @@ export function TaskCard({
     onDragLeaveTask,
     dropIndicator,
 }: TaskCardProps) {
-    const { directories, users, projectColors, updateTask, comments, currentUser, validateTask, requestCorrections } = useStore();
+    const { directories, users, projectColors, updateTask, comments, currentUser, validateTask, requestCorrections, convertSubtaskBack } = useStore();
     const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
     const [showUserPopover, setShowUserPopover] = useState(false);
+    const [subtaskOriginMenu, setSubtaskOriginMenu] = useState<{ x: number; y: number } | null>(null);
     const [isEditingNotes, setIsEditingNotes] = useState(false);
     const [showCorrectionInput, setShowCorrectionInput] = useState(false);
     const [correctionText, setCorrectionText] = useState("");
@@ -215,6 +217,50 @@ export function TaskCard({
 
             {/* Card content - relative z-10 to appear above gradient */}
             <div className="relative z-10 flex flex-col gap-3">
+
+            {/* Badge : tâche issue d'une sous-tâche */}
+            {task.convertedFromSubtask && (
+                <>
+                <button
+                    onClick={(e) => e.stopPropagation()}
+                    onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSubtaskOriginMenu({ x: e.clientX, y: e.clientY });
+                    }}
+                    className="flex items-center gap-1.5 self-start rounded-full border border-indigo-400/30 bg-indigo-400/10 px-2 py-0.5 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-400/20 transition cursor-context-menu"
+                    title={`Issu de la sous-tâche de : ${task.convertedFromSubtask.parentTaskTitle}\nClic droit pour reconvertir en sous-tâche`}
+                >
+                    <ArrowDownToLine className="h-3 w-3" />
+                    Sous-tâche de : {task.convertedFromSubtask.parentTaskTitle}
+                </button>
+                {subtaskOriginMenu && createPortal(
+                    <div
+                        style={{ top: Math.min(subtaskOriginMenu.y, window.innerHeight - 60), left: Math.min(subtaskOriginMenu.x, window.innerWidth - 200) }}
+                        className="fixed z-[99999] min-w-[190px] rounded-lg border border-white/10 bg-slate-800 py-1 shadow-xl"
+                        onMouseDown={(e) => e.stopPropagation()}
+                    >
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                convertSubtaskBack(task.id);
+                                setSubtaskOriginMenu(null);
+                            }}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                        >
+                            <ArrowDownToLine className="h-4 w-4 text-indigo-400" />
+                            Reconvertir en sous-tâche
+                        </button>
+                    </div>,
+                    document.body
+                )}
+                {subtaskOriginMenu && createPortal(
+                    <div className="fixed inset-0 z-[99998]" onMouseDown={() => setSubtaskOriginMenu(null)} />,
+                    document.body
+                )}
+                </>
+            )}
+
             {/* Header: Title + Actions */}
             <div className="flex items-start justify-between gap-2">
                 <h4 className="text-base font-bold text-white leading-snug line-clamp-2 uppercase">
@@ -361,7 +407,13 @@ export function TaskCard({
             {/* Footer: Subtasks & Interactions */}
             <div>
                 {(totalSubtasks > 0 || task.notes) && (
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex flex-col gap-1.5 mb-2">
+                        {task.notes && (
+                            <span className="flex items-center justify-center gap-1.5 w-full rounded py-0.5 bg-amber-400/15 text-amber-400" title="Cette tâche contient une note">
+                                <FileText className="h-3 w-3" />
+                                <span className="text-[10px] font-semibold leading-none">note</span>
+                            </span>
+                        )}
                         {totalSubtasks > 0 && (
                             <button
                                 onClick={(e) => {
@@ -376,9 +428,6 @@ export function TaskCard({
                                 </div>
                                 {isSubtasksExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
                             </button>
-                        )}
-                        {task.notes && (
-                            <Paperclip className="h-3.5 w-3.5 text-slate-400" />
                         )}
                     </div>
                 )}

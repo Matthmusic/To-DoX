@@ -5,7 +5,7 @@ import { PROJECT_COLORS } from "../constants";
 import { addDaysISO, formatDateFull } from "../utils";
 import { alertModal } from "../utils/confirm";
 import { Autocomplete } from "./Autocomplete";
-import { DatePickerModal } from "./DatePickerModal";
+import { DatePickerDropdown } from "./DatePickerModal";
 import { ProjectAutocomplete } from "./ProjectAutocomplete";
 import { useClickOutside } from "../hooks/useClickOutside";
 import { useTheme } from "../hooks/useTheme";
@@ -88,7 +88,7 @@ function ProjectExistsModal({ existingProject, onUseExisting, onCreateNew, onCan
  * Expose une méthode focus() via ref pour permettre le focus programmatique depuis les raccourcis clavier
  */
 export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) => {
-    const { addTask, projectHistory, users, directories, projectColors, setDirectories, setProjectColor, templates, createTaskFromTemplate, deleteTemplate } = useStore();
+    const { addTask, projectHistory, users, directories, projectColors, setDirectories, setProjectColor, templates, createTaskFromTemplate, deleteTemplate, currentUser } = useStore();
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
     const secondaryColor = activeTheme.palette.secondary;
@@ -98,7 +98,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
     const [pendingFolderPath, setPendingFolderPath] = useState<string | null>(null);
     const [dueDate, setDueDate] = useState(addDaysISO(3));
     const [taskPriority] = useState<"low" | "med" | "high">("med");
-    const [assignedUserId, setAssignedUserId] = useState("unassigned");
+    const [assignedUserId, setAssignedUserId] = useState(() => currentUser || "unassigned");
     const [showExistsModal, setShowExistsModal] = useState(false);
     const [pendingProjectName, setPendingProjectName] = useState("");
     const [selectedColorIndex, setSelectedColorIndex] = useState<number | null>(null);
@@ -150,6 +150,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
     useClickOutside([colorPickerRef, colorButtonRef], () => setShowColorPicker(false), showColorPicker);
     useClickOutside([projectPickerRef, projectButtonRef], () => setShowProjectPicker(false), showProjectPicker);
     useClickOutside([userPickerRef, userButtonRef], () => setShowUserPicker(false), showUserPicker);
+    useClickOutside([datePickerButtonRef], () => setShowDatePicker(false), showDatePicker);
 
     function onAdd(data: TaskData) {
         addTask(data);
@@ -181,7 +182,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
         setTaskTitle("");
         setPendingFolderPath(null);
         setProjectName("");
-        setAssignedUserId("unassigned");
+        setAssignedUserId(currentUser || "unassigned");
     }
 
     function handleTitleChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -471,16 +472,25 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
                         )}
 
                         {/* Date Picker */}
-                        <button
-                            ref={datePickerButtonRef}
-                            type="button"
-                            onClick={() => setShowDatePicker(true)}
-                            className="hidden md:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-theme-secondary transition-all hover:bg-white/10 hover:text-white whitespace-nowrap"
-                            title="Définir une échéance"
-                        >
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span className="hidden lg:inline">{formatDateFull(dueDate)}</span>
-                        </button>
+                        <div className="relative hidden md:block">
+                            <button
+                                ref={datePickerButtonRef}
+                                type="button"
+                                onClick={() => setShowDatePicker(v => !v)}
+                                className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-theme-secondary transition-all hover:bg-white/10 hover:text-white whitespace-nowrap"
+                                title="Définir une échéance"
+                            >
+                                <Calendar className="h-3.5 w-3.5" />
+                                <span className="hidden lg:inline">{formatDateFull(dueDate)}</span>
+                            </button>
+                            <DatePickerDropdown
+                                isOpen={showDatePicker}
+                                value={dueDate}
+                                onSelect={(iso) => setDueDate(iso)}
+                                onClose={() => setShowDatePicker(false)}
+                                align="right"
+                            />
+                        </div>
 
                         {/* Submit Button */}
                         <button
@@ -515,12 +525,6 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
                     onCancel={handleCancelModal}
                 />
             )}
-            <DatePickerModal
-                isOpen={showDatePicker}
-                value={dueDate}
-                onSelect={(iso) => setDueDate(iso)}
-                onClose={() => setShowDatePicker(false)}
-            />
         </>
     );
 });

@@ -84,6 +84,7 @@ const normalizeSubtasks = (value: unknown): Subtask[] => {
       completed: toBoolean(item.completed, false),
       createdAt: toNumber(item.createdAt, Date.now()),
       completedAt: typeof item.completedAt === 'number' ? item.completedAt : null,
+      completedBy: typeof item.completedBy === 'string' ? item.completedBy : null,
     });
   }
 
