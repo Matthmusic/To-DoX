@@ -70,6 +70,21 @@ export interface StoredData {
   templates?: TaskTemplate[];
   savedReports?: SavedReport[];
   appNotifications?: AppNotification[];
+  timeEntries?: TimeEntry[];
+}
+
+/**
+ * Saisie d'heures sur un projet pour un jour donné (feuille de pointage)
+ */
+export interface TimeEntry {
+  id: string;
+  project: string;    // Nom du projet (UPPERCASE)
+  date: string;       // ISO YYYY-MM-DD
+  hours: number;      // Heures pointées (décimal, ex: 1.5 = 1h30)
+  userId: string;     // Identifiant de l'utilisateur
+  note?: string;      // Commentaire optionnel
+  createdAt: number;  // Timestamp de création
+  updatedAt: number;  // Timestamp de dernière modif
 }
 
 export interface ElectronAPI {
@@ -80,6 +95,7 @@ export interface ElectronAPI {
   getFileHash: (path: string) => Promise<{ success: boolean; hash: string | null; error?: string }>;
   chooseStorageFolder: () => Promise<{ success: boolean; path?: string }>;
   openFolder: (path: string) => Promise<void>;
+  getPathForFile: (file: File) => string;
   openExternalUrl: (url: string) => Promise<void>;
   printHtml: (html: string) => Promise<void>;
   checkForUpdates: () => Promise<UpdateInfo>;

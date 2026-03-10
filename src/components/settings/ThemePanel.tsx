@@ -1,7 +1,6 @@
 import { createPortal } from 'react-dom';
-import { X, Palette, Sparkles } from 'lucide-react';
+import { X, Palette } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
-import { useState } from 'react';
 import type { Theme } from '../../types';
 
 interface ThemePanelProps {
@@ -10,39 +9,15 @@ interface ThemePanelProps {
 
 export function ThemePanel({ onClose }: ThemePanelProps) {
   const {
-    // mode,
     activeTheme,
-    // effectiveMode,
     presetThemes,
     customThemes,
-    customAccentColor,
-    // setMode,
     setActiveTheme,
-    setCustomAccent,
   } = useTheme();
-
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [tempColor, setTempColor] = useState(customAccentColor || '#06b6d4');
-
-  // const modes: { id: ThemeMode; label: string; icon: typeof Sun; description: string }[] = [
-  //   // { id: 'light', label: 'Clair', icon: Sun, description: 'Mode clair permanent' }, // Désactivé
-  //   { id: 'dark', label: 'Sombre', icon: Moon, description: 'Mode sombre permanent' },
-  //   { id: 'auto', label: 'Auto', icon: Monitor, description: 'Suit le thème système' },
-  // ];
 
   const allThemes = [...presetThemes, ...customThemes];
   const darkThemes = allThemes.filter(t => t.mode === 'dark');
   const lightThemes = allThemes.filter(t => t.mode === 'light');
-
-  const handleApplyCustomColor = () => {
-    setCustomAccent(tempColor);
-    setShowColorPicker(false);
-  };
-
-  const handleResetCustomColor = () => {
-    setCustomAccent(undefined);
-    setShowColorPicker(false);
-  };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
@@ -108,75 +83,6 @@ export function ThemePanel({ onClose }: ThemePanelProps) {
             </section>
           )}
 
-          {/* Section Couleur d'Accent Personnalisée */}
-          <section>
-            <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-theme-secondary" />
-              Couleur d'accent personnalisée
-            </h3>
-            <div className="p-4 rounded-xl bg-white/5 border border-theme-primary space-y-3">
-              <p className="text-sm text-theme-secondary">
-                Personnalisez la couleur principale du thème actif
-              </p>
-
-              {showColorPicker ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="color"
-                      value={tempColor}
-                      onChange={(e) => setTempColor(e.target.value)}
-                      className="w-16 h-16 rounded-lg border-2 border-theme-primary cursor-pointer"
-                    />
-                    <input
-                      type="text"
-                      value={tempColor}
-                      onChange={(e) => setTempColor(e.target.value)}
-                      className="flex-1 px-3 py-2 rounded-lg bg-theme-tertiary border border-theme-primary text-theme-primary"
-                      placeholder="#06b6d4"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleApplyCustomColor}
-                      className="flex-1 px-4 py-2 rounded-lg bg-theme-primary text-white font-semibold hover:opacity-80"
-                    >
-                      Appliquer
-                    </button>
-                    <button
-                      onClick={handleResetCustomColor}
-                      className="px-4 py-2 rounded-lg bg-white/10 text-theme-secondary hover:bg-white/20"
-                    >
-                      Réinitialiser
-                    </button>
-                    <button
-                      onClick={() => setShowColorPicker(false)}
-                      className="px-4 py-2 rounded-lg bg-white/10 text-theme-secondary hover:bg-white/20"
-                    >
-                      Annuler
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowColorPicker(true)}
-                  className="w-full px-4 py-3 rounded-lg bg-gradient-to-r from-theme-primary to-theme-secondary text-white font-bold hover:opacity-80"
-                >
-                  {customAccentColor ? '🎨 Modifier la couleur' : '✨ Choisir une couleur'}
-                </button>
-              )}
-
-              {customAccentColor && !showColorPicker && (
-                <div className="flex items-center gap-2 text-sm">
-                  <div
-                    className="w-6 h-6 rounded border border-theme-primary"
-                    style={{ backgroundColor: customAccentColor }}
-                  />
-                  <span className="text-theme-secondary">Couleur active: {customAccentColor}</span>
-                </div>
-              )}
-            </div>
-          </section>
         </div>
       </div>
     </div>,

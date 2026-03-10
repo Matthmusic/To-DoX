@@ -20,7 +20,6 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
   const { activeTheme } = useTheme();
   const primaryColor = activeTheme.palette.primary;
   const secondaryColor = activeTheme.palette.secondary;
-  const [testSent, setTestSent] = useState(false);
   const [playingSound, setPlayingSound] = useState<string | null>(null);
 
   const handleToggle = (key: keyof typeof notificationSettings) => {
@@ -52,36 +51,6 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
     }
   };
 
-  const handleTestNotification = async () => {
-    if (!window.electronAPI) {
-      alert('Les notifications ne sont disponibles qu\'en mode desktop (Electron)');
-      return;
-    }
-
-    try {
-      // Envoyer la notification
-      await window.electronAPI.sendNotification(
-        '🔔 Test de notification',
-        'Si vous voyez ceci, les notifications fonctionnent correctement !',
-        'test-notification'
-      );
-
-      // 🔊 Jouer le son sélectionné si activé
-      if (notificationSettings.sound && notificationSettings.soundFile) {
-        try {
-          await playSoundFile(notificationSettings.soundFile);
-        } catch (audioError) {
-          console.warn('⚠️ Impossible de jouer le son:', audioError);
-        }
-      }
-
-      setTestSent(true);
-      setTimeout(() => setTestSent(false), 3000);
-    } catch (error) {
-      console.error('Erreur test notification:', error);
-      alert('Erreur lors de l\'envoi de la notification de test');
-    }
-  };
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
@@ -351,24 +320,6 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
             </div>
           )}
 
-          {/* Test notification */}
-          <div className="pt-4 border-t border-theme-primary">
-            <button
-              onClick={handleTestNotification}
-              disabled={!notificationSettings.enabled || !window.electronAPI}
-              className="w-full px-6 py-3 rounded-lg text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              style={{
-                backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
-              }}
-            >
-              {testSent ? '✅ Notification envoyée !' : '🧪 Envoyer une notification de test'}
-            </button>
-            {!window.electronAPI && (
-              <p className="mt-2 text-xs text-amber-400 text-center">
-                ⚠️ Les notifications ne sont disponibles qu'en mode desktop (Electron)
-              </p>
-            )}
-          </div>
         </div>
       </div>
     </div>,

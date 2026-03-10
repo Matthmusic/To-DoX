@@ -8,19 +8,26 @@ import useStore from "../store/useStore";
 import type { Task, TaskData, RecurrenceType } from "../types";
 import { confirmModal } from "../utils/confirm";
 import { formatDateFull } from "../utils";
-import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw, Calendar } from "lucide-react";
+import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw, Calendar, ExternalLink } from "lucide-react";
+import { parseFilePaths, getDroppedFilePath, formatPathForInsertion } from "./SubtaskList";
 
 interface TaskEditPanelProps {
     task: Task;
     position: { x: number; y: number };
     onClose: () => void;
+    centered?: boolean;
 }
 
 /**
  * Panneau d'édition pour clic droit sur une tâche
  */
-export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEditPanelProps) {
-    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate, setReviewers } = useStore();
+export function TaskEditPanel({ task: initialTask, position, onClose, centered = false }: TaskEditPanelProps) {
+    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate, setReviewers, currentUser } = useStore();
+    const sortedUsers = [...users].sort((a, b) => {
+        if (a.id === currentUser) return -1;
+        if (b.id === currentUser) return 1;
+        return 0;
+    });
 
     // Récupérer la tâche à jour depuis le store pour refléter les changements en temps réel
     const task = tasks.find(t => t.id === initialTask.id) || initialTask;
@@ -37,6 +44,9 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
     const [localTitle, setLocalTitle] = useState(task.title);
     const [localProject, setLocalProject] = useState(task.project);
     const [localNotes, setLocalNotes] = useState(task.notes || "");
+    const [notesEditing, setNotesEditing] = useState(false);
+    const [notesDropTarget, setNotesDropTarget] = useState(false);
+    const notesRef = useRef<HTMLTextAreaElement>(null);
     const [showDateDropdown, setShowDateDropdown] = useState(false);
 
     // Synchroniser les états locaux quand la tâche change (pour les champs texte)
@@ -44,6 +54,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
         setLocalTitle(task.title);
         setLocalProject(task.project);
         setLocalNotes(task.notes || "");
+        setNotesEditing(false);
     }, [task.id, task.title, task.project, task.notes]); // Sync sur les changements de la tâche
 
     // Fonction pour sauvegarder les modifications en attente
@@ -97,15 +108,24 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
         setAdjustedPosition({ top, left });
     }, [position.x, position.y]);
 
-    return createPortal(
+    const panel = (
         <div
             ref={menuRef}
             className="fixed z-[99999] w-[calc(100vw-1rem)] sm:w-[32rem] max-h-[85vh] sm:max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/20 bg-white/5 p-3 text-slate-100 shadow-2xl backdrop-blur-xl"
-            style={{
-                top: adjustedPosition.top,
-                left: adjustedPosition.left,
-                animation: 'contextMenuSlideIn 0.15s ease-out'
-            }}
+            style={
+                centered
+                    ? {
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        animation: 'contextMenuSlideIn 0.15s ease-out',
+                    }
+                    : {
+                        top: adjustedPosition.top,
+                        left: adjustedPosition.left,
+                        animation: 'contextMenuSlideIn 0.15s ease-out',
+                    }
+            }
         >
             <div className="grid gap-2">
                 <label className="text-xs text-slate-400">Statut</label>
@@ -187,7 +207,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
 
                 <label className="mt-2 text-xs text-slate-400">Assigné à (sélection multiple)</label>
                 <div className="w-full rounded-2xl border border-white/15 bg-white/5 p-2 space-y-1 max-h-32 overflow-y-auto">
-                    {users.map(user => (
+                    {sortedUsers.map(user => (
                         <label key={user.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 cursor-pointer transition">
                             <input
                                 type="checkbox"
@@ -207,7 +227,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
 
                 <label className="mt-2 text-xs text-violet-400">Réviseurs</label>
                 <div className="w-full rounded-2xl border border-violet-400/20 bg-violet-400/5 p-2 space-y-1 max-h-32 overflow-y-auto">
-                    {users.map(user => (
+                    {sortedUsers.map(user => (
                         <label key={user.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 cursor-pointer transition">
                             <input
                                 type="checkbox"
@@ -258,13 +278,80 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
                 )}
 
                 <label className="mt-2 text-xs text-slate-400">Notes</label>
-                <textarea
-                    value={localNotes}
-                    onChange={(e) => setLocalNotes(e.target.value)}
-                    onBlur={() => localNotes !== (task.notes || "") && onUpdate(task.id, { notes: localNotes })}
-                    className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-                    rows={3}
-                />
+                {notesEditing ? (
+                    <textarea
+                        ref={notesRef}
+                        value={localNotes}
+                        onChange={(e) => setLocalNotes(e.target.value)}
+                        onBlur={() => {
+                            if (localNotes !== (task.notes || "")) onUpdate(task.id, { notes: localNotes });
+                            setNotesEditing(false);
+                        }}
+                        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }}
+                        onDrop={(e) => {
+                            if (e.dataTransfer.files.length === 0) return;
+                            e.preventDefault();
+                            const file = e.dataTransfer.files[0];
+                            const path = getDroppedFilePath(file);
+                            if (!path) return;
+                            const formattedPath = formatPathForInsertion(path);
+                            const ta = e.currentTarget;
+                            const start = ta.selectionStart ?? localNotes.length;
+                            const end = ta.selectionEnd ?? localNotes.length;
+                            const newNotes = localNotes.slice(0, start) + (localNotes.slice(0, start).length > 0 ? '\n' : '') + formattedPath + localNotes.slice(end);
+                            setLocalNotes(newNotes);
+                            onUpdate(task.id, { notes: newNotes });
+                        }}
+                        className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                        rows={3}
+                        autoFocus
+                    />
+                ) : (
+                    <div
+                        onClick={() => { setNotesEditing(true); setTimeout(() => notesRef.current?.focus(), 10); }}
+                        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setNotesDropTarget(true); } }}
+                        onDragLeave={() => setNotesDropTarget(false)}
+                        onDrop={(e) => {
+                            if (e.dataTransfer.files.length === 0) return;
+                            e.preventDefault();
+                            setNotesDropTarget(false);
+                            const file = e.dataTransfer.files[0];
+                            const path = getDroppedFilePath(file);
+                            if (!path) return;
+                            const formattedPath = formatPathForInsertion(path);
+                            const newNotes = localNotes ? `${localNotes}\n${formattedPath}` : formattedPath;
+                            setLocalNotes(newNotes);
+                            onUpdate(task.id, { notes: newNotes });
+                        }}
+                        className={`min-h-[60px] cursor-text rounded-2xl border px-2 py-1 text-sm transition ${notesDropTarget ? 'border-blue-400/60 bg-blue-400/10' : 'border-white/15 bg-white/5'}`}
+                        title="Cliquer pour éditer · Déposer un fichier pour insérer son chemin"
+                    >
+                        {localNotes ? (
+                            <span className="whitespace-pre-wrap leading-relaxed">
+                                {parseFilePaths(localNotes).map((part, idx) =>
+                                    part.type === 'path' ? (
+                                        <button
+                                            key={idx}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (window.electronAPI?.openFolder) window.electronAPI.openFolder(part.content);
+                                            }}
+                                            className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
+                                            title={`Ouvrir: ${part.content}`}
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            {part.content}
+                                        </button>
+                                    ) : (
+                                        <span key={idx} className="text-slate-300">{part.content}</span>
+                                    )
+                                )}
+                            </span>
+                        ) : (
+                            <span className="text-slate-500 italic">Notes... (déposer un fichier pour l'insérer)</span>
+                        )}
+                    </div>
+                )}
 
                 {/* Récurrence */}
                 <label className="mt-2 text-xs text-slate-400 flex items-center gap-1">
@@ -333,7 +420,19 @@ export function TaskEditPanel({ task: initialTask, position, onClose }: TaskEdit
                 </button>
 
             </div>
-        </div>,
+        </div>
+    );
+
+    return createPortal(
+        centered ? (
+            <div
+                className="fixed inset-0 z-[99998] flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }}
+                onMouseDown={(e) => { if (e.target === e.currentTarget) { onClose(); } }}
+            >
+                {panel}
+            </div>
+        ) : panel,
         document.body
     );
 }

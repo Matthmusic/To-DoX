@@ -16,7 +16,15 @@ export function LoginModal() {
   const primary   = activeTheme.palette.primary;
   const secondary = activeTheme.palette.secondary;
 
-  const realUsers = users.filter(u => u.id !== "unassigned");
+  const lastUsedId = localStorage.getItem('last_login_user_id');
+
+  const realUsers = (() => {
+    const filtered = users.filter(u => u.id !== "unassigned");
+    if (!lastUsedId) return filtered;
+    const last = filtered.find(u => u.id === lastUsedId);
+    if (!last) return filtered;
+    return [last, ...filtered.filter(u => u.id !== lastUsedId)];
+  })();
 
   return (
     <GlassModal
@@ -63,24 +71,25 @@ export function LoginModal() {
               {realUsers.map((user, i) => {
                 const avatarColor = i % 2 === 0 ? primary : secondary;
                 const initials = getUserInitials(user.name);
+                const isLastUsed = user.id === lastUsedId;
                 return (
                   <motion.button
                     key={user.id}
-                    onClick={() => setCurrentUser(user.id)}
+                    onClick={() => { localStorage.setItem('last_login_user_id', user.id); setCurrentUser(user.id); }}
                     whileHover={{ scale: 1.02, x: 3 }}
                     whileTap={{ scale: 0.97 }}
                     className="w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-colors group"
                     style={{
-                      borderColor: 'var(--border-primary)',
-                      backgroundColor: 'rgba(255,255,255,0.04)',
+                      borderColor: isLastUsed ? `${primary}55` : 'var(--border-primary)',
+                      backgroundColor: isLastUsed ? `${primary}10` : 'rgba(255,255,255,0.04)',
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.borderColor = `${primary}55`;
                       e.currentTarget.style.backgroundColor = `${primary}12`;
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = 'var(--border-primary)';
-                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)';
+                      e.currentTarget.style.borderColor = isLastUsed ? `${primary}55` : 'var(--border-primary)';
+                      e.currentTarget.style.backgroundColor = isLastUsed ? `${primary}10` : 'rgba(255,255,255,0.04)';
                     }}
                   >
                     {/* Avatar */}
@@ -93,7 +102,17 @@ export function LoginModal() {
 
                     {/* Infos */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-theme-primary font-semibold text-sm">{user.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-theme-primary font-semibold text-sm">{user.name}</span>
+                        {isLastUsed && (
+                          <span
+                            className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                            style={{ backgroundColor: `${primary}25`, color: primary }}
+                          >
+                            Dernier utilisé
+                          </span>
+                        )}
+                      </div>
                       {user.email && (
                         <div className="text-theme-muted text-xs truncate">{user.email}</div>
                       )}

@@ -42,3 +42,12 @@ export const NearEdge: Story = {
     position: { x: window.innerWidth - 100, y: window.innerHeight - 100 },
   },
 };
+
+export const Centered: Story = {
+  name: 'Mode centré (depuis Dashboard)',
+  args: {
+    task: mockTasks[2],
+    position: { x: 0, y: 0 },
+    centered: true,
+  },
+};

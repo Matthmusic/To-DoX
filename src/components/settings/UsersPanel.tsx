@@ -81,7 +81,11 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                         className="flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-theme-primary focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 cursor-pointer"
                     >
                         <option value="unassigned" className="bg-slate-800 text-theme-primary">Non assigné</option>
-                        {users.filter(u => u.id !== "unassigned").map(user => (
+                        {[...users].filter(u => u.id !== "unassigned").sort((a, b) => {
+                            if (a.id === currentUser) return -1;
+                            if (b.id === currentUser) return 1;
+                            return 0;
+                        }).map(user => (
                             <option key={user.id} value={user.id} className="bg-slate-800 text-theme-primary">
                                 {user.name} ({user.email})
                             </option>

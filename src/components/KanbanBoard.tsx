@@ -116,7 +116,7 @@ export function KanbanBoard({
 
             {/* ── DESKTOP : colonnes côte à côte ── */}
             <div className="hidden md:flex h-full p-4 lg:p-6 gap-4 lg:gap-6 overflow-x-auto">
-                <div className="kanban-row flex h-full gap-4 lg:gap-6 justify-center w-full">
+                <div className="kanban-row flex h-full gap-4 lg:gap-6 w-full">
                     {kanbanStatuses.map((status) => (
                         <div
                             key={status.id}

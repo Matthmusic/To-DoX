@@ -397,7 +397,7 @@ export function TaskCard({
                                         remainingDays <= 7 ? "text-amber-400" :
                                             "text-emerald-400"
                                 }`}>
-                                {remainingDays < 0 ? `J${remainingDays}` : `J-${remainingDays} ouvrés`}
+                                {remainingDays < 0 ? `J+${Math.abs(remainingDays)}` : `J-${remainingDays} ouvrés`}
                             </span>
                         )
                     )}

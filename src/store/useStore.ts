@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { todayISO, uid } from '../utils';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
-import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention, TaskTemplate, SavedReport, AppNotification } from '../types';
+import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention, TaskTemplate, SavedReport, AppNotification, TimeEntry } from '../types';
 
 interface StoreState {
     // State
@@ -105,6 +105,12 @@ interface StoreState {
     // Ephemeral UI state — dialog d'assignation réviseur (action locale uniquement, non persisté)
     pendingReviewDialogTaskId: string | null;
     setPendingReviewDialogTaskId: (taskId: string | null) => void;
+
+    // Feuilles de pointage
+    timeEntries: TimeEntry[];
+    setTimeEntries: (entries: TimeEntry[]) => void;
+    upsertTimeEntry: (project: string, date: string, hours: number, userId: string, note?: string) => void;
+    deleteTimeEntry: (project: string, date: string, userId: string) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -126,6 +132,7 @@ const useStore = create<StoreState>((set, get) => ({
     savedReports: [],
     appNotifications: [],
     pendingReviewDialogTaskId: null,
+    timeEntries: [],
 
     notificationSettings: {
         enabled: true,
@@ -723,6 +730,48 @@ const useStore = create<StoreState>((set, get) => ({
             reviewRejectedAt: undefined,
             rejectionComment: undefined,
         });
+    },
+
+    // ── Feuilles de pointage ─────────────────────────────────────────────────
+    setTimeEntries: (timeEntries) => set({ timeEntries }),
+
+    upsertTimeEntry: (project, date, hours, userId, note) => {
+        const now = Date.now();
+        set(state => {
+            const idx = state.timeEntries.findIndex(
+                e => e.project === project && e.date === date && e.userId === userId
+            );
+            if (hours <= 0) {
+                // Supprimer si heures = 0
+                return { timeEntries: state.timeEntries.filter((_, i) => i !== idx) };
+            }
+            if (idx >= 0) {
+                // Mettre à jour
+                const updated = [...state.timeEntries];
+                updated[idx] = { ...updated[idx], hours, note, updatedAt: now };
+                return { timeEntries: updated };
+            }
+            // Créer
+            const newEntry: TimeEntry = {
+                id: uid(),
+                project,
+                date,
+                hours,
+                userId,
+                note,
+                createdAt: now,
+                updatedAt: now,
+            };
+            return { timeEntries: [...state.timeEntries, newEntry] };
+        });
+    },
+
+    deleteTimeEntry: (project, date, userId) => {
+        set(state => ({
+            timeEntries: state.timeEntries.filter(
+                e => !(e.project === project && e.date === date && e.userId === userId)
+            )
+        }));
     },
 }));
 

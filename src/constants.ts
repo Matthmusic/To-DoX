@@ -58,6 +58,19 @@ export const PROJECT_COLORS: ProjectColor[] = [
     { border: "border-slate-400/40", bg: "bg-slate-400/15", text: "text-slate-200", ring: "ring-slate-400/60", glow: "shadow-slate-500/30" },
 ];
 
+/**
+ * Utilisateurs VIP — affichés comme onglets de connexion rapide dans la TitleBar.
+ * Modifier cette liste pour choisir qui apparaît dans la barre de titre.
+ */
+export const VIP_USERS: string[] = [
+    "laurent",
+    "frederic",
+    "jerome",
+    "matthieu",
+    "william",
+    "sakina",
+];
+
 // Liste FIXE des utilisateurs (commune à tous)
 // Cette liste n'est PAS sauvegardée dans data.json et n'est pas modifiable via l'interface
 export const FIXED_USERS = [

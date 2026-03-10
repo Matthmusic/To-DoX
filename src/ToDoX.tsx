@@ -27,6 +27,7 @@ import {
     DashboardView,
 } from "./components";
 import { TermineesView } from "./components/TermineesView";
+import { TimesheetView } from "./components/TimesheetView";
 import { alertModal } from "./utils/confirm";
 
 // Hooks personnalisés
@@ -165,7 +166,7 @@ export default function ToDoX() {
     const [showThemesPanel, setShowThemesPanel] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
     const [centeredTask, setCenteredTask] = useState<Task | null>(null);
-    const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard' | 'terminées'>('kanban');
+    const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard' | 'terminées' | 'pointage'>('kanban');
     const importFileRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<{ focus: () => void }>(null);
     const quickAddRef = useRef<{ focus: () => void }>(null);
@@ -438,6 +439,8 @@ export default function ToDoX() {
                     <TermineesView
                         onTaskClick={(task, x, y) => setContextMenu({ x, y, task })}
                     />
+                ) : activeView === 'pointage' ? (
+                    <TimesheetView />
                 ) : (
                     <DashboardView />
                 )}

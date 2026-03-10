@@ -20,6 +20,7 @@ import {
     CalendarDays,
     BarChart3,
     CheckCircle2,
+    Clock,
     Menu,
     X,
 } from "lucide-react";
@@ -52,8 +53,8 @@ interface KanbanHeaderPremiumProps {
     // Mentions non lues
     mentionCount: number;
     // Vue active
-    activeView: 'kanban' | 'timeline' | 'dashboard' | 'terminées';
-    onViewChange: (view: 'kanban' | 'timeline' | 'dashboard' | 'terminées') => void;
+    activeView: 'kanban' | 'timeline' | 'dashboard' | 'terminées' | 'pointage';
+    onViewChange: (view: 'kanban' | 'timeline' | 'dashboard' | 'terminées' | 'pointage') => void;
     // Recherche
     filterSearch: string;
     onSearchChange: (value: string) => void;
@@ -200,6 +201,7 @@ export function KanbanHeaderPremium({
         { id: 'timeline' as const, Icon: CalendarDays, label: 'Timeline' },
         { id: 'dashboard' as const, Icon: BarChart3, label: 'Dashboard' },
         { id: 'terminées' as const, Icon: CheckCircle2, label: 'Terminées' },
+        { id: 'pointage' as const, Icon: Clock, label: 'Pointage' },
     ];
 
     const commandBarStyle = {
@@ -253,7 +255,9 @@ export function KanbanHeaderPremium({
                                 activeView === id
                                     ? id === 'terminées'
                                         ? { backgroundColor: 'rgba(52,211,153,0.15)', color: 'rgb(52,211,153)' }
-                                        : { backgroundColor: `${primaryColor}25`, color: primaryColor }
+                                        : id === 'pointage'
+                                            ? { backgroundColor: 'rgba(251,191,36,0.15)', color: 'rgb(251,191,36)' }
+                                            : { backgroundColor: `${primaryColor}25`, color: primaryColor }
                                     : { color: 'rgba(255,255,255,0.72)' }
                             }
                             title={label}
@@ -526,7 +530,9 @@ export function KanbanHeaderPremium({
                                     activeView === id
                                         ? id === 'terminées'
                                             ? { backgroundColor: 'rgba(52,211,153,0.15)', color: 'rgb(52,211,153)' }
-                                            : { backgroundColor: `${primaryColor}25`, color: primaryColor }
+                                            : id === 'pointage'
+                                                ? { backgroundColor: 'rgba(251,191,36,0.15)', color: 'rgb(251,191,36)' }
+                                                : { backgroundColor: `${primaryColor}25`, color: primaryColor }
                                         : { color: 'rgba(255,255,255,0.72)' }
                                 }
                                 title={`Vue ${label}`}

@@ -61,16 +61,22 @@ const withStore: Decorator = (Story) => {
 
 const preview: Preview = {
   decorators: [withStore],
+
   parameters: {
     controls: { matchers: { color: /(background|color)$/i, date: /Date/ } },
     backgrounds: {
-      default: 'cyberpunk-dark',
-      values: [
-        { name: 'cyberpunk-dark', value: '#050b1f' },
-        { name: 'card', value: '#0a0e1a' },
-      ],
+      options: {
+        "cyberpunk-dark": { name: 'cyberpunk-dark', value: '#050b1f' },
+        card: { name: 'card', value: '#0a0e1a' }
+      }
     },
   },
+
+  initialGlobals: {
+    backgrounds: {
+      value: 'cyberpunk-dark'
+    }
+  }
 };
 
 export default preview;

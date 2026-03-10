@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 // Exposer les APIs Electron au renderer de manière sécurisée
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -60,6 +60,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   castDiscover: () => ipcRenderer.invoke('cast:discover'),
   castLaunch: (host, port, appId) => ipcRenderer.invoke('cast:launch', host, port, appId),
   castGetReceiverUrl: () => ipcRenderer.invoke('cast:get-receiver-url'),
+
+  // Récupérer le chemin natif d'un File (fonctionne aussi pour les dossiers)
+  getPathForFile: (file) => webUtils.getPathForFile(file),
 
   // Vérifier si on est dans Electron
   isElectron: true

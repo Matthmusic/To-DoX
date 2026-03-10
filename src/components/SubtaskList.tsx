@@ -5,6 +5,25 @@ import useStore from "../store/useStore";
 import type { Task, Subtask } from "../types";
 
 /**
+ * Récupère le chemin natif d'un File droppé (fichier ou dossier).
+ * Utilise webUtils.getPathForFile via l'API Electron si disponible,
+ * sinon fallback sur la propriété .path (ancienne API).
+ */
+export function getDroppedFilePath(file: File): string {
+    if (window.electronAPI?.getPathForFile) {
+        return window.electronAPI.getPathForFile(file);
+    }
+    return (file as File & { path?: string }).path ?? '';
+}
+
+/**
+ * Formate un chemin pour insertion : ajoute des guillemets si le chemin contient des espaces.
+ */
+export function formatPathForInsertion(path: string): string {
+    return path.includes(' ') ? `"${path}"` : path;
+}
+
+/**
  * Détecte et parse les chemins de fichiers dans le texte
  * Supporte les chemins avec espaces entre guillemets et les chemins sans espaces
  */
@@ -98,7 +117,28 @@ export function SubtaskItem({ subtask, task, isDragging }: SubtaskItemProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(subtask.title);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+    const [isFileDropTarget, setIsFileDropTarget] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileDragOver = (e: React.DragEvent) => {
+        if (!e.dataTransfer.types.includes('Files')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setIsFileDropTarget(true);
+    };
+
+    const handleFileDrop = (e: React.DragEvent) => {
+        if (e.dataTransfer.files.length === 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setIsFileDropTarget(false);
+        const file = e.dataTransfer.files[0];
+        const path = getDroppedFilePath(file);
+        if (!path) return;
+        const formattedPath = formatPathForInsertion(path);
+        const newTitle = subtask.title ? `${subtask.title} ${formattedPath}` : formattedPath;
+        updateSubtaskTitle(task.id, subtask.id, newTitle);
+    };
 
     useEffect(() => {
         if (isEditing && inputRef.current) {
@@ -145,7 +185,11 @@ export function SubtaskItem({ subtask, task, isDragging }: SubtaskItemProps) {
         <>
             <div
                 onContextMenu={handleContextMenu}
-                className={`flex items-center gap-2 rounded-lg bg-white/5 p-2 transition ${isDragging ? "opacity-50" : ""}`}
+                onDragOver={handleFileDragOver}
+                onDragLeave={() => setIsFileDropTarget(false)}
+                onDrop={handleFileDrop}
+                className={`flex items-center gap-2 rounded-lg p-2 transition ${isDragging ? "opacity-50" : ""} ${isFileDropTarget ? "border border-blue-400/60 bg-blue-400/10" : "bg-white/5"}`}
+                title="Déposer un fichier pour l'attacher"
             >
                 <GripVertical className="h-4 w-4 cursor-grab text-slate-400" />
                 <input
