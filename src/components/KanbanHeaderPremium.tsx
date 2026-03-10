@@ -23,6 +23,7 @@ import {
     Clock,
     Menu,
     X,
+    ShieldAlert,
 } from "lucide-react";
 import ToDoXLogo from "../assets/To Do X.svg";
 import { QuickAddPremium } from "./QuickAddPremium";
@@ -46,6 +47,8 @@ interface KanbanHeaderPremiumProps {
     onOpenThemes: () => void;
     onOpenDirPanel: () => void;
     onOpenProjectsList: () => void;
+    isAdmin: boolean;
+    onOpenAdminProjects: () => void;
     onOpenTaskArchive: () => void;
     onExport: () => void;
     onImport: () => void;
@@ -73,6 +76,7 @@ interface KanbanHeaderPremiumProps {
 export function KanbanHeaderPremium({
     filterProject,
     onProjectClick,
+    onArchiveProject,
     onOpenWeeklyReport,
     onOpenStorage,
     onOpenUsers,
@@ -83,6 +87,8 @@ export function KanbanHeaderPremium({
     onOpenThemes,
     onOpenDirPanel,
     onOpenProjectsList,
+    isAdmin,
+    onOpenAdminProjects,
     onOpenTaskArchive,
     onExport,
     onImport,
@@ -378,6 +384,16 @@ export function KanbanHeaderPremium({
                         ))}
                     </div>
 
+                    {isAdmin && (
+                        <button
+                            onClick={burgerAction(onOpenAdminProjects)}
+                            className="w-full flex items-center gap-2 px-4 py-3 text-xs font-semibold text-rose-200 transition-colors hover:bg-rose-400/10 border-t border-white/5"
+                        >
+                            <ShieldAlert className="h-4 w-4" />
+                            Admin projets (JSON)
+                        </button>
+                    )}
+
                     {/* Export / Import */}
                     <div className="grid grid-cols-2 border-t border-white/5">
                         {[
@@ -496,6 +512,7 @@ export function KanbanHeaderPremium({
                                 done={stat.done}
                                 isSelected={filterProject === stat.project}
                                 onClick={() => onProjectClick(stat.project)}
+                                onArchiveProject={() => onArchiveProject(stat.project)}
                                 projectColors={projectColors}
                                 onColorChange={(idx) => setProjectColor(stat.project, idx)}
                             />
@@ -597,6 +614,9 @@ export function KanbanHeaderPremium({
                         <div className="my-1 h-px bg-theme-primary" />
                         <DropdownItem icon={FolderPlus} label="Dossiers projets" onClick={onOpenDirPanel} />
                         <DropdownItem icon={List} label="Gérer projets" onClick={onOpenProjectsList} />
+                        {isAdmin && (
+                            <DropdownItem icon={ShieldAlert} label="Admin projets (JSON)" onClick={onOpenAdminProjects} />
+                        )}
                         <DropdownItem icon={Trash2} label="Corbeille tâches" onClick={onOpenTaskArchive} />
                         <div className="my-1 h-px bg-theme-primary" />
                         <DropdownItem icon={Download} label="Export JSON" onClick={onExport} />

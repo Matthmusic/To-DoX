@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { getProjectColor } from "../utils";
 import { PROJECT_COLORS } from "../constants";
+import { confirmModal } from "../utils/confirm";
 
 // Couleurs de prévisualisation pour chaque index
 const COLOR_PREVIEWS = [
@@ -23,6 +24,7 @@ interface CircularProgressBadgeProps {
     done: number;
     isSelected: boolean;
     onClick: () => void;
+    onArchiveProject?: () => void;
     projectColors: Record<string, number>;
     onColorChange?: (colorIndex: number) => void;
 }
@@ -39,6 +41,7 @@ export function CircularProgressBadge({
     done,
     isSelected,
     onClick,
+    onArchiveProject,
     projectColors,
     onColorChange,
 }: CircularProgressBadgeProps) {
@@ -81,12 +84,28 @@ export function CircularProgressBadge({
         setMenuPos(null);
     }, [onColorChange]);
 
+    const handleGlowContextMenu = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setMenuPos({ x: e.clientX, y: e.clientY });
+    }, []);
+
+    const handleArchiveClick = useCallback(async () => {
+        if (!onArchiveProject) return;
+        const confirmed = await confirmModal(`Archiver le projet "${cleanProjectName}" ?`);
+        if (confirmed) {
+            onArchiveProject();
+            setMenuPos(null);
+        }
+    }, [onArchiveProject, cleanProjectName]);
+
     // Calcul pour le cercle SVG (rayon 16, circonférence 100.53)
     const radius = 16;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (animatedPercentage / 100) * circumference;
 
     const currentColorIndex = project in projectColors ? projectColors[project] % PROJECT_COLORS.length : -1;
+    const canArchiveFromMenu = percentage < 30 && !!onArchiveProject;
 
     return (
         <>
@@ -167,6 +186,7 @@ export function CircularProgressBadge({
                                 ? "bg-rose-400/5"
                                 : "bg-cyan-400/5"
                     } blur-xl`}
+                    onContextMenu={handleGlowContextMenu}
                 />
             </button>
 
@@ -197,6 +217,18 @@ export function CircularProgressBadge({
                             </button>
                         ))}
                     </div>
+                    {canArchiveFromMenu && (
+                        <>
+                            <div className="my-2 h-px bg-white/10" />
+                            <button
+                                type="button"
+                                onClick={handleArchiveClick}
+                                className="w-full rounded-lg border border-rose-400/30 bg-rose-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-rose-200 transition-colors hover:bg-rose-500/20"
+                            >
+                                Archiver ce projet
+                            </button>
+                        </>
+                    )}
                 </div>,
                 document.body
             )}

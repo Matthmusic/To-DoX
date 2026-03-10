@@ -17,6 +17,7 @@ import {
     TaskArchivePanel,
     ProjectDirs,
     ProjectsListPanel,
+    AdminProjectsPanel,
     UsersPanel,
     StoragePanel,
     WeeklyReportModal,
@@ -157,6 +158,7 @@ export default function ToDoX() {
     const [showStoragePanel, setShowStoragePanel] = useState(false);
     const [showWeeklyReportPanel, setShowWeeklyReportPanel] = useState(false);
     const [showProjectsListPanel, setShowProjectsListPanel] = useState(false);
+    const [showAdminProjectsPanel, setShowAdminProjectsPanel] = useState(false);
     const [showHelpPanel, setShowHelpPanel] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
@@ -322,6 +324,7 @@ export default function ToDoX() {
         showStoragePanel ||
         showWeeklyReportPanel ||
         showProjectsListPanel ||
+        showAdminProjectsPanel ||
         showHelpPanel ||
         showNotificationsPanel ||
         showThemesPanel ||
@@ -352,6 +355,7 @@ export default function ToDoX() {
             setShowStoragePanel(false);
             setShowWeeklyReportPanel(false);
             setShowProjectsListPanel(false);
+            setShowAdminProjectsPanel(false);
             setShowHelpPanel(false);
             setShowNotificationsPanel(false);
             setShowSearch(false);
@@ -400,6 +404,8 @@ export default function ToDoX() {
                 onOpenArchive={() => setShowArchivePanel(true)}
                 onOpenDirPanel={() => setShowDirPanel(true)}
                 onOpenProjectsList={() => setShowProjectsListPanel(true)}
+                isAdmin={currentUser === "matthieu"}
+                onOpenAdminProjects={() => setShowAdminProjectsPanel(true)}
                 onOpenTaskArchive={() => setShowTaskArchivePanel(true)}
                 onExport={handleExport}
                 onImport={handleImportClick}
@@ -504,6 +510,12 @@ export default function ToDoX() {
             {showProjectsListPanel && (
                 <ProjectsListPanel
                     onClose={() => setShowProjectsListPanel(false)}
+                />
+            )}
+
+            {showAdminProjectsPanel && (
+                <AdminProjectsPanel
+                    onClose={() => setShowAdminProjectsPanel(false)}
                 />
             )}
 

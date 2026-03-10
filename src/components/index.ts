@@ -27,6 +27,7 @@ export { TaskArchivePanel } from './archive/TaskArchivePanel';
 // Settings
 export { ProjectDirs } from './settings/ProjectDirs';
 export { ProjectsListPanel } from './settings/ProjectsListPanel';
+export { AdminProjectsPanel } from './settings/AdminProjectsPanel';
 export { UsersPanel } from './settings/UsersPanel';
 export { StoragePanel } from './settings/StoragePanel';
 export { ConfirmModalHost } from './ConfirmModalHost';

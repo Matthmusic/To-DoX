@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.1.5",
+    "version": "2.1.6",
     "description": {
       "short": "Kanban intelligent avec interface mobile-first, workflow de revision et notifications.",
       "long": "To-DoX est une application Kanban moderne pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recurrence, des templates, un dashboard KPIs, une vue Timeline/Gantt, un workflow de revision complet, une vue Terminees, des notifications in-app, une interface responsive mobile-first (burger menu, onglets Kanban), ainsi que l'export et l'import des donnees. Les donnees sont stockees localement et peuvent etre synchronisees via OneDrive."
@@ -72,9 +72,17 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.5.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.6.exe"
   },
   "changelog": {
+    "2.1.6": {
+      "date": "2026-03-10",
+      "changes": [
+        "Ajout d'une interface Admin projets (reservee a Matthieu) pour supprimer totalement un projet des donnees JSON (taches, pointage, historique, dossiers et couleurs)",
+        "Ajout de l'acces Admin projets (JSON) dans les menus desktop et mobile",
+        "Badges projet: clic droit sur le glow conserve la palette de couleurs et ajoute l'action d'archivage pour les projets en dessous de 30%"
+      ]
+    },
     "2.1.5": {
       "date": "2026-03-10",
       "changes": [
