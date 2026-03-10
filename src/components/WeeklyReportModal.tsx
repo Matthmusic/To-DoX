@@ -50,11 +50,11 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
             t.completedAt <= range.end.getTime()
         );
 
-        // Tâches restantes : on exclut les archivées (elles ne sont plus actives)
-        const active = allTasks.filter(t => baseFilter(t) && !t.archived);
+        // Tâches restantes : archivées incluses si elles tombent dans la période du CR
         const remaining = isCurrentWeek
-            ? active.filter(t => t.status !== "done")
-            : active.filter(t =>
+            ? allTasks.filter(t => baseFilter(t) && t.status !== "done")
+            : allTasks.filter(t =>
+                baseFilter(t) &&
                 t.status !== "done" &&
                 t.createdAt >= range.start.getTime() &&
                 t.createdAt <= range.end.getTime()

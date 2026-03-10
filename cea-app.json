@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.1.2",
+    "version": "2.1.3",
     "description": {
       "short": "Kanban intelligent avec interface mobile-first, workflow de revision et notifications.",
       "long": "To-DoX est une application Kanban moderne pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recurrence, des templates, un dashboard KPIs, une vue Timeline/Gantt, un workflow de revision complet, une vue Terminees, des notifications in-app, une interface responsive mobile-first (burger menu, onglets Kanban), ainsi que l'export et l'import des donnees. Les donnees sont stockees localement et peuvent etre synchronisees via OneDrive."
@@ -72,9 +72,22 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.2.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.3.exe"
   },
   "changelog": {
+    "2.1.3": {
+      "date": "2026-03-10",
+      "changes": [
+        "Fix: les réviseurs ne s'effacent plus après affectation (migrateTask préserve désormais le champ reviewers)",
+        "Vue en tant que : clic sur un autre onglet utilisateur dans la barre de titre pour voir son point de vue sans changer sa session",
+        "Sélecteur de couleur de projet via clic droit sur les badges circulaires dans le header",
+        "Bouton notifications transformé en toggle activer/désactiver (persisté en localStorage)",
+        "Suppression des boutons archive et utilisateur/stockage du header (accessibles via paramètres)",
+        "Contraste amélioré sur tous les éléments gris du dashboard et des toggles de vue",
+        "Banner tâches en retard : dépliable avec vue compacte groupée par projet",
+        "Fix: déplacement de la fenêtre (barre de titre) à nouveau fonctionnel"
+      ]
+    },
     "2.1.2": {
       "date": "2026-03-05",
       "changes": [

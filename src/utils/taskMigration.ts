@@ -126,6 +126,9 @@ export function migrateTask(raw: unknown, options: MigrationOptions): Task {
     ganttDays: normalizeGanttDays(data.ganttDays),
     order: toNumber(data.order, 0),
     recurrence: normalizeRecurrence(data.recurrence),
+    reviewers: Array.isArray(data.reviewers)
+      ? (data.reviewers as unknown[]).filter((r): r is string => typeof r === 'string' && r.length > 0)
+      : undefined,
   };
 }
 

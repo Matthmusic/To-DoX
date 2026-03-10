@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { todayISO } from "./utils";
 import { migrateTask } from "./utils/taskMigration";
 
@@ -11,6 +12,7 @@ type StoredDataRaw = Omit<StoredData, 'tasks'> & { tasks?: unknown[] };
 // Composants extraits
 import {
     TaskEditPanel,
+    TaskCard,
     ArchivePanel,
     TaskArchivePanel,
     ProjectDirs,
@@ -61,9 +63,14 @@ interface ReviewerPickerDialogProps {
 }
 
 function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDialogProps) {
-    const { tasks, users } = useStore();
+    const { tasks, users, currentUser } = useStore();
     const task = tasks.find(t => t.id === taskId);
     const [selected, setSelected] = useState<string[]>(task?.reviewers || []);
+    const sortedUsers = [...users].sort((a, b) => {
+        if (a.id === currentUser) return -1;
+        if (b.id === currentUser) return 1;
+        return 0;
+    });
 
     if (!task) return null;
 
@@ -76,7 +83,7 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
                     Choisissez un ou plusieurs réviseurs.
                 </p>
                 <div className="space-y-1 max-h-48 overflow-y-auto mb-4">
-                    {users.map(user => (
+                    {sortedUsers.map(user => (
                         <label key={user.id} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-white/5 cursor-pointer transition">
                             <input
                                 type="checkbox"
@@ -118,7 +125,7 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
 export default function ToDoX() {
     // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser, pendingMentions, clearPendingMentions, appNotifications, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser, viewAsUser, pendingMentions, clearPendingMentions, appNotifications, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId } = useStore();
 
     const mentionCount = currentUser ? (pendingMentions[currentUser] || []).length : 0;
 
@@ -129,7 +136,7 @@ export default function ToDoX() {
         setFilterSearch,
         grouped,
         filteredTasks,
-    } = useFilters(tasks, currentUser);
+    } = useFilters(tasks, viewAsUser ?? currentUser);
 
     const {
         handleDragStart,
@@ -152,8 +159,12 @@ export default function ToDoX() {
     const [showHelpPanel, setShowHelpPanel] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
     const [showNotificationsPanel, setShowNotificationsPanel] = useState(false);
+    const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(() =>
+        localStorage.getItem('todox_notif_enabled') !== 'false'
+    );
     const [showThemesPanel, setShowThemesPanel] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
+    const [centeredTask, setCenteredTask] = useState<Task | null>(null);
     const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard' | 'terminées'>('kanban');
     const importFileRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<{ focus: () => void }>(null);
@@ -176,7 +187,7 @@ export default function ToDoX() {
             return;
         }
         for (const notif of myUnread) {
-            if (!prevUnreadNotifIdsRef.current.has(notif.id)) {
+            if (!prevUnreadNotifIdsRef.current.has(notif.id) && notificationsEnabled) {
                 window.electronAPI?.sendNotification('To-Do X', notif.message, `review-${notif.id}`);
             }
         }
@@ -196,6 +207,17 @@ export default function ToDoX() {
         window.addEventListener('todox:openTask', handler);
         return () => window.removeEventListener('todox:openTask', handler);
     }, [handleOpenTaskById]);
+
+    // Ouvrir une tâche en mode modal centré (depuis le dashboard)
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const taskId = (e as CustomEvent<{ taskId: string }>).detail?.taskId;
+            const task = tasks.find(t => t.id === taskId);
+            if (task) setCenteredTask(task);
+        };
+        window.addEventListener('todox:openTaskModal', handler);
+        return () => window.removeEventListener('todox:openTaskModal', handler);
+    }, [tasks]);
 
     // Import/Export Handlers
     const handleExport = () => {
@@ -367,6 +389,12 @@ export default function ToDoX() {
                     setShowNotificationsPanel(true);
                     if (currentUser) clearPendingMentions(currentUser);
                 }}
+                notificationsEnabled={notificationsEnabled}
+                onToggleNotifications={() => {
+                    const next = !notificationsEnabled;
+                    setNotificationsEnabled(next);
+                    localStorage.setItem('todox_notif_enabled', String(next));
+                }}
                 onOpenThemes={() => setShowThemesPanel(true)}
                 onOpenArchive={() => setShowArchivePanel(true)}
                 onOpenDirPanel={() => setShowDirPanel(true)}
@@ -423,6 +451,27 @@ export default function ToDoX() {
                     position={contextMenu.x !== null && contextMenu.y !== null ? { x: contextMenu.x, y: contextMenu.y } : { x: 0, y: 0 }}
                     onClose={() => setContextMenu(null)}
                 />
+            )}
+            {centeredTask && createPortal(
+                <div
+                    className="fixed inset-0 z-[99998] flex items-center justify-center"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)' }}
+                    onMouseDown={(e) => { if (e.target === e.currentTarget) setCenteredTask(null); }}
+                >
+                    <div className="w-[min(1200px,90vw)] max-h-[90vh] overflow-y-auto" onMouseDown={e => e.stopPropagation()}>
+                        <TaskCard
+                            task={centeredTask}
+                            onDragStart={() => {}}
+                            onClick={() => {}}
+                            onContextMenu={(e, task) => {
+                                setCenteredTask(null);
+                                setContextMenu({ x: e.clientX, y: e.clientY, task });
+                            }}
+                            onSetProjectDirectory={() => {}}
+                        />
+                    </div>
+                </div>,
+                document.body
             )}
 
             {showWeeklyReportPanel && (

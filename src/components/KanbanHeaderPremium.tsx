@@ -14,6 +14,7 @@ import {
     Plus,
     HelpCircle,
     Bell,
+    BellOff,
     Palette,
     LayoutGrid,
     CalendarDays,
@@ -39,6 +40,8 @@ interface KanbanHeaderPremiumProps {
     onOpenUsers: () => void;
     onOpenArchive: () => void;
     onOpenNotifications: () => void;
+    notificationsEnabled: boolean;
+    onToggleNotifications: () => void;
     onOpenThemes: () => void;
     onOpenDirPanel: () => void;
     onOpenProjectsList: () => void;
@@ -74,6 +77,8 @@ export function KanbanHeaderPremium({
     onOpenUsers,
     onOpenArchive,
     onOpenNotifications,
+    notificationsEnabled,
+    onToggleNotifications,
     onOpenThemes,
     onOpenDirPanel,
     onOpenProjectsList,
@@ -90,7 +95,7 @@ export function KanbanHeaderPremium({
     showSearch,
     quickAddRef,
 }: KanbanHeaderPremiumProps) {
-    const { tasks, projectColors, currentUser } = useStore();
+    const { tasks, projectColors, currentUser, viewAsUser, setProjectColor } = useStore();
     const { activeTheme } = useTheme();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const [showBurgerMenu, setShowBurgerMenu] = useState(false);
@@ -161,9 +166,10 @@ export function KanbanHeaderPremium({
         for (const t of tasks) {
             if (t.archived || !t.project) continue;
 
-            if (currentUser && currentUser !== "unassigned") {
-                const isAssigned = t.assignedTo.includes(currentUser);
-                const isCreator = t.createdBy === currentUser;
+            const effectiveUser = viewAsUser ?? currentUser;
+            if (effectiveUser && effectiveUser !== "unassigned") {
+                const isAssigned = t.assignedTo.includes(effectiveUser);
+                const isCreator = t.createdBy === effectiveUser;
                 if (!isAssigned && !isCreator) continue;
             }
 
@@ -187,7 +193,7 @@ export function KanbanHeaderPremium({
                 completedAt: v.total && v.done === v.total ? v.completedAt : null,
             }))
             .sort((a, b) => b.total - a.total);
-    }, [tasks, currentUser]);
+    }, [tasks, currentUser, viewAsUser]);
 
     const viewButtons = [
         { id: 'kanban' as const, Icon: LayoutGrid, label: 'Kanban' },
@@ -248,7 +254,7 @@ export function KanbanHeaderPremium({
                                     ? id === 'terminées'
                                         ? { backgroundColor: 'rgba(52,211,153,0.15)', color: 'rgb(52,211,153)' }
                                         : { backgroundColor: `${primaryColor}25`, color: primaryColor }
-                                    : { color: 'rgba(255,255,255,0.35)' }
+                                    : { color: 'rgba(255,255,255,0.72)' }
                             }
                             title={label}
                         >
@@ -259,18 +265,23 @@ export function KanbanHeaderPremium({
 
                 <div className="flex-1" />
 
-                {/* Notifications */}
+                {/* Notifications toggle */}
                 <button
-                    onClick={onOpenNotifications}
-                    className="relative flex items-center justify-center rounded-xl border px-2 py-2 text-xs transition-all"
-                    style={mentionCount > 0
-                        ? { borderColor: 'rgba(245,158,11,0.45)', backgroundColor: 'rgba(245,158,11,0.15)', color: '#fcd34d' }
-                        : { borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }
+                    onClick={onToggleNotifications}
+                    className="relative flex items-center justify-center rounded-xl border px-2 py-2 text-xs transition-all hover:scale-105"
+                    style={!notificationsEnabled
+                        ? { borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.25)' }
+                        : mentionCount > 0
+                            ? { borderColor: 'rgba(245,158,11,0.45)', backgroundColor: 'rgba(245,158,11,0.15)', color: '#fcd34d' }
+                            : { borderColor: 'rgba(255,255,255,0.15)', backgroundColor: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)' }
                     }
-                    title="Notifications"
+                    title={notificationsEnabled ? 'Notifications activées — cliquer pour désactiver' : 'Notifications désactivées — cliquer pour activer'}
                 >
-                    <Bell className="h-4 w-4" />
-                    {mentionCount > 0 && (
+                    {notificationsEnabled
+                        ? <Bell className="h-4 w-4" />
+                        : <BellOff className="h-4 w-4" />
+                    }
+                    {notificationsEnabled && mentionCount > 0 && (
                         <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 animate-pulse items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black">
                             {mentionCount > 9 ? '9+' : mentionCount}
                         </span>
@@ -330,9 +341,6 @@ export function KanbanHeaderPremium({
                     {/* Grille 3 colonnes — actions principales */}
                     <div className="grid grid-cols-3">
                         {[
-                            { icon: HardDrive, label: 'Stockage', action: onOpenStorage },
-                            { icon: Users, label: 'Utilisateurs', action: onOpenUsers },
-                            { icon: Archive, label: 'Archives', action: onOpenArchive },
                             { icon: Bell, label: 'Notifs', action: onOpenNotifications },
                             { icon: Palette, label: 'Thèmes', action: onOpenThemes },
                             { icon: HelpCircle, label: 'Aide', action: onOpenHelp },
@@ -485,6 +493,7 @@ export function KanbanHeaderPremium({
                                 isSelected={filterProject === stat.project}
                                 onClick={() => onProjectClick(stat.project)}
                                 projectColors={projectColors}
+                                onColorChange={(idx) => setProjectColor(stat.project, idx)}
                             />
                         ))}
                     </div>
@@ -506,68 +515,6 @@ export function KanbanHeaderPremium({
                         <span>CR semaine</span>
                     </button>
 
-                    {/* Quick Access Buttons */}
-                    <button
-                        onClick={onOpenStorage}
-                        className="hidden md:flex items-center gap-1.5 rounded-xl border border-theme-primary bg-white/5 px-2.5 py-2 text-xs text-theme-secondary transition-all hover:scale-105 hover:bg-white/10 hover:text-theme-primary"
-                        title="Stockage"
-                    >
-                        <HardDrive className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                        onClick={onOpenUsers}
-                        className="hidden md:flex items-center gap-1.5 rounded-xl border border-theme-primary bg-white/5 px-2.5 py-2 text-xs text-theme-secondary transition-all hover:scale-105 hover:bg-white/10 hover:text-theme-primary"
-                        title="Utilisateurs"
-                    >
-                        <Users className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                        onClick={onOpenArchive}
-                        className="hidden md:flex items-center gap-1.5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-2.5 py-2 text-xs text-amber-200 transition-all hover:scale-105 hover:bg-amber-500/20"
-                        title="Archives"
-                    >
-                        <Archive className="h-3.5 w-3.5" />
-                    </button>
-
-                    {/* Notifications / Mentions badge */}
-                    <button
-                        onClick={onOpenNotifications}
-                        className="relative flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs transition-all hover:scale-105"
-                        style={mentionCount > 0
-                            ? { borderColor: 'rgba(245,158,11,0.45)', backgroundColor: 'rgba(245,158,11,0.15)', color: '#fcd34d' }
-                            : { borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }
-                        }
-                        title={mentionCount > 0 ? `${mentionCount} mention(s) non lue(s)` : 'Notifications'}
-                    >
-                        <Bell className="h-3.5 w-3.5" />
-                        {mentionCount > 0 && (
-                            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 animate-pulse items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black">
-                                {mentionCount > 9 ? '9+' : mentionCount}
-                            </span>
-                        )}
-                    </button>
-
-                    {/* More Menu */}
-                    <DropdownMenu
-                        icon={Settings}
-                        label=""
-                        className="rounded-xl border border-theme-primary bg-theme-secondary/60 px-2.5 py-2 hover:bg-theme-secondary/80 transition-all text-theme-primary"
-                    >
-                        <DropdownItem icon={Printer} label="CR Semaine" onClick={onOpenWeeklyReport} />
-                        <DropdownItem icon={HardDrive} label="Stockage" onClick={onOpenStorage} />
-                        <DropdownItem icon={Users} label="Utilisateurs" onClick={onOpenUsers} />
-                        <DropdownItem icon={Bell} label="Notifications" onClick={onOpenNotifications} />
-                        <DropdownItem icon={Palette} label="Thèmes" onClick={onOpenThemes} />
-                        <DropdownItem icon={Archive} label="Archives" onClick={onOpenArchive} />
-                        <div className="my-1 h-px bg-theme-primary" />
-                        <DropdownItem icon={FolderPlus} label="Dossiers projets" onClick={onOpenDirPanel} />
-                        <DropdownItem icon={List} label="Gérer projets" onClick={onOpenProjectsList} />
-                        <DropdownItem icon={Trash2} label="Corbeille tâches" onClick={onOpenTaskArchive} />
-                        <div className="my-1 h-px bg-theme-primary" />
-                        <DropdownItem icon={Download} label="Export JSON" onClick={onExport} />
-                        <DropdownItem icon={Upload} label="Import JSON" onClick={onImport} />
-                    </DropdownMenu>
-
                     {/* View Toggle (Kanban / Timeline / Dashboard / Terminées) */}
                     <div className="flex rounded-xl overflow-hidden border border-white/10 overflow-x-auto">
                         {viewButtons.map(({ id, Icon, label }) => (
@@ -580,7 +527,7 @@ export function KanbanHeaderPremium({
                                         ? id === 'terminées'
                                             ? { backgroundColor: 'rgba(52,211,153,0.15)', color: 'rgb(52,211,153)' }
                                             : { backgroundColor: `${primaryColor}25`, color: primaryColor }
-                                        : { color: 'rgba(255,255,255,0.35)' }
+                                        : { color: 'rgba(255,255,255,0.72)' }
                                 }
                                 title={`Vue ${label}`}
                             >
@@ -605,6 +552,50 @@ export function KanbanHeaderPremium({
                     >
                         <HelpCircle className="h-3.5 w-3.5" />
                     </button>
+
+                    {/* Notifications toggle */}
+                    <button
+                        onClick={onToggleNotifications}
+                        className="relative flex items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs transition-all hover:scale-105"
+                        style={!notificationsEnabled
+                            ? { borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(255,255,255,0.03)', color: 'rgba(255,255,255,0.25)' }
+                            : mentionCount > 0
+                                ? { borderColor: 'rgba(245,158,11,0.45)', backgroundColor: 'rgba(245,158,11,0.15)', color: '#fcd34d' }
+                                : { borderColor: 'rgba(255,255,255,0.15)', backgroundColor: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.7)' }
+                        }
+                        title={notificationsEnabled ? 'Notifications activées — cliquer pour désactiver' : 'Notifications désactivées — cliquer pour activer'}
+                    >
+                        {notificationsEnabled
+                            ? <Bell className="h-3.5 w-3.5" />
+                            : <BellOff className="h-3.5 w-3.5" />
+                        }
+                        {notificationsEnabled && mentionCount > 0 && (
+                            <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 animate-pulse items-center justify-center rounded-full bg-amber-500 text-[9px] font-bold text-black">
+                                {mentionCount > 9 ? '9+' : mentionCount}
+                            </span>
+                        )}
+                    </button>
+
+                    {/* Settings Menu */}
+                    <DropdownMenu
+                        icon={Settings}
+                        label=""
+                        className="rounded-xl border border-theme-primary bg-theme-secondary/60 px-2.5 py-2 hover:bg-theme-secondary/80 transition-all text-white/80"
+                    >
+                        <DropdownItem icon={Printer} label="CR Semaine" onClick={onOpenWeeklyReport} />
+                        <DropdownItem icon={HardDrive} label="Stockage" onClick={onOpenStorage} />
+                        <DropdownItem icon={Users} label="Utilisateurs" onClick={onOpenUsers} />
+                        <DropdownItem icon={Bell} label="Notifications" onClick={onOpenNotifications} />
+                        <DropdownItem icon={Palette} label="Thèmes" onClick={onOpenThemes} />
+                        <DropdownItem icon={Archive} label="Archives" onClick={onOpenArchive} />
+                        <div className="my-1 h-px bg-theme-primary" />
+                        <DropdownItem icon={FolderPlus} label="Dossiers projets" onClick={onOpenDirPanel} />
+                        <DropdownItem icon={List} label="Gérer projets" onClick={onOpenProjectsList} />
+                        <DropdownItem icon={Trash2} label="Corbeille tâches" onClick={onOpenTaskArchive} />
+                        <div className="my-1 h-px bg-theme-primary" />
+                        <DropdownItem icon={Download} label="Export JSON" onClick={onExport} />
+                        <DropdownItem icon={Upload} label="Import JSON" onClick={onImport} />
+                    </DropdownMenu>
                 </div>
             </div>
 

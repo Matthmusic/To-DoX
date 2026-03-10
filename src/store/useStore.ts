@@ -12,6 +12,7 @@ interface StoreState {
     projectColors: Record<string, number>;
     users: User[];
     currentUser: string | null; // ID de l'utilisateur actuellement connecté
+    viewAsUser: string | null;  // Vue en tant que (filtre visuel, sans changer la session)
     collapsedProjects: Record<string, boolean>;
     storagePath: string | null;
     isLoadingData: boolean;
@@ -27,6 +28,7 @@ interface StoreState {
     setProjectColor: (projectName: string, colorIndex: number) => void;
     setUsers: (users: User[]) => void;
     setCurrentUser: (userId: string | null) => void;
+    setViewAsUser: (userId: string | null) => void;
     setStoragePath: (path: string | null) => void;
     setIsLoadingData: (loading: boolean) => void;
     setSaveError: (error: string | null) => void;
@@ -113,6 +115,7 @@ const useStore = create<StoreState>((set, get) => ({
     projectColors: {},
     users: FIXED_USERS,
     currentUser: null,
+    viewAsUser: null,
     collapsedProjects: {},
     storagePath: null,
     isLoadingData: true,
@@ -153,6 +156,7 @@ const useStore = create<StoreState>((set, get) => ({
     },
     setUsers: (users) => set({ users }),
     setCurrentUser: (userId) => set({ currentUser: userId }),
+    setViewAsUser: (userId) => set({ viewAsUser: userId }),
     setStoragePath: (path) => set({ storagePath: path }),
     setIsLoadingData: (loading) => set({ isLoadingData: loading }),
     setSaveError: (error) => set({ saveError: error }),
@@ -184,7 +188,7 @@ const useStore = create<StoreState>((set, get) => ({
 
         const newTask: Task = {
             id: uid(),
-            title: data.title?.trim() || "Sans titre",
+            title: (data.title?.trim() || "Sans titre").toUpperCase(),
             project: projectName,
             due: data.due || todayISO(),
             priority: data.priority || "med",
@@ -221,7 +225,7 @@ const useStore = create<StoreState>((set, get) => ({
 
         const updatedPatch = { ...patch };
         if (patch.title) {
-            updatedPatch.title = patch.title.trim() || patch.title;
+            updatedPatch.title = (patch.title.trim() || patch.title).toUpperCase();
         }
         if (patch.status === "done") {
             updatedPatch.completedAt = Date.now();
