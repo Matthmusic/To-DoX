@@ -254,6 +254,8 @@ export function TimesheetView() {
         const fullName = users.find(u => u.id === selectedViewUserId)?.name ?? selectedViewUserId;
         return fullName.trim().split(/\s+/)[0] || fullName;
     }, [users, selectedViewUserId]);
+    const canEditTimesheet = !!currentUser && currentUser !== "unassigned" && selectedViewUserId === currentUser;
+    const isReadOnlyView = !!selectedViewUserId && !canEditTimesheet;
 
     // ── Navigation semaine
     const [weekOffset, setWeekOffset] = useState(0);
@@ -268,30 +270,30 @@ export function TimesheetView() {
         for (const t of tasks) {
             if (t.archived || t.deletedAt) continue;
             if (t.status !== "doing") continue;
-            if (currentUser) {
-                if (!t.assignedTo.includes(currentUser) && t.createdBy !== currentUser) continue;
+            if (selectedViewUserId) {
+                if (!t.assignedTo.includes(selectedViewUserId) && t.createdBy !== selectedViewUserId) continue;
             }
             if (t.project) seen.add(t.project);
         }
         return [...seen].sort();
-    }, [tasks, currentUser]);
+    }, [tasks, selectedViewUserId]);
 
     // ── Projets avec saisies cette semaine
     const projectsWithEntriesThisWeek = useMemo(() => {
         const seen = new Set<string>();
         for (const e of timeEntries) {
-            if (currentUser && e.userId !== currentUser) continue;
+            if (selectedViewUserId && e.userId !== selectedViewUserId) continue;
             if (weekDates.includes(e.date)) seen.add(e.project);
         }
         return [...seen];
-    }, [timeEntries, weekDates, currentUser]);
+    }, [timeEntries, weekDates, selectedViewUserId]);
 
     // ── Liste ordonnée des projets visibles, indexée par semaine (weekDates[0])
     const [projectsByWeek, setProjectsByWeek] = useState<Record<string, string[]>>({});
     // ── Projets explicitement supprimés par l'user pour une semaine donnée
     const [dismissedByWeek, setDismissedByWeek] = useState<Record<string, string[]>>({});
 
-    const weekKey = weekDates[0];
+    const weekKey = `${selectedViewUserId ?? "none"}::${weekDates[0]}`;
 
     // Sync : initialise la semaine si pas encore vue,
     // sinon ajoute uniquement les projets nouveaux (jamais vus ET non supprimés)
@@ -335,15 +337,18 @@ export function TimesheetView() {
     const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
     function handleRowDragStart(idx: number) {
+        if (!canEditTimesheet) return;
         dragSrcIdxRef.current = idx;
     }
 
     function handleRowDragOver(e: React.DragEvent, idx: number) {
+        if (!canEditTimesheet) return;
         e.preventDefault();
         if (dragSrcIdxRef.current !== null) setDragOverIdx(idx);
     }
 
     function handleRowDrop(idx: number) {
+        if (!canEditTimesheet) return;
         const src = dragSrcIdxRef.current;
         dragSrcIdxRef.current = null;
         setDragOverIdx(null);
@@ -364,15 +369,19 @@ export function TimesheetView() {
     // ── Dropdown heures
     const [dropdownCell, setDropdownCell] = useState<{ project: string; date: string; rect: DOMRect } | null>(null);
 
+    useEffect(() => {
+        setDropdownCell(null);
+    }, [weekKey, canEditTimesheet]);
+
     // ── Lookup entrées
     const entryMap = useMemo(() => {
         const map = new Map<string, number>();
         for (const e of timeEntries) {
-            if (currentUser && e.userId !== currentUser) continue;
+            if (selectedViewUserId && e.userId !== selectedViewUserId) continue;
             map.set(`${e.project}|${e.date}`, e.hours);
         }
         return map;
-    }, [timeEntries, currentUser]);
+    }, [timeEntries, selectedViewUserId]);
 
     function getHours(project: string, date: string): number {
         return entryMap.get(`${project}|${date}`) ?? 0;
@@ -395,13 +404,13 @@ export function TimesheetView() {
 
     // ── Ouvrir dropdown
     function openDropdown(e: React.MouseEvent<HTMLButtonElement>, project: string, date: string) {
-        if (!currentUser) return;
+        if (!canEditTimesheet) return;
         const rect = e.currentTarget.getBoundingClientRect();
         setDropdownCell({ project, date, rect });
     }
 
     function selectHours(hours: number) {
-        if (!dropdownCell || !currentUser) return;
+        if (!dropdownCell || !canEditTimesheet || !currentUser) return;
         upsertTimeEntry(dropdownCell.project, dropdownCell.date, hours, currentUser);
         setDropdownCell(null);
     }
@@ -431,6 +440,12 @@ export function TimesheetView() {
         };
     }, [showProjectPicker]);
 
+    useEffect(() => {
+        if (canEditTimesheet) return;
+        setPickerAnchorRect(null);
+        setPickerSearch("");
+    }, [canEditTimesheet]);
+
     const pickerProjects = useMemo(() => {
         const q = pickerSearch.toLowerCase();
         const inView = new Set(orderedProjects);
@@ -440,12 +455,14 @@ export function TimesheetView() {
     }, [allProjectNames, orderedProjects, pickerSearch]);
 
     function addProject(name: string) {
+        if (!canEditTimesheet) return;
         setOrderedProjects(prev => [...prev, name]);
         setPickerAnchorRect(null);
         setPickerSearch("");
     }
 
     function removeProject(name: string) {
+        if (!canEditTimesheet) return;
         setOrderedProjects(prev => prev.filter(p => p !== name));
         setDismissedByWeek(prev => ({
             ...prev,
@@ -454,6 +471,7 @@ export function TimesheetView() {
     }
 
     function clearAllProjects() {
+        if (!canEditTimesheet) return;
         const all = projectsByWeek[weekKey] ?? [];
         setProjectsByWeek(prev => ({ ...prev, [weekKey]: [] }));
         setDismissedByWeek(prev => ({
@@ -546,7 +564,7 @@ export function TimesheetView() {
             </div>
 
             {/* ── INFO si pas connecté ────────────────────────────────────── */}
-            {!currentUser && (
+            {!selectedViewUserId && (
                 <div className="mx-6 mt-4 flex items-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-300">
                     <Info className="h-4 w-4 shrink-0" />
                     Connectez-vous pour saisir vos heures (menu utilisateur en haut à droite).
@@ -554,6 +572,13 @@ export function TimesheetView() {
             )}
 
             {/* ── TABLEAU ─────────────────────────────────────────────────── */}
+            {isReadOnlyView && (
+                <div className="mx-6 mt-4 flex items-center gap-2 rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-4 py-3 text-sm text-cyan-200">
+                    <Info className="h-4 w-4 shrink-0" />
+                    Mode lecture seule : vous consultez la feuille de pointage de {selectedViewFirstName}.
+                </div>
+            )}
+
             <div className="flex-1 overflow-auto px-4 py-4">
                 <div
                     className="rounded-2xl border overflow-hidden"
@@ -574,7 +599,7 @@ export function TimesheetView() {
                                     <div className="flex items-center gap-2">
                                         <CalendarDays className="h-3.5 w-3.5" />
                                         Projet
-                                        {orderedProjects.length > 0 && (
+                                        {orderedProjects.length > 0 && canEditTimesheet && (
                                             <button
                                                 onClick={clearAllProjects}
                                                 title="Tout supprimer"
@@ -636,7 +661,7 @@ export function TimesheetView() {
                                     return (
                                         <tr
                                             key={project}
-                                            draggable
+                                            draggable={canEditTimesheet}
                                             onDragStart={() => handleRowDragStart(rowIdx)}
                                             onDragOver={e => handleRowDragOver(e, rowIdx)}
                                             onDrop={() => handleRowDrop(rowIdx)}
@@ -645,7 +670,7 @@ export function TimesheetView() {
                                             style={{
                                                 borderBottom: "1px solid rgba(255,255,255,0.04)",
                                                 borderTop: isDragOver ? `2px solid ${primaryColor}` : undefined,
-                                                cursor: "grab",
+                                                cursor: canEditTimesheet ? "grab" : "default",
                                             }}
                                             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(255,255,255,0.03)"; }}
                                             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
@@ -667,12 +692,14 @@ export function TimesheetView() {
                                                                 EN COURS
                                                             </span>
                                                         )}
-                                                        <button
-                                                            onClick={() => removeProject(project)}
-                                                            className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all"
-                                                        >
-                                                            <X className="h-3 w-3" />
-                                                        </button>
+                                                        {canEditTimesheet && (
+                                                            <button
+                                                                onClick={() => removeProject(project)}
+                                                                className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>
@@ -691,7 +718,7 @@ export function TimesheetView() {
                                                     >
                                                         <button
                                                             onClick={e => openDropdown(e, project, date)}
-                                                            disabled={!currentUser}
+                                                            disabled={!canEditTimesheet}
                                                             className="w-12 rounded-lg py-1.5 text-sm font-bold tabular-nums transition-all"
                                                             style={
                                                                 isOpen
@@ -714,13 +741,13 @@ export function TimesheetView() {
                                                                         }
                                                             }
                                                             onMouseEnter={e => {
-                                                                if (!currentUser || isOpen) return;
+                                                                if (!canEditTimesheet || isOpen) return;
                                                                 (e.currentTarget as HTMLElement).style.borderColor = `${primaryColor}50`;
                                                                 (e.currentTarget as HTMLElement).style.backgroundColor = `${primaryColor}10`;
                                                                 (e.currentTarget as HTMLElement).style.color = primaryColor;
                                                             }}
                                                             onMouseLeave={e => {
-                                                                if (!currentUser || isOpen) return;
+                                                                if (!canEditTimesheet || isOpen) return;
                                                                 (e.currentTarget as HTMLElement).style.borderColor = h > 0 ? `${primaryColor}30` : "transparent";
                                                                 (e.currentTarget as HTMLElement).style.backgroundColor = h > 0 ? `${primaryColor}18` : "transparent";
                                                                 (e.currentTarget as HTMLElement).style.color = h > 0 ? primaryColor : "rgba(255,255,255,0.12)";
@@ -761,14 +788,21 @@ export function TimesheetView() {
                                         />
                                         <button
                                             onClick={e => {
+                                                if (!canEditTimesheet) return;
                                                 if (pickerAnchorRect) { setPickerAnchorRect(null); return; }
                                                 setPickerAnchorRect(e.currentTarget.getBoundingClientRect());
                                                 setPickerSearch("");
                                             }}
+                                            disabled={!canEditTimesheet}
                                             className="flex-1 text-left text-sm font-semibold transition-colors min-w-0 truncate"
-                                            style={{ color: `${primaryColor}70` }}
-                                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = primaryColor; }}
-                                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = `${primaryColor}70`; }}
+                                            style={{ color: canEditTimesheet ? `${primaryColor}70` : "rgba(255,255,255,0.35)" }}
+                                            onMouseEnter={e => {
+                                                if (!canEditTimesheet) return;
+                                                (e.currentTarget as HTMLElement).style.color = primaryColor;
+                                            }}
+                                            onMouseLeave={e => {
+                                                (e.currentTarget as HTMLElement).style.color = canEditTimesheet ? `${primaryColor}70` : "rgba(255,255,255,0.35)";
+                                            }}
                                         >
                                             Ajouter un projet...
                                         </button>
