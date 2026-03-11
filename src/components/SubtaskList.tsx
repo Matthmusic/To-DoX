@@ -67,6 +67,15 @@ export function parseFilePaths(text: string): Array<{ type: 'text' | 'path', con
     return parts.length > 0 ? parts : [{ type: 'text', content: text }];
 }
 
+/**
+ * Retourne uniquement le nom de fichier ou dossier (dernier segment du chemin)
+ */
+export function getPathDisplayName(path: string): string {
+    const normalized = path.replace(/[/\\]+$/, '');
+    const parts = normalized.split(/[/\\]/);
+    return parts[parts.length - 1] || path;
+}
+
 interface ContextMenuProps {
     x: number;
     y: number;
@@ -206,6 +215,21 @@ export function SubtaskItem({ subtask, task, isDragging }: SubtaskItemProps) {
                         onChange={(e) => setEditTitle(e.target.value)}
                         onBlur={handleSave}
                         onKeyDown={handleKeyDown}
+                        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.stopPropagation(); } }}
+                        onDrop={(e) => {
+                            if (e.dataTransfer.files.length === 0) return;
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const file = e.dataTransfer.files[0];
+                            const path = getDroppedFilePath(file);
+                            if (!path) return;
+                            const formattedPath = formatPathForInsertion(path);
+                            const input = e.currentTarget;
+                            const start = input.selectionStart ?? editTitle.length;
+                            const end = input.selectionEnd ?? editTitle.length;
+                            const newTitle = editTitle.slice(0, start) + (start > 0 ? ' ' : '') + formattedPath + editTitle.slice(end);
+                            setEditTitle(newTitle);
+                        }}
                         className="flex-1 rounded bg-white/10 px-2 py-1 text-sm text-slate-100 outline-none focus:bg-white/20"
                     />
                 ) : (
@@ -226,11 +250,16 @@ export function SubtaskItem({ subtask, task, isDragging }: SubtaskItemProps) {
                                             alert(`Chemin détecté: ${part.content}\n(Disponible uniquement en mode Electron)`);
                                         }
                                     }}
+                                    onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        navigator.clipboard.writeText(part.content);
+                                    }}
                                     className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
-                                    title={`Ouvrir: ${part.content}`}
+                                    title={part.content}
                                 >
                                     <ExternalLink className="h-3 w-3" />
-                                    {part.content}
+                                    {getPathDisplayName(part.content)}
                                 </button>
                             ) : (
                                 <span key={idx}>{part.content}</span>
@@ -285,6 +314,7 @@ export function SubtaskList({ task }: SubtaskListProps) {
     const { addSubtask, reorderSubtasks } = useStore();
     const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [isNewDropTarget, setIsNewDropTarget] = useState(false);
 
     const handleAdd = () => {
         if (newSubtaskTitle.trim()) {
@@ -349,8 +379,21 @@ export function SubtaskList({ task }: SubtaskListProps) {
                     value={newSubtaskTitle}
                     onChange={(e) => setNewSubtaskTitle(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Ajouter une sous-tâche..."
-                    className="flex-1 rounded-lg bg-white/10 px-3 py-2 text-sm text-slate-100 placeholder-slate-400 outline-none focus:bg-white/20"
+                    onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.stopPropagation(); setIsNewDropTarget(true); } }}
+                    onDragLeave={() => setIsNewDropTarget(false)}
+                    onDrop={(e) => {
+                        if (e.dataTransfer.files.length === 0) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsNewDropTarget(false);
+                        const file = e.dataTransfer.files[0];
+                        const path = getDroppedFilePath(file);
+                        if (!path) return;
+                        const formattedPath = formatPathForInsertion(path);
+                        setNewSubtaskTitle(prev => prev ? `${prev} ${formattedPath}` : formattedPath);
+                    }}
+                    placeholder="Ajouter une sous-tâche... (ou déposer un fichier)"
+                    className={`flex-1 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-400 outline-none transition ${isNewDropTarget ? 'bg-blue-500/15 border border-blue-400/50' : 'bg-white/10 focus:bg-white/20'}`}
                 />
                 <button
                     onClick={handleAdd}

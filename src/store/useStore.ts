@@ -75,6 +75,7 @@ interface StoreState {
     archiveProject: (projectName: string) => void;
     unarchiveProject: (projectName: string) => void;
     deleteArchivedProject: (projectName: string) => void;
+    renameProject: (oldName: string, newName: string) => void;
 
     // Templates
     templates: TaskTemplate[];
@@ -541,6 +542,42 @@ const useStore = create<StoreState>((set, get) => ({
                     : t
             )
         }));
+    },
+
+    renameProject: (oldName, newName) => {
+        if (!newName.trim() || newName === oldName) return;
+        const trimmed = newName.trim().toUpperCase();
+        set(state => {
+            // tasks
+            const tasks = state.tasks.map(t =>
+                t.project === oldName ? { ...t, project: trimmed } : t
+            );
+            // timeEntries
+            const timeEntries = state.timeEntries.map(e =>
+                e.project === oldName ? { ...e, project: trimmed } : e
+            );
+            // directories
+            const directories = { ...state.directories };
+            if (oldName in directories) {
+                directories[trimmed] = directories[oldName];
+                delete directories[oldName];
+            }
+            // projectColors
+            const projectColors = { ...state.projectColors };
+            if (oldName in projectColors) {
+                projectColors[trimmed] = projectColors[oldName];
+                delete projectColors[oldName];
+            }
+            // projectHistory
+            const projectHistory = state.projectHistory.map(p => p === oldName ? trimmed : p);
+            // collapsedProjects
+            const collapsedProjects: Record<string, boolean> = {};
+            for (const [key, val] of Object.entries(state.collapsedProjects)) {
+                const renamed = key.replace(`_${oldName}`, `_${trimmed}`);
+                collapsedProjects[renamed] = val;
+            }
+            return { tasks, timeEntries, directories, projectColors, projectHistory, collapsedProjects };
+        });
     },
 
     // Task reorder

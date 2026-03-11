@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, ArrowUpAZ, ArrowDownAZ, Search, X } from "lucide-react";
 import useStore from "../../store/useStore";
 import { GlassModal } from "../ui/GlassModal";
 import { alertModal, confirmModal } from "../../utils/confirm";
@@ -9,10 +9,12 @@ interface ProjectsListPanelProps {
 }
 
 export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
-    const { projectHistory, setProjectHistory, tasks, setTasks, directories, setDirectories } = useStore();
+    const { projectHistory, setProjectHistory, tasks, directories, setDirectories, renameProject } = useStore();
     const [localHistory, setLocalHistory] = useState<string[]>(() => [...projectHistory]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingValue, setEditingValue] = useState("");
+    const [search, setSearch] = useState("");
+    const [sortDir, setSortDir] = useState<'asc' | 'desc' | null>(null);
 
     // Compte le nombre de tâches par projet
     const taskCountByProject = useMemo(() => {
@@ -24,6 +26,18 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
         });
         return counts;
     }, [tasks]);
+
+    // Vue filtrée + triée (conserve l'index original de localHistory)
+    const displayList = useMemo(() => {
+        const filtered = localHistory
+            .map((name, index) => ({ name, index }))
+            .filter(({ name }) => name.toLowerCase().includes(search.toLowerCase()));
+
+        if (sortDir === 'asc') filtered.sort((a, b) => a.name.localeCompare(b.name));
+        else if (sortDir === 'desc') filtered.sort((a, b) => b.name.localeCompare(a.name));
+
+        return filtered;
+    }, [localHistory, search, sortDir]);
 
     function startEditing(index: number) {
         setEditingIndex(index);
@@ -46,11 +60,9 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
             return;
         }
 
-        // Mettre à jour la liste locale
         const newHistory = [...localHistory];
         newHistory[editingIndex] = newName;
         setLocalHistory(newHistory);
-
         setEditingIndex(null);
         setEditingValue("");
     }
@@ -65,74 +77,85 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
         const taskCount = taskCountByProject[projectName] || 0;
 
         if (taskCount > 0) {
-            if (!(await confirmModal(`Le projet "${projectName}" contient ${taskCount} tâche(s).Voulez - vous vraiment le supprimer de la liste ? (Les tâches ne seront pas supprimées)`))) {
+            if (!(await confirmModal(`Le projet "${projectName}" contient ${taskCount} tâche(s). Voulez-vous vraiment le supprimer de la liste ? (Les tâches ne seront pas supprimées)`))) {
                 return;
             }
         }
 
-        const newHistory = localHistory.filter((_, i) => i !== index);
-        setLocalHistory(newHistory);
+        setLocalHistory(localHistory.filter((_, i) => i !== index));
+        if (editingIndex === index) { setEditingIndex(null); setEditingValue(""); }
     }
 
     function save() {
-        // Détecter les renommages
-        const renames: Record<string, string> = {};
         projectHistory.forEach((oldName, index) => {
             const newName = localHistory[index];
             if (newName && newName !== oldName) {
-                renames[oldName] = newName;
+                renameProject(oldName, newName);
             }
         });
 
-        // Appliquer les renommages aux tâches
-        if (Object.keys(renames).length > 0) {
-            const newTasks = tasks.map(t => {
-                if (t.project && renames[t.project]) {
-                    return { ...t, project: renames[t.project] };
-                }
-                return t;
-            });
-            // Update store
-            setTasks(newTasks);
-        }
-
-        // Apply renames/removals to directories
-        // Combine renames and removals on a fresh copy of directories
-        const finalDirectories = { ...directories };
-
-        // Apply renames
-        if (Object.keys(renames).length > 0) {
-            Object.entries(renames).forEach(([oldName, newName]) => {
-                if (finalDirectories[oldName]) {
-                    finalDirectories[newName] = finalDirectories[oldName];
-                    delete finalDirectories[oldName];
-                }
-            });
-        }
-
-        // Apply removals
         const removed = projectHistory.filter(p => !localHistory.includes(p));
-        removed.forEach(p => {
-            delete finalDirectories[p];
-        });
+        if (removed.length > 0) {
+            const finalDirectories = { ...directories };
+            removed.forEach(p => { delete finalDirectories[p]; });
+            setDirectories(finalDirectories);
+        }
 
-        setDirectories(finalDirectories);
         setProjectHistory(localHistory);
         onClose();
     }
+
+    const toggleSort = () => {
+        setSortDir(d => d === 'asc' ? 'desc' : d === 'desc' ? null : 'asc');
+    };
 
     return (
         <GlassModal isOpen={true} onClose={onClose} title="Liste des projets" size="xl">
             <p className="mt-2 text-sm text-slate-400">
                 Gérez la liste des projets utilisés pour l'autocomplétion. Vous pouvez renommer ou supprimer des projets.
             </p>
-            <div className="mt-4 max-h-[50vh] space-y-2 overflow-auto pr-1">
-                {localHistory.length === 0 && (
+
+            {/* Barre recherche + tri */}
+            <div className="mt-3 flex gap-2">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Rechercher un projet..."
+                        className="w-full rounded-xl border border-white/10 bg-white/5 pl-8 pr-8 py-1.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-white/20 focus:bg-white/10"
+                    />
+                    {search && (
+                        <button
+                            onClick={() => setSearch("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                        >
+                            <X className="h-3.5 w-3.5" />
+                        </button>
+                    )}
+                </div>
+                <button
+                    onClick={toggleSort}
+                    title={sortDir === 'asc' ? 'Tri A→Z (cliquer pour Z→A)' : sortDir === 'desc' ? 'Tri Z→A (cliquer pour désactiver)' : 'Tri désactivé (cliquer pour A→Z)'}
+                    className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
+                        sortDir
+                            ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-200'
+                            : 'border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
+                    }`}
+                >
+                    {sortDir === 'desc' ? <ArrowDownAZ className="h-4 w-4" /> : <ArrowUpAZ className="h-4 w-4" />}
+                    {sortDir === 'asc' ? 'A→Z' : sortDir === 'desc' ? 'Z→A' : 'Trier'}
+                </button>
+            </div>
+
+            <div className="mt-3 max-h-[50vh] space-y-2 overflow-auto pr-1">
+                {displayList.length === 0 && (
                     <div className="text-sm text-slate-400">
-                        Aucun projet dans l'historique.
+                        {search ? `Aucun projet ne correspond à "${search}".` : 'Aucun projet dans l\'historique.'}
                     </div>
                 )}
-                {localHistory.map((project, index) => (
+                {displayList.map(({ name: project, index }) => (
                     <div key={index} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2">
                         {editingIndex === index ? (
                             <>
@@ -185,6 +208,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                     </div>
                 ))}
             </div>
+
             <div className="mt-4 flex justify-end gap-2">
                 <button
                     onClick={onClose}

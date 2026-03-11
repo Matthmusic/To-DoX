@@ -324,13 +324,18 @@ export function TimesheetView() {
         }));
     }
 
+    // Projets sur lesquels l'utilisateur est/était affecté (assigné ou créateur)
     const allProjectNames = useMemo(() => {
         const seen = new Set<string>();
         for (const t of tasks) {
-            if (!t.archived && !t.deletedAt && t.project) seen.add(t.project);
+            if (!t.archived && !t.deletedAt && t.project) {
+                if (!selectedViewUserId || t.assignedTo.includes(selectedViewUserId) || t.createdBy === selectedViewUserId) {
+                    seen.add(t.project);
+                }
+            }
         }
         return [...seen].sort();
-    }, [tasks]);
+    }, [tasks, selectedViewUserId]);
 
     // ── Drag-and-drop reorder des lignes
     const dragSrcIdxRef = useRef<number | null>(null);
@@ -933,7 +938,22 @@ export function TimesheetView() {
 
                         {/* Liste */}
                         <div className="max-h-52 overflow-y-auto pb-1.5">
-                            {pickerProjects.length === 0 ? (
+                            {/* Saisie libre si le texte ne correspond à aucun projet existant */}
+                            {pickerSearch.trim() && !orderedProjects.includes(pickerSearch.trim()) && !allProjectNames.some(p => p.toLowerCase() === pickerSearch.trim().toLowerCase()) && (
+                                <button
+                                    onClick={() => addProject(pickerSearch.trim())}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-white/80 transition-colors text-left border-b"
+                                    style={{ borderColor: `${primaryColor}20` }}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = `${primaryColor}15`; }}
+                                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
+                                >
+                                    <Plus className="h-3 w-3 shrink-0" style={{ color: primaryColor }} />
+                                    <span className="truncate font-semibold" style={{ color: primaryColor }}>
+                                        Ajouter « {pickerSearch.trim()} »
+                                    </span>
+                                </button>
+                            )}
+                            {pickerProjects.length === 0 && !pickerSearch.trim() ? (
                                 <div className="px-3 py-3 text-sm text-white/30 text-center italic">
                                     Aucun projet disponible
                                 </div>

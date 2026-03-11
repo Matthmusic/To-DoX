@@ -489,8 +489,9 @@ export function TaskCard({
                             ))}
                         </div>
                     )}
-                    {/* Boutons d'action de révision */}
-                    {!showCorrectionInput ? (
+                    {/* Boutons d'action de révision — visibles uniquement pour les réviseurs désignés */}
+                    {currentUser && (task.reviewers || []).includes(currentUser) && (
+                        !showCorrectionInput ? (
                         <div className="flex gap-2">
                             <button
                                 onClick={(e) => {
@@ -515,7 +516,7 @@ export function TaskCard({
                                 Corrections
                             </button>
                         </div>
-                    ) : (
+                        ) : (
                         <div className="space-y-1.5">
                             <textarea
                                 autoFocus
@@ -555,6 +556,7 @@ export function TaskCard({
                                 </button>
                             </div>
                         </div>
+                        )
                     )}
                 </div>
             )}

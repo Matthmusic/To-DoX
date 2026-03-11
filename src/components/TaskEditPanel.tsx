@@ -9,7 +9,7 @@ import type { Task, TaskData, RecurrenceType } from "../types";
 import { confirmModal } from "../utils/confirm";
 import { formatDateFull } from "../utils";
 import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw, Calendar, ExternalLink } from "lucide-react";
-import { parseFilePaths, getDroppedFilePath, formatPathForInsertion } from "./SubtaskList";
+import { parseFilePaths, getDroppedFilePath, formatPathForInsertion, getPathDisplayName } from "./SubtaskList";
 
 interface TaskEditPanelProps {
     task: Task;
@@ -46,6 +46,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
     const [localNotes, setLocalNotes] = useState(task.notes || "");
     const [notesEditing, setNotesEditing] = useState(false);
     const [notesDropTarget, setNotesDropTarget] = useState(false);
+    const [notesEditDropTarget, setNotesEditDropTarget] = useState(false);
     const notesRef = useRef<HTMLTextAreaElement>(null);
     const [showDateDropdown, setShowDateDropdown] = useState(false);
 
@@ -287,10 +288,12 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                             if (localNotes !== (task.notes || "")) onUpdate(task.id, { notes: localNotes });
                             setNotesEditing(false);
                         }}
-                        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) e.preventDefault(); }}
+                        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setNotesEditDropTarget(true); } }}
+                        onDragLeave={() => setNotesEditDropTarget(false)}
                         onDrop={(e) => {
                             if (e.dataTransfer.files.length === 0) return;
                             e.preventDefault();
+                            setNotesEditDropTarget(false);
                             const file = e.dataTransfer.files[0];
                             const path = getDroppedFilePath(file);
                             if (!path) return;
@@ -302,7 +305,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                             setLocalNotes(newNotes);
                             onUpdate(task.id, { notes: newNotes });
                         }}
-                        className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                        className={`rounded-2xl border px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] transition ${notesEditDropTarget ? 'border-blue-400/60 bg-blue-400/10' : 'border-white/15 bg-white/5'}`}
                         rows={3}
                         autoFocus
                     />
@@ -336,11 +339,16 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                                                 e.stopPropagation();
                                                 if (window.electronAPI?.openFolder) window.electronAPI.openFolder(part.content);
                                             }}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                navigator.clipboard.writeText(part.content);
+                                            }}
                                             className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
-                                            title={`Ouvrir: ${part.content}`}
+                                            title={part.content}
                                         >
                                             <ExternalLink className="h-3 w-3" />
-                                            {part.content}
+                                            {getPathDisplayName(part.content)}
                                         </button>
                                     ) : (
                                         <span key={idx} className="text-slate-300">{part.content}</span>

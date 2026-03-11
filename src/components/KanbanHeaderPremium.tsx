@@ -37,6 +37,7 @@ interface KanbanHeaderPremiumProps {
     filterProject: string;
     onProjectClick: (projectName: string) => void;
     onArchiveProject: (projectName: string) => void;
+    onRenameProject: (oldName: string, newName: string) => void;
     onOpenWeeklyReport: () => void;
     onOpenStorage: () => void;
     onOpenUsers: () => void;
@@ -77,6 +78,7 @@ export function KanbanHeaderPremium({
     filterProject,
     onProjectClick,
     onArchiveProject,
+    onRenameProject,
     onOpenWeeklyReport,
     onOpenStorage,
     onOpenUsers,
@@ -205,8 +207,8 @@ export function KanbanHeaderPremium({
     const viewButtons = [
         { id: 'kanban' as const, Icon: LayoutGrid, label: 'Kanban' },
         { id: 'timeline' as const, Icon: CalendarDays, label: 'Timeline' },
-        { id: 'dashboard' as const, Icon: BarChart3, label: 'Dashboard' },
         { id: 'terminées' as const, Icon: CheckCircle2, label: 'Terminées' },
+        { id: 'dashboard' as const, Icon: BarChart3, label: 'Dashboard' },
         { id: 'pointage' as const, Icon: Clock, label: 'Pointage' },
     ];
 
@@ -513,6 +515,7 @@ export function KanbanHeaderPremium({
                                 isSelected={filterProject === stat.project}
                                 onClick={() => onProjectClick(stat.project)}
                                 onArchiveProject={() => onArchiveProject(stat.project)}
+                                onRenameProject={(newName) => onRenameProject(stat.project, newName)}
                                 projectColors={projectColors}
                                 onColorChange={(idx) => setProjectColor(stat.project, idx)}
                             />

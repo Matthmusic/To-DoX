@@ -127,7 +127,7 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
 export default function ToDoX() {
     // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, currentUser, viewAsUser, pendingMentions, clearPendingMentions, appNotifications, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, renameProject, currentUser, viewAsUser, pendingMentions, clearPendingMentions, appNotifications, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId } = useStore();
 
     const mentionCount = currentUser ? (pendingMentions[currentUser] || []).length : 0;
 
@@ -386,6 +386,7 @@ export default function ToDoX() {
                 filterProject={filterProject}
                 onProjectClick={handleProjectClick}
                 onArchiveProject={archiveProject}
+                onRenameProject={renameProject}
                 onOpenWeeklyReport={() => setShowWeeklyReportPanel(true)}
                 onOpenStorage={() => setShowStoragePanel(true)}
                 onOpenUsers={() => setShowUsersPanel(true)}
