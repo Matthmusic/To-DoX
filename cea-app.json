@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.1.6",
+    "version": "2.1.8",
     "description": {
       "short": "Kanban intelligent avec interface mobile-first, workflow de revision et notifications.",
       "long": "To-DoX est une application Kanban moderne pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recurrence, des templates, un dashboard KPIs, une vue Timeline/Gantt, un workflow de revision complet, une vue Terminees, des notifications in-app, une interface responsive mobile-first (burger menu, onglets Kanban), ainsi que l'export et l'import des donnees. Les donnees sont stockees localement et peuvent etre synchronisees via OneDrive."
@@ -72,9 +72,25 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.6.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.8.exe"
   },
   "changelog": {
+    "2.1.8": {
+      "date": "2026-03-11",
+      "changes": [
+        "Vue Terminées : séparation en 2 colonnes — 'Mes tâches' (assigné ou réviseur) vs 'Autres tâches'",
+        "Archiver/Rouvrir restreints aux tâches où l'utilisateur courant est assigné ou réviseur",
+        "Couleurs de projet appliquées sur les headers des cards dans la vue Terminées",
+        "Cards projet repliables dans la vue Terminées",
+        "Tâches dépliables inline : affichage de la priorité, échéance, réviseurs, notes et sous-tâches"
+      ]
+    },
+    "2.1.7": {
+      "date": "2026-03-10",
+      "changes": [
+        "Version intermédiaire"
+      ]
+    },
     "2.1.6": {
       "date": "2026-03-10",
       "changes": [
