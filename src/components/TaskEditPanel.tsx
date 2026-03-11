@@ -6,7 +6,7 @@ import { ProjectAutocomplete } from "./ProjectAutocomplete";
 import { DatePickerDropdown } from "./DatePickerModal";
 import useStore from "../store/useStore";
 import type { Task, TaskData, RecurrenceType } from "../types";
-import { confirmModal } from "../utils/confirm";
+import { confirmModal, alertModal } from "../utils/confirm";
 import { formatDateFull } from "../utils";
 import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw, Calendar, ExternalLink } from "lucide-react";
 import { parseFilePaths, getDroppedFilePath, formatPathForInsertion, getPathDisplayName } from "./SubtaskList";
@@ -383,16 +383,15 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                     ))}
                 </div>
 
-                {/* Enregistrer comme template */}
+                {/* Enregistrer les sous-tâches comme template */}
                 <button
-                    onClick={() => {
+                    onClick={async () => {
+                        if (task.subtasks.length === 0) {
+                            await alertModal("Cette tâche n'a aucune sous-tâche à enregistrer comme template.");
+                            return;
+                        }
                         addTemplate({
                             name: task.title,
-                            title: task.title,
-                            project: task.project,
-                            priority: task.priority,
-                            assignedTo: task.assignedTo,
-                            notes: task.notes || '',
                             subtaskTitles: task.subtasks.map(s => s.title),
                         });
                         onClose();
@@ -400,7 +399,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                     className="mt-2 flex items-center gap-2 rounded-2xl border border-violet-400/40 bg-violet-400/10 px-2 py-1 text-violet-200 transition hover:bg-violet-400/20 text-sm"
                 >
                     <BookmarkPlus className="w-4 h-4" />
-                    Enregistrer comme template
+                    Enregistrer les sous-tâches comme template
                 </button>
 
                 {task.status === "done" && (

@@ -7,7 +7,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { backdropVariants, modalVariants } from '../../utils/animations';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 
@@ -15,7 +15,7 @@ interface GlassModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
-  title?: string;
+  title?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   showCloseButton?: boolean;
   closeOnBackdrop?: boolean;
@@ -137,10 +137,10 @@ export function GlassModal({
 
                 {/* Header */}
                 {(title || showCloseButton) && (
-                  <div className="relative flex items-center justify-between px-4 py-4 sm:px-8 sm:py-6 border-b border-theme-primary">
+                  <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-4 sm:px-8 sm:py-6 border-b border-theme-primary bg-theme-secondary/95 backdrop-blur-sm">
                     {title && (
                       <h2
-                        className="text-lg sm:text-2xl font-bold bg-clip-text text-transparent"
+                        className="text-lg sm:text-2xl font-bold bg-clip-text text-transparent flex items-center"
                         style={{
                           backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
                         }}

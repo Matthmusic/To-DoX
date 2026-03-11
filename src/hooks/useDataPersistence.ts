@@ -8,6 +8,19 @@ import { mergeTasksByUpdatedAt, migrateTask } from '../utils/taskMigration';
 type StoredDataRaw = Omit<StoredData, 'tasks'> & { tasks?: unknown[] };
 
 /**
+ * Migration silencieuse des templates vers le nouveau format (sous-tâches uniquement).
+ * Les anciens champs (title, project, priority, assignedTo, notes) sont ignorés.
+ */
+function migrateTemplate(raw: unknown): TaskTemplate {
+    const t = raw as Record<string, unknown>;
+    return {
+        id: (t.id as string) || crypto.randomUUID(),
+        name: (t.name as string) || 'Template',
+        subtaskTitles: Array.isArray(t.subtaskTitles) ? t.subtaskTitles as string[] : [],
+    };
+}
+
+/**
  * Merge deux états de commentaires (fichier vs local) avec soft-delete.
  * Règles :
  *  - Un commentaire local absent du fichier est conservé (pas encore sauvegardé)
@@ -116,7 +129,7 @@ export function useDataPersistence() {
                     if (parsed.notificationSettings) setNotificationSettings(parsed.notificationSettings);
                     if (parsed.comments) setComments(parsed.comments);
                     if (parsed.pendingMentions) setPendingMentions(parsed.pendingMentions);
-                    if (parsed.templates) setTemplates(parsed.templates as TaskTemplate[]);
+                    if (parsed.templates) setTemplates((parsed.templates as unknown[]).map(migrateTemplate));
                     if (parsed.savedReports) setSavedReports(parsed.savedReports as SavedReport[]);
                     if (parsed.appNotifications) setAppNotifications(parsed.appNotifications as AppNotification[]);
                     if (parsed.timeEntries) setTimeEntries(parsed.timeEntries as TimeEntry[]);
@@ -190,7 +203,7 @@ export function useDataPersistence() {
                         if (result.data.projectColors) setProjectColors(result.data.projectColors);
                         if (result.data.notificationSettings) setNotificationSettings(result.data.notificationSettings);
                         if (result.data.pendingMentions) setPendingMentions(result.data.pendingMentions);
-                        if (result.data.templates) setTemplates(result.data.templates as TaskTemplate[]);
+                        if (result.data.templates) setTemplates((result.data.templates as unknown[]).map(migrateTemplate));
                         if (result.data.savedReports) setSavedReports(result.data.savedReports as SavedReport[]);
                         if (result.data.appNotifications) setAppNotifications(result.data.appNotifications as AppNotification[]);
                         if (result.data.timeEntries) setTimeEntries(result.data.timeEntries as TimeEntry[]);

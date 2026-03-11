@@ -270,6 +270,15 @@ ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });
 
+ipcMain.handle('get-login-item', () => {
+  return app.getLoginItemSettings();
+});
+
+ipcMain.handle('set-login-item', (_event, openAtLogin) => {
+  app.setLoginItemSettings({ openAtLogin });
+  return true;
+});
+
 ipcMain.handle('get-sound-url', async (_event, soundFile) => {
   try {
     const url = await resolveSoundUrl(soundFile);

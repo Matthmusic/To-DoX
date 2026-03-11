@@ -64,6 +64,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Récupérer le chemin natif d'un File (fonctionne aussi pour les dossiers)
   getPathForFile: (file) => webUtils.getPathForFile(file),
 
+  // Démarrage automatique avec Windows
+  getLoginItem: () => ipcRenderer.invoke('get-login-item'),
+  setLoginItem: (openAtLogin) => ipcRenderer.invoke('set-login-item', openAtLogin),
+
   // Vérifier si on est dans Electron
   isElectron: true
 });

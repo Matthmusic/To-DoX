@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { HardDrive } from "lucide-react";
 import useStore from "../../store/useStore";
 import { GlassModal } from "../ui/GlassModal";
 import { alertModal } from "../../utils/confirm";
+import { useTheme } from "../../hooks/useTheme";
 
 interface StoragePanelProps {
     onClose: () => void;
@@ -9,6 +11,8 @@ interface StoragePanelProps {
 
 export function StoragePanel({ onClose }: StoragePanelProps) {
     const { storagePath, setStoragePath } = useStore();
+    const { activeTheme } = useTheme();
+    const primaryColor = activeTheme.palette.primary;
     const [localPath, setLocalPath] = useState(storagePath || "");
     const [changeMessage, setChangeMessage] = useState("");
 
@@ -45,7 +49,7 @@ export function StoragePanel({ onClose }: StoragePanelProps) {
     }
 
     return (
-        <GlassModal isOpen={true} onClose={onClose} title="Configuration du stockage" size="lg">
+        <GlassModal isOpen={true} onClose={onClose} title={<><HardDrive className="w-6 h-6 mr-2" style={{ color: primaryColor }} />Configuration du stockage</>} size="xl">
             <div className="mt-4 space-y-4">
                 <div className="rounded-2xl border border-indigo-400/30 bg-indigo-400/5 p-4">
                     <h4 className="text-sm font-semibold text-indigo-200">🗂️ Stockage Partagé</h4>

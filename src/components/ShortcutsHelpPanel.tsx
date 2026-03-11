@@ -93,7 +93,7 @@ export function ShortcutsHelpPanel({ onClose, shortcuts }: ShortcutsHelpPanelPro
   };
 
   return (
-    <GlassModal isOpen={true} onClose={onClose} title="Raccourcis Clavier" size="md">
+    <GlassModal isOpen={true} onClose={onClose} title={<><Keyboard className="w-6 h-6 mr-2 text-cyan-400" />Raccourcis Clavier</>} size="md">
       <div className="space-y-6">
         {/* Introduction */}
         <div className="flex items-center gap-2 text-slate-300">

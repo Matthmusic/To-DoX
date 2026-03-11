@@ -48,6 +48,7 @@ import { NotificationsPanel } from "./components/settings/NotificationsPanel";
 
 // Composants thèmes
 import { ThemePanel } from "./components/settings/ThemePanel";
+import { TemplatesPanel } from "./components/settings/TemplatesPanel";
 
 // Error Boundary
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -166,12 +167,14 @@ export default function ToDoX() {
         localStorage.getItem('todox_notif_enabled') !== 'false'
     );
     const [showThemesPanel, setShowThemesPanel] = useState(false);
+    const [showTemplatesPanel, setShowTemplatesPanel] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
     const [centeredTask, setCenteredTask] = useState<Task | null>(null);
     const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard' | 'terminées' | 'pointage'>('kanban');
     const importFileRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<{ focus: () => void }>(null);
     const quickAddRef = useRef<{ focus: () => void }>(null);
+    const [quickAddTrigger, setQuickAddTrigger] = useState(0);
 
     // Persist collapsed state
     useEffect(() => {
@@ -333,7 +336,7 @@ export default function ToDoX() {
     // Callbacks pour les raccourcis clavier
     const shortcutsCallbacks: ShortcutsContextValue = {
         focusQuickAdd: () => {
-            quickAddRef.current?.focus();
+            setQuickAddTrigger(t => t + 1);
         },
 
         focusSearch: () => {
@@ -411,12 +414,14 @@ export default function ToDoX() {
                 onExport={handleExport}
                 onImport={handleImportClick}
                 onOpenHelp={() => setShowHelpPanel(true)}
+                onOpenTemplates={() => setShowTemplatesPanel(true)}
                 activeView={activeView}
                 onViewChange={setActiveView}
                 filterSearch={filterSearch}
                 onSearchChange={setFilterSearch}
                 searchInputRef={searchInputRef}
                 quickAddRef={quickAddRef}
+                triggerOpenQuickAdd={quickAddTrigger}
                 showSearch={showSearch}
             />
 
@@ -548,6 +553,12 @@ export default function ToDoX() {
             {showThemesPanel && (
                 <ThemePanel
                     onClose={() => setShowThemesPanel(false)}
+                />
+            )}
+
+            {showTemplatesPanel && (
+                <TemplatesPanel
+                    onClose={() => setShowTemplatesPanel(false)}
                 />
             )}
 

@@ -1,6 +1,6 @@
-import { createPortal } from 'react-dom';
-import { X, Palette } from 'lucide-react';
+import { Palette } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
+import { GlassModal } from '../ui/GlassModal';
 import type { Theme } from '../../types';
 
 interface ThemePanelProps {
@@ -18,33 +18,16 @@ export function ThemePanel({ onClose }: ThemePanelProps) {
   const allThemes = [...presetThemes, ...customThemes];
   const darkThemes = allThemes.filter(t => t.mode === 'dark');
   const lightThemes = allThemes.filter(t => t.mode === 'light');
+  const primaryColor = activeTheme.palette.primary;
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
-      <div
-        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto border-2 border-theme-primary rounded-2xl shadow-2xl"
-        style={{
-          backdropFilter: 'blur(40px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-          backgroundColor: 'var(--bg-secondary)',
-          opacity: 0.98
-        }}
-      >
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-theme-primary bg-theme-secondary/95 backdrop-blur-sm">
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-theme-primary to-theme-secondary bg-clip-text text-transparent flex items-center gap-2">
-            <Palette className="w-6 h-6 text-theme-primary" />
-            Thèmes et Apparence
-          </h2>
-          <button
-            onClick={onClose}
-            className="flex items-center justify-center w-10 h-10 rounded-full border border-theme-primary bg-white/5 text-theme-muted hover:text-theme-primary hover:bg-red-500/20 hover:border-red-500/50 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-8">
+  return (
+    <GlassModal
+      isOpen={true}
+      onClose={onClose}
+      title={<><Palette className="w-6 h-6 mr-2" style={{ color: primaryColor }} />Thèmes et Apparence</>}
+      size="xl"
+    >
+      <div className="space-y-8">
           {/* Section Thèmes */}
           <section>
             <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
@@ -83,10 +66,17 @@ export function ThemePanel({ onClose }: ThemePanelProps) {
             </section>
           )}
 
-        </div>
       </div>
-    </div>,
-    document.body
+
+      <div className="mt-6 flex justify-end">
+        <button
+          onClick={onClose}
+          className="rounded-2xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 px-6 py-2 font-semibold text-slate-900 shadow-lg shadow-emerald-500/20"
+        >
+          Fermer
+        </button>
+      </div>
+    </GlassModal>
   );
 }
 

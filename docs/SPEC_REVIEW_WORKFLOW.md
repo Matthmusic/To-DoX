@@ -1,8 +1,8 @@
 # 📋 Spec — Workflow de Révision & Centre de Notifications
 
-**Statut :** 📝 Spécification
+**Statut :** ✅ Implémenté en v2.1.0
 **Date :** 27 février 2026
-**Version cible :** v2.1.0
+**Version livrée :** v2.1.0
 
 ---
 

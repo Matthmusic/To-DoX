@@ -122,6 +122,8 @@ export interface ElectronAPI {
   castDiscover: () => Promise<{ success: boolean; devices: CastDevice[]; error?: string }>;
   castLaunch: (host: string, port: number, appId?: string) => Promise<{ success: boolean; url?: string; warning?: string; error?: string }>;
   castGetReceiverUrl: () => Promise<{ success: boolean; receiverUrl?: string; error?: string }>;
+  getLoginItem: () => Promise<{ openAtLogin: boolean }>;
+  setLoginItem: (openAtLogin: boolean) => Promise<boolean>;
 }
 
 export interface CastDevice {
@@ -184,16 +186,11 @@ export interface Recurrence {
 }
 
 /**
- * Template de tâche réutilisable
+ * Template de sous-tâches réutilisable
  */
 export interface TaskTemplate {
   id: string;
   name: string;
-  title: string;
-  project: string;
-  priority: 'low' | 'med' | 'high';
-  assignedTo: string[];
-  notes: string;
   subtaskTitles: string[];
 }
 
@@ -232,6 +229,7 @@ export interface AppNotification {
   message: string;
   createdAt: number;
   readAt?: number;
+  deletedBy?: string[];  // IDs des utilisateurs ayant supprimé cette notification pour eux
 }
 
 /**

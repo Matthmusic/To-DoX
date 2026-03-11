@@ -15,25 +15,24 @@
 ### 1. Mettre à jour la version dans package.json
 
 ```bash
-cd "c:\DEV\ToolBox CEAI\To-DoX\smart-todo"
+cd "c:\DEV\TO DO X\To-DoX"
 ```
 
 Ouvrir `package.json` et modifier la ligne :
 ```json
-"version": "1.X.X"  // Incrémenter selon SemVer
+"version": "2.X.X"  // Incrémenter selon SemVer
 ```
 
 **Règles SemVer :**
-- `1.0.0 → 1.0.1` : Bug fix / correction
-- `1.0.0 → 1.1.0` : Nouvelle fonctionnalité
-- `1.0.0 → 2.0.0` : Breaking change
+- `2.1.0 → 2.1.1` : Bug fix / correction
+- `2.1.0 → 2.2.0` : Nouvelle fonctionnalité
+- `2.0.0 → 3.0.0` : Breaking change
 
 ### 2. Commiter le changement de version
 
 ```bash
-cd "c:\DEV\ToolBox CEAI\To-DoX"
-git add smart-todo/package.json
-git commit -m "chore: bump version to 1.X.X"
+git add To-DoX/package.json
+git commit -m "chore: bump version to 2.X.X"
 ```
 
 ### 3. Commiter les modifications du code
@@ -60,11 +59,11 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
 
 ```bash
 # Créer le tag (ATTENTION : préfixe v obligatoire)
-git tag -a v1.X.X -m "Release v1.X.X - Nom de la release"
+git tag -a v2.X.X -m "Release v2.X.X - Nom de la release"
 
 # Pousser TOUT vers GitHub
 git push origin main
-git push origin v1.X.X
+git push origin v2.X.X
 ```
 
 ### 5. Attendre le workflow GitHub Actions
@@ -91,16 +90,16 @@ Un script `deploy.sh` sera créé pour automatiser tout ça en une seule command
 
 ```bash
 # Modifier package.json manuellement
-git add smart-todo/package.json
+git add To-DoX/package.json
 git commit --amend --no-edit
 
 # Recréer le tag
-git tag -d v1.X.X
-git tag -a v1.X.X -m "Release v1.X.X - Nom"
+git tag -d v2.X.X
+git tag -a v2.X.X -m "Release v2.X.X - Nom"
 
 # Push forcé (ATTENTION)
 git push --force origin main
-git push --force origin v1.X.X
+git push --force origin v2.X.X
 ```
 
 ### Le workflow ne se déclenche pas

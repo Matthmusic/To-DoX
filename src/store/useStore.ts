@@ -82,7 +82,7 @@ interface StoreState {
     setTemplates: (templates: TaskTemplate[]) => void;
     addTemplate: (template: Omit<TaskTemplate, 'id'>) => void;
     deleteTemplate: (id: string) => void;
-    createTaskFromTemplate: (templateId: string) => void;
+    applyTemplateToTask: (taskId: string, templateId: string) => void;
 
     // Saved Reports (CRs)
     savedReports: SavedReport[];
@@ -96,6 +96,7 @@ interface StoreState {
     addAppNotification: (notif: Omit<AppNotification, 'id' | 'createdAt'>) => void;
     markNotificationRead: (notifId: string) => void;
     markAllNotificationsRead: (userId: string) => void;
+    deleteNotificationForUser: (notifId: string, userId: string) => void;
 
     // Review workflow
     setReviewers: (taskId: string, reviewers: string[]) => void;
@@ -619,22 +620,10 @@ const useStore = create<StoreState>((set, get) => ({
     deleteTemplate: (id) => {
         set(state => ({ templates: state.templates.filter(t => t.id !== id) }));
     },
-    createTaskFromTemplate: (templateId) => {
-        const { templates, currentUser } = get();
-        const tpl = templates.find(t => t.id === templateId);
-        if (!tpl || !currentUser) return;
-        get().addTask({
-            title: tpl.title,
-            project: tpl.project,
-            priority: tpl.priority,
-            assignedTo: tpl.assignedTo.length > 0 ? tpl.assignedTo : [currentUser],
-            notes: tpl.notes,
-        });
-        // Ajouter les sous-tâches après création
-        const newTask = get().tasks[0];
-        if (newTask && tpl.subtaskTitles.length > 0) {
-            tpl.subtaskTitles.forEach(title => get().addSubtask(newTask.id, title));
-        }
+    applyTemplateToTask: (taskId, templateId) => {
+        const tpl = get().templates.find(t => t.id === templateId);
+        if (!tpl) return;
+        tpl.subtaskTitles.forEach(title => get().addSubtask(taskId, title));
     },
 
     // Saved Reports
@@ -667,6 +656,16 @@ const useStore = create<StoreState>((set, get) => ({
         set(state => ({
             appNotifications: state.appNotifications.map(n =>
                 n.toUserId === userId && !n.readAt ? { ...n, readAt: Date.now() } : n
+            )
+        }));
+    },
+
+    deleteNotificationForUser: (notifId, userId) => {
+        set(state => ({
+            appNotifications: state.appNotifications.map(n =>
+                n.id === notifId
+                    ? { ...n, deletedBy: [...(n.deletedBy ?? []), userId] }
+                    : n
             )
         }));
     },

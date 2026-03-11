@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { createPortal } from "react-dom";
-import { Calendar, Hash, AtSign, Sparkles, FolderPlus, Palette, LayoutTemplate } from "lucide-react";
+import { Calendar, Hash, AtSign, Sparkles, FolderPlus, Palette } from "lucide-react";
 import { PROJECT_COLORS } from "../constants";
 import { addDaysISO, formatDateFull } from "../utils";
 import { alertModal } from "../utils/confirm";
@@ -88,7 +88,7 @@ function ProjectExistsModal({ existingProject, onUseExisting, onCreateNew, onCan
  * Expose une méthode focus() via ref pour permettre le focus programmatique depuis les raccourcis clavier
  */
 export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) => {
-    const { addTask, projectHistory, users, directories, projectColors, setDirectories, setProjectColor, templates, createTaskFromTemplate, deleteTemplate, currentUser } = useStore();
+    const { addTask, projectHistory, users, directories, projectColors, setDirectories, setProjectColor, currentUser } = useStore();
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
     const secondaryColor = activeTheme.palette.secondary;
@@ -105,7 +105,6 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
     const [showColorPicker, setShowColorPicker] = useState(false);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showProjectPicker, setShowProjectPicker] = useState(false);
-    const [showTemplates, setShowTemplates] = useState(false);
     const [showUserPicker, setShowUserPicker] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
 
@@ -431,45 +430,6 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
                                 </div>
                             )}
                         </div>
-
-                        {/* Templates */}
-                        {templates.length > 0 && (
-                            <div className="relative">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowTemplates(v => !v)}
-                                    className="hidden md:flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-theme-secondary transition-all hover:bg-white/10 hover:text-white whitespace-nowrap"
-                                    title="Créer depuis un template"
-                                >
-                                    <LayoutTemplate className="h-3.5 w-3.5" />
-                                    <span className="hidden lg:inline">Template</span>
-                                </button>
-                                {showTemplates && (
-                                    <div className="absolute bottom-full mb-2 right-0 w-64 rounded-2xl border border-white/10 bg-[#161b2e] shadow-2xl p-2 z-[99999]">
-                                        <p className="text-xs text-slate-500 px-2 pb-1 font-semibold">Templates enregistrés</p>
-                                        {templates.map(tpl => (
-                                            <div key={tpl.id} className="flex items-center justify-between rounded-xl hover:bg-white/5 px-2 py-1.5 group">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => { createTaskFromTemplate(tpl.id); setShowTemplates(false); }}
-                                                    className="flex-1 text-left text-sm text-slate-200 truncate"
-                                                >
-                                                    <span className="block font-medium truncate">{tpl.name}</span>
-                                                    <span className="block text-xs text-slate-500 truncate">{tpl.project}</span>
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => deleteTemplate(tpl.id)}
-                                                    className="ml-2 text-slate-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition"
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
 
                         {/* Date Picker */}
                         <div className="relative hidden md:block">

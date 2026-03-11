@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CheckCircle2, RotateCcw, Eye, Clock, CheckCheck } from "lucide-react";
+import { Bell, CheckCircle2, RotateCcw, Eye, Clock, CheckCheck, Trash2 } from "lucide-react";
 import useStore from "../store/useStore";
 import type { AppNotification } from "../types";
 
@@ -31,11 +31,11 @@ function timeAgo(ts: number): string {
 }
 
 export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: NotificationDropdownProps) {
-    const { currentUser, appNotifications, markNotificationRead, markAllNotificationsRead } = useStore();
+    const { currentUser, appNotifications, markNotificationRead, markAllNotificationsRead, deleteNotificationForUser } = useStore();
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const myNotifs = appNotifications
-        .filter(n => n.toUserId === currentUser)
+        .filter(n => n.toUserId === currentUser && !(n.deletedBy ?? []).includes(currentUser ?? ''))
         .sort((a, b) => b.createdAt - a.createdAt)
         .slice(0, 50);
 
@@ -95,30 +95,46 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
                     </div>
                 ) : (
                     myNotifs.map(notif => (
-                        <button
+                        <div
                             key={notif.id}
-                            onClick={() => {
-                                markNotificationRead(notif.id);
-                                onTaskClick(notif.taskId);
-                                onClose();
-                            }}
-                            className={`w-full flex items-start gap-3 px-4 py-3 text-left transition hover:bg-white/5 border-b border-white/5 ${!notif.readAt ? "bg-white/[0.03]" : ""}`}
+                            className={`group flex items-start gap-3 px-4 py-3 border-b border-white/5 transition hover:bg-white/5 ${!notif.readAt ? "bg-white/[0.03]" : ""}`}
                         >
                             <div className="mt-0.5 flex-shrink-0">
                                 {getNotifIcon(notif.type)}
                             </div>
-                            <div className="flex-1 min-w-0">
+                            <button
+                                onClick={() => {
+                                    markNotificationRead(notif.id);
+                                    onTaskClick(notif.taskId);
+                                    onClose();
+                                }}
+                                className="flex-1 min-w-0 text-left"
+                            >
                                 <p className={`text-xs leading-snug ${!notif.readAt ? "text-white font-semibold" : "text-slate-300"}`}>
                                     {notif.message}
                                 </p>
                                 <span className="text-[10px] text-slate-500 mt-0.5 block">
                                     {timeAgo(notif.createdAt)}
                                 </span>
+                            </button>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                                {!notif.readAt && (
+                                    <div className="mt-1.5 h-2 w-2 rounded-full bg-violet-400" />
+                                )}
+                                {currentUser && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            deleteNotificationForUser(notif.id, currentUser);
+                                        }}
+                                        className="p-1 rounded hover:bg-rose-400/15 text-slate-500 hover:text-rose-400 transition opacity-0 group-hover:opacity-100"
+                                        title="Supprimer cette notification"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                )}
                             </div>
-                            {!notif.readAt && (
-                                <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-violet-400" />
-                            )}
-                        </button>
+                        </div>
                     ))
                 )}
             </div>

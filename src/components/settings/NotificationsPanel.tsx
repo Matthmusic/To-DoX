@@ -3,10 +3,10 @@
  * Interface pour configurer les notifications desktop natives
  */
 
-import { createPortal } from 'react-dom';
-import { X, Bell, BellOff, Clock, Moon, Volume2, VolumeX, AlertCircle, Music, Play } from 'lucide-react';
+import { Bell, BellOff, Clock, Moon, Volume2, VolumeX, AlertCircle, Music, Play, Power } from 'lucide-react';
+import { GlassModal } from '../ui/GlassModal';
 import useStore from '../../store/useStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { NOTIFICATION_SOUNDS } from '../../constants';
 import { playSoundFile } from '../../utils/sound';
@@ -19,8 +19,22 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
   const { notificationSettings, updateNotificationSettings } = useStore();
   const { activeTheme } = useTheme();
   const primaryColor = activeTheme.palette.primary;
-  const secondaryColor = activeTheme.palette.secondary;
   const [playingSound, setPlayingSound] = useState<string | null>(null);
+  const [openAtLogin, setOpenAtLogin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!window.electronAPI?.getLoginItem) return;
+    window.electronAPI.getLoginItem().then(result => {
+      setOpenAtLogin(result.openAtLogin);
+    }).catch(() => { /* silencieux en dev */ });
+  }, []);
+
+  const handleToggleStartup = async () => {
+    if (!window.electronAPI?.setLoginItem || openAtLogin === null) return;
+    const next = !openAtLogin;
+    await window.electronAPI.setLoginItem(next);
+    setOpenAtLogin(next);
+  };
 
   const handleToggle = (key: keyof typeof notificationSettings) => {
     updateNotificationSettings({ [key]: !notificationSettings[key] });
@@ -52,39 +66,14 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
   };
 
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
-      {/* Panel */}
-      <div
-        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto border-2 border-theme-primary rounded-2xl shadow-2xl"
-        style={{
-          backdropFilter: 'blur(40px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-          backgroundColor: 'var(--bg-secondary)',
-          opacity: 0.98
-        }}
-      >
-        {/* Header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-theme-primary bg-theme-secondary/95 backdrop-blur-sm">
-          <h2
-            className="text-2xl font-bold bg-clip-text text-transparent flex items-center gap-2"
-            style={{
-              backgroundImage: `linear-gradient(to right, ${primaryColor}, ${secondaryColor})`
-            }}
-          >
-            <Bell className="w-6 h-6" style={{ color: primaryColor }} />
-            Notifications Desktop
-          </h2>
-          <button
-            onClick={onClose}
-            className="flex items-center justify-center w-10 h-10 rounded-full border border-theme-primary bg-white/5 text-theme-muted hover:text-theme-primary hover:bg-red-500/20 hover:border-red-500/50 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
+  return (
+    <GlassModal
+      isOpen={true}
+      onClose={onClose}
+      title={<><Bell className="w-6 h-6 mr-2" style={{ color: primaryColor }} />Notifications Desktop</>}
+      size="xl"
+    >
+      <div className="space-y-6">
           {/* Activation globale */}
           <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-theme-primary">
             <div className="flex items-center gap-3">
@@ -320,10 +309,24 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
             </div>
           )}
 
-        </div>
+          {/* Section démarrage Windows */}
+          {window.electronAPI?.isElectron && openAtLogin !== null && (
+            <div className="space-y-3 pt-4 border-t border-theme-primary">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Power className="w-5 h-5 text-emerald-400" />
+                Démarrage système
+              </h3>
+              <ToggleOption
+                label="Lancer To-DoX au démarrage de Windows"
+                description="Démarrer l'application automatiquement à l'ouverture de session"
+                enabled={openAtLogin}
+                onToggle={handleToggleStartup}
+              />
+            </div>
+          )}
+
       </div>
-    </div>,
-    document.body
+    </GlassModal>
   );
 }
 

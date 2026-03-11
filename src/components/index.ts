@@ -34,4 +34,4 @@ export { ConfirmModalHost } from './ConfirmModalHost';
 
 // UI
 export { Modal } from './ui/Modal';
-export { DropdownMenu, DropdownItem } from './DropdownMenu';
+export { DropdownMenu, DropdownItem, DropdownSection } from './DropdownMenu';

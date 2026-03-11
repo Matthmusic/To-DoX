@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
+import { FolderOpen } from "lucide-react";
 import useStore from "../../store/useStore";
 import type { Directories } from "../../types";
 import { GlassModal } from "../ui/GlassModal";
+import { useTheme } from "../../hooks/useTheme";
 
 interface ProjectDirsProps {
     onClose: () => void;
@@ -9,6 +11,8 @@ interface ProjectDirsProps {
 
 export function ProjectDirs({ onClose }: ProjectDirsProps) {
     const { tasks, directories, setDirectories } = useStore();
+    const { activeTheme } = useTheme();
+    const primaryColor = activeTheme.palette.primary;
 
     // Calculer la liste des projets (hors archives)
     const projects = useMemo(() => {
@@ -28,7 +32,7 @@ export function ProjectDirs({ onClose }: ProjectDirsProps) {
     }
 
     return (
-        <GlassModal isOpen={true} onClose={onClose} title="Dossiers projets" size="lg">
+        <GlassModal isOpen={true} onClose={onClose} title={<><FolderOpen className="w-6 h-6 mr-2" style={{ color: primaryColor }} />Dossiers projets</>} size="xl">
             <p className="mt-2 text-sm text-slate-400">
                 Saisis le chemin local du dossier pour chaque projet. Exemples :
                 <br />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { GripVertical, Trash2, CheckSquare, Plus, ExternalLink, ArrowUpFromLine } from "lucide-react";
+import { GripVertical, Trash2, CheckSquare, Plus, ExternalLink, ArrowUpFromLine, LayoutTemplate } from "lucide-react";
 import useStore from "../store/useStore";
 import type { Task, Subtask } from "../types";
 
@@ -311,10 +311,22 @@ interface SubtaskListProps {
  * Liste de sous-tâches avec drag & drop
  */
 export function SubtaskList({ task }: SubtaskListProps) {
-    const { addSubtask, reorderSubtasks } = useStore();
+    const { addSubtask, reorderSubtasks, templates, applyTemplateToTask } = useStore();
     const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [isNewDropTarget, setIsNewDropTarget] = useState(false);
+    const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
+    const templateDropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!showTemplateDropdown) return;
+        function handleClickOutside(e: MouseEvent) {
+            if (templateDropdownRef.current?.contains(e.target as Node)) return;
+            setShowTemplateDropdown(false);
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [showTemplateDropdown]);
 
     const handleAdd = () => {
         if (newSubtaskTitle.trim()) {
@@ -351,6 +363,37 @@ export function SubtaskList({ task }: SubtaskListProps) {
             <div className="flex items-center gap-2">
                 <CheckSquare className="h-4 w-4 text-blue-400" />
                 <span className="text-sm font-semibold text-slate-300">Sous-tâches</span>
+                {templates.length > 0 && (
+                    <div ref={templateDropdownRef} className="relative ml-auto">
+                        <button
+                            onClick={(e) => { e.stopPropagation(); setShowTemplateDropdown(v => !v); }}
+                            className="flex items-center gap-1 text-xs text-slate-500 hover:text-violet-400 transition"
+                            title="Appliquer un template"
+                        >
+                            <LayoutTemplate className="h-3.5 w-3.5" />
+                            Template
+                        </button>
+                        {showTemplateDropdown && (
+                            <div className="absolute top-full mt-1 right-0 w-52 rounded-xl border border-white/10 bg-[#161b2e] shadow-2xl p-1.5 z-[99999]">
+                                <p className="text-[10px] text-slate-500 px-2 pb-1 font-semibold uppercase">Templates</p>
+                                {templates.map(tpl => (
+                                    <button
+                                        key={tpl.id}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            applyTemplateToTask(task.id, tpl.id);
+                                            setShowTemplateDropdown(false);
+                                        }}
+                                        className="w-full text-left px-2 py-1.5 rounded-lg text-sm text-slate-200 hover:bg-white/5 transition"
+                                    >
+                                        <span className="font-medium block truncate">{tpl.name}</span>
+                                        <span className="text-[10px] text-slate-500">{tpl.subtaskTitles.length} sous-tâche{tpl.subtaskTitles.length > 1 ? 's' : ''}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Liste des sous-tâches */}

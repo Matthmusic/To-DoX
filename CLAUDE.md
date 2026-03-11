@@ -62,6 +62,8 @@ The application uses a **centralized Zustand store** located in [src/store/useSt
 - Task operations: `addTask()`, `updateTask()`, `removeTask()`, `moveTask()`, `archiveTask()`, `unarchiveTask()`
 - Subtask operations: `addSubtask()`, `toggleSubtask()`, `deleteSubtask()`, `updateSubtaskTitle()`, `reorderSubtasks()`
 - Project operations: `addToProjectHistory()`, `toggleProjectCollapse()`, `archiveProject()`, `unarchiveProject()`, `deleteArchivedProject()`
+- Review workflow: `setReviewers()`, `validateTask()`, `requestCorrections()`, `reopenTask()`
+- Notifications: `addAppNotification()`, `markNotificationRead()`, `markAllNotificationsRead()`
 
 **CRITICAL RULE:** Always use store actions instead of direct state manipulation. Never call `setTasks()` manually to modify tasks - use specific actions like `updateTask()` which handle side effects (e.g., updating `completedAt` when status changes to "done", updating `updatedAt` timestamps).
 
@@ -108,14 +110,18 @@ STATUSES.map(status) →
 
 **Critical UI Components:**
 - `KanbanBoard` - Main Kanban grid with drag & drop zones
-- `KanbanHeaderPremium` - Top header with filters, search, and action buttons
+- `KanbanHeaderPremium` - Top header with filters, search, and action buttons (burger menu on mobile)
 - `ProjectCard` - Groups tasks by project within each status column (collapsible)
-- `TaskCard` - Individual task display with drag support, priority badges, deadline indicators
+- `TaskCard` - Individual task display with drag support, priority badges, deadline indicators; Valider/Corrections review buttons
 - `QuickAddPremium` - Inline task creation form in header with autocomplete
 - `ActiveProjectsBar` - Project statistics with progress bars
-- `TaskEditPanel` - Right-click context menu for editing tasks
-- `TitleBar` - Custom title bar with window controls (minimize, maximize, close)
+- `TaskEditPanel` - Right-click context menu for editing tasks; Réviseurs field + revision history
+- `TitleBar` - Custom title bar with window controls + notification bell badge + `NotificationDropdown`
 - `UpdateNotification` - Auto-update notification UI
+- `TermineesView` - Completed tasks view with Rouvrir/Archiver actions (toggled from header)
+- `DashboardView` - Dashboard analytics view
+- `TimesheetView` - Timesheet view
+- `NotificationDropdown` - App notification dropdown (rendered via portal)
 
 **Modal/Panel Components:**
 - `WeeklyReportModal` - Weekly completion report with PDF export
@@ -126,6 +132,7 @@ STATUSES.map(status) →
 - `UsersPanel` - User management
 - `StoragePanel` - Storage location configuration
 - `ConfirmModalHost` - Global confirmation modal system
+- `ShortcutsHelpPanel` - Keyboard shortcuts reference panel
 
 ### Electron Integration
 
@@ -295,6 +302,24 @@ Located in `package.json` under `build` key:
 6. **OneDrive path hardcoded** - Default is `~/OneDrive - CEA/DATA/To-Do-X` but user can override in settings
 7. **Working directory mismatch** - GitHub workflow references `smart-todo` but actual root is `To-DoX`
 8. **Tag prefix required** - GitHub release workflow only triggers on tags starting with `v`
+9. **Hidden elements still intercept clicks** - `overflow-visible` + `max-h-0 opacity-0` hides content visually but keeps it clickable. Always add `pointer-events-none` when hiding via `opacity-0`.
+10. **CSS class `bg-theme-bg-secondary` does not exist** - Valid theme classes: `bg-theme-primary`, `bg-theme-secondary`, `bg-theme-tertiary`
+
+### Review Workflow
+
+`status: 'review'` tasks are shown in the Kanban. Tasks with `status: 'done'` are **not** shown in the Kanban — they appear in `TermineesView` instead (controlled by `kanban: boolean` on `StatusDef` in `constants.ts`).
+
+Review store actions auto-generate `AppNotification` entries and update task timestamps. `validateTask()` sets status → `'done'`, `requestCorrections()` sets status → `'doing'`, `reopenTask()` sets status → `'todo'`.
+
+### Custom Event: `todox:openTask`
+
+`TitleBar` dispatches `window.dispatchEvent(new CustomEvent('todox:openTask', { detail: { taskId } }))` when a notification is clicked. `ToDoX.tsx` listens for this event to open the `TaskEditPanel` for the corresponding task.
+
+### Mobile Responsive Patterns
+
+- Breakpoint: `md:` (768px). Pattern: `md:hidden` / `hidden md:flex`
+- `KanbanBoard`: mobile tabs + single active column (`activeMobileTab` state)
+- `TimelineView`: list view on mobile (`md:hidden`), Gantt on desktop (`hidden md:flex`)
 
 ## Code Style
 

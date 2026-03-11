@@ -61,6 +61,7 @@ export function DropdownMenu({ icon: Icon, label, children, className = "" }: Dr
             {isOpen && createPortal(
                 <div
                     ref={panelRef}
+                    onClick={() => setIsOpen(false)}
                     className="min-w-[200px] rounded-2xl border-2 border-theme-primary bg-theme-secondary/98 shadow-[0_20px_70px_rgba(0,0,0,0.6)] overflow-hidden"
                     style={{
                         ...panelStyle,
@@ -100,10 +101,21 @@ export function DropdownItem({ icon: Icon, label, onClick, className = "" }: Dro
     return (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-3 px-4 py-3 text-left text-theme-primary transition hover:bg-white/10 ${className}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-theme-primary transition hover:bg-white/10 ${className}`}
         >
-            {Icon && <Icon className="h-4 w-4 text-theme-secondary" />}
-            <span>{label}</span>
+            {Icon && <Icon className="h-3.5 w-3.5 text-theme-secondary" />}
+            <span className="text-sm">{label}</span>
         </button>
+    );
+}
+
+/**
+ * En-tête de section dans un dropdown
+ */
+export function DropdownSection({ label }: { label: string }) {
+    return (
+        <div className="px-4 pt-3 pb-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</span>
+        </div>
     );
 }

@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { Users } from "lucide-react";
 import useStore from "../../store/useStore";
 import type { User } from "../../types";
 import { uid } from "../../utils";
 import { GlassModal } from "../ui/GlassModal";
 import { alertModal, confirmModal } from "../../utils/confirm";
+import { useTheme } from "../../hooks/useTheme";
 
 interface UsersPanelProps {
     onClose: () => void;
@@ -11,6 +13,8 @@ interface UsersPanelProps {
 
 export function UsersPanel({ onClose }: UsersPanelProps) {
     const { users, setUsers, currentUser, setCurrentUser } = useStore();
+    const { activeTheme } = useTheme();
+    const primaryColor = activeTheme.palette.primary;
     const [localUsers, setLocalUsers] = useState<User[]>(() => [...users]);
     const [newUserName, setNewUserName] = useState("");
     const [newUserEmail, setNewUserEmail] = useState("");
@@ -65,7 +69,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
     }
 
     return (
-        <GlassModal isOpen={true} onClose={onClose} title="Gestion des utilisateurs" size="xl">
+        <GlassModal isOpen={true} onClose={onClose} title={<><Users className="w-6 h-6 mr-2" style={{ color: primaryColor }} />Gestion des utilisateurs</>} size="xl">
             <p className="mt-2 text-sm text-theme-muted">
                 Gérez les utilisateurs qui peuvent être assignés aux tâches. L'email sera utilisé pour les relances futures.
             </p>

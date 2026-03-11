@@ -24,11 +24,12 @@ import {
     Menu,
     X,
     ShieldAlert,
+    LayoutTemplate,
 } from "lucide-react";
 import ToDoXLogo from "../assets/To Do X.svg";
 import { QuickAddPremium } from "./QuickAddPremium";
 import { CircularProgressBadge } from "./CircularProgressBadge";
-import { DropdownMenu, DropdownItem } from ".";
+import { DropdownMenu, DropdownItem, DropdownSection } from ".";
 import { SearchInput } from "./SearchInput";
 import useStore from "../store/useStore";
 import { useTheme } from "../hooks/useTheme";
@@ -54,6 +55,7 @@ interface KanbanHeaderPremiumProps {
     onExport: () => void;
     onImport: () => void;
     onOpenHelp: () => void;
+    onOpenTemplates: () => void;
     // Mentions non lues
     mentionCount: number;
     // Vue active
@@ -66,6 +68,8 @@ interface KanbanHeaderPremiumProps {
     showSearch: boolean;
     // QuickAdd
     quickAddRef?: React.RefObject<{ focus: () => void } | null>;
+    /** Incrémenter pour ouvrir le panneau QuickAdd et focus l'input (Ctrl+N) */
+    triggerOpenQuickAdd?: number;
 }
 
 /**
@@ -95,6 +99,7 @@ export function KanbanHeaderPremium({
     onExport,
     onImport,
     onOpenHelp,
+    onOpenTemplates,
     mentionCount,
     activeView,
     onViewChange,
@@ -103,6 +108,7 @@ export function KanbanHeaderPremium({
     searchInputRef,
     showSearch,
     quickAddRef,
+    triggerOpenQuickAdd,
 }: KanbanHeaderPremiumProps) {
     const { tasks, projectColors, currentUser, viewAsUser, setProjectColor } = useStore();
     const { activeTheme } = useTheme();
@@ -146,6 +152,13 @@ export function KanbanHeaderPremium({
             }, 100);
         }
     }, [showQuickAdd, quickAddRef]);
+
+    // Ouvrir + focus via raccourci clavier Ctrl+N (triggerOpenQuickAdd s'incrémente)
+    useEffect(() => {
+        if (!triggerOpenQuickAdd) return;
+        setShowQuickAdd(true);
+        // Le focus est géré par l'effet showQuickAdd ci-dessus
+    }, [triggerOpenQuickAdd]);
 
     // Fermer le burger menu lors d'un clic à l'extérieur
     useEffect(() => {
@@ -608,20 +621,25 @@ export function KanbanHeaderPremium({
                         label=""
                         className="rounded-xl border border-theme-primary bg-theme-secondary/60 px-2.5 py-2 hover:bg-theme-secondary/80 transition-all text-white/80"
                     >
-                        <DropdownItem icon={Printer} label="CR Semaine" onClick={onOpenWeeklyReport} />
-                        <DropdownItem icon={HardDrive} label="Stockage" onClick={onOpenStorage} />
-                        <DropdownItem icon={Users} label="Utilisateurs" onClick={onOpenUsers} />
-                        <DropdownItem icon={Bell} label="Notifications" onClick={onOpenNotifications} />
+                        <DropdownSection label="Paramètres" />
                         <DropdownItem icon={Palette} label="Thèmes" onClick={onOpenThemes} />
-                        <DropdownItem icon={Archive} label="Archives" onClick={onOpenArchive} />
+                        <DropdownItem icon={Bell} label="Notifications" onClick={onOpenNotifications} />
+                        <DropdownItem icon={LayoutTemplate} label="Templates" onClick={onOpenTemplates} />
+                        <DropdownItem icon={Users} label="Utilisateurs" onClick={onOpenUsers} />
+                        <DropdownItem icon={HardDrive} label="Stockage" onClick={onOpenStorage} />
+
                         <div className="my-1 h-px bg-theme-primary" />
+                        <DropdownSection label="Projets" />
                         <DropdownItem icon={FolderPlus} label="Dossiers projets" onClick={onOpenDirPanel} />
                         <DropdownItem icon={List} label="Gérer projets" onClick={onOpenProjectsList} />
                         {isAdmin && (
-                            <DropdownItem icon={ShieldAlert} label="Admin projets (JSON)" onClick={onOpenAdminProjects} />
+                            <DropdownItem icon={ShieldAlert} label="Admin (JSON)" onClick={onOpenAdminProjects} />
                         )}
-                        <DropdownItem icon={Trash2} label="Corbeille tâches" onClick={onOpenTaskArchive} />
+
                         <div className="my-1 h-px bg-theme-primary" />
+                        <DropdownSection label="Données" />
+                        <DropdownItem icon={Archive} label="Archives" onClick={onOpenArchive} />
+                        <DropdownItem icon={Trash2} label="Corbeille tâches" onClick={onOpenTaskArchive} />
                         <DropdownItem icon={Download} label="Export JSON" onClick={onExport} />
                         <DropdownItem icon={Upload} label="Import JSON" onClick={onImport} />
                     </DropdownMenu>
@@ -631,7 +649,7 @@ export function KanbanHeaderPremium({
             {/* Row 2: QuickAdd Premium - Collapsible */}
             <div
                 ref={quickAddContainerRef}
-                className={`mx-auto w-full px-2 sm:px-0 sm:w-[95%] lg:w-[90%] xl:w-[85%] 2xl:w-[80%] overflow-visible transition-all duration-300 ${
+                className={`mx-auto w-full px-2 sm:px-0 sm:w-[80%] lg:w-[75%] xl:w-[70%] 2xl:w-[65%] overflow-visible transition-all duration-300 ${
                     showQuickAdd ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
                 }`}
             >

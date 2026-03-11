@@ -5,6 +5,7 @@ import { ProjectsListPanel } from '../components/settings/ProjectsListPanel';
 import { StoragePanel } from '../components/settings/StoragePanel';
 import { ThemePanel } from '../components/settings/ThemePanel';
 import { UsersPanel } from '../components/settings/UsersPanel';
+import { TemplatesPanel } from '../components/settings/TemplatesPanel';
 import useStore from '../store/useStore';
 import { mockTasks } from './mockData';
 
@@ -78,4 +79,28 @@ export const Themes: StoryObj = {
 export const Users: StoryObj = {
   name: 'Panneau Utilisateurs',
   render: () => <UsersPanel onClose={() => {}} />,
+};
+
+// ─── TemplatesPanel ──────────────────────────────────────────────────────────
+
+export const Templates: StoryObj = {
+  name: 'Panneau Templates – avec données',
+  render: () => {
+    useStore.setState({
+      templates: [
+        { id: 'tpl-1', name: 'Revue de code', subtaskTitles: ['Lire le PR', 'Tester localement', 'Laisser un commentaire', 'Approuver ou demander corrections'] },
+        { id: 'tpl-2', name: 'Déploiement', subtaskTitles: ['Build production', 'Tests de non-régression', 'Mise en prod', 'Vérification monitoring'] },
+        { id: 'tpl-3', name: 'Onboarding', subtaskTitles: ['Créer accès VPN', 'Créer compte GitLab', 'Présentation équipe'] },
+      ],
+    });
+    return <TemplatesPanel onClose={() => {}} />;
+  },
+};
+
+export const TemplatesEmpty: StoryObj = {
+  name: 'Panneau Templates – vide',
+  render: () => {
+    useStore.setState({ templates: [] });
+    return <TemplatesPanel onClose={() => {}} />;
+  },
 };

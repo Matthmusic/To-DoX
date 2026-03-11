@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { Pencil, Trash2, ArrowUpAZ, ArrowDownAZ, Search, X } from "lucide-react";
+import { Pencil, Trash2, ArrowUpAZ, ArrowDownAZ, Search, X, List } from "lucide-react";
 import useStore from "../../store/useStore";
 import { GlassModal } from "../ui/GlassModal";
 import { alertModal, confirmModal } from "../../utils/confirm";
+import { useTheme } from "../../hooks/useTheme";
 
 interface ProjectsListPanelProps {
     onClose: () => void;
@@ -10,6 +11,8 @@ interface ProjectsListPanelProps {
 
 export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
     const { projectHistory, setProjectHistory, tasks, directories, setDirectories, renameProject } = useStore();
+    const { activeTheme } = useTheme();
+    const primaryColor = activeTheme.palette.primary;
     const [localHistory, setLocalHistory] = useState<string[]>(() => [...projectHistory]);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editingValue, setEditingValue] = useState("");
@@ -110,7 +113,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
     };
 
     return (
-        <GlassModal isOpen={true} onClose={onClose} title="Liste des projets" size="xl">
+        <GlassModal isOpen={true} onClose={onClose} title={<><List className="w-6 h-6 mr-2" style={{ color: primaryColor }} />Liste des projets</>} size="xl">
             <p className="mt-2 text-sm text-slate-400">
                 Gérez la liste des projets utilisés pour l'autocomplétion. Vous pouvez renommer ou supprimer des projets.
             </p>

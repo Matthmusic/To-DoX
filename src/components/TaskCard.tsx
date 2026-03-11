@@ -564,76 +564,84 @@ export function TaskCard({
             {/* Expanded Content: Notes + Subtasks */}
             {isSubtasksExpanded && (
                 <div onClick={e => e.stopPropagation()} className="mt-2 pt-2 border-t border-white/5 space-y-3">
-                    {/* Notes Section */}
-                    {(task.notes || isEditingNotes) && (
-                        <div className="rounded-lg bg-white/5 border border-white/10 p-3 hover:border-amber-400/30 transition-colors">
-                            <div className="flex items-center justify-between gap-2 mb-2">
-                                <div className="flex items-center gap-2">
-                                    <Paperclip className="h-3.5 w-3.5 text-amber-400" />
-                                    <span className="text-xs font-bold text-amber-400 uppercase">Notes</span>
-                                </div>
-                                {!isEditingNotes && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setIsEditingNotes(true);
-                                        }}
-                                        className="p-1 rounded hover:bg-amber-400/20 text-amber-400 transition"
-                                        title="Éditer les notes"
-                                    >
-                                        <Edit3 className="h-3 w-3" />
-                                    </button>
-                                )}
+                    {/* Notes Section — toujours visible quand la carte est dépliée */}
+                    <div className="rounded-lg bg-white/5 border border-white/10 p-3 hover:border-amber-400/30 transition-colors">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2">
+                                <Paperclip className="h-3.5 w-3.5 text-amber-400" />
+                                <span className="text-xs font-bold text-amber-400 uppercase">Notes</span>
                             </div>
-                            {isEditingNotes ? (
-                                <div className="space-y-2">
-                                    <textarea
-                                        ref={notesTextareaRef}
-                                        value={localNotes}
-                                        onChange={(e) => setLocalNotes(e.target.value)}
-                                        onBlur={handleSaveNotes}
-                                        onKeyDown={handleNotesKeyDown}
-                                        className="w-full min-h-[100px] rounded-lg bg-white/10 border border-amber-400/30 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:bg-white/15 resize-y"
-                                        placeholder="Ajouter des notes... (Ctrl+Enter pour sauvegarder, Echap pour annuler)"
-                                    />
-                                    <div className="flex gap-2 text-xs text-slate-300">
-                                        <span>💡 Astuce: Utilisez des guillemets pour les chemins avec espaces</span>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div
+                            {!isEditingNotes && task.notes && (
+                                <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setIsEditingNotes(true);
                                     }}
-                                    className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed cursor-pointer hover:text-white transition"
+                                    className="p-1 rounded hover:bg-amber-400/20 text-amber-400 transition"
+                                    title="Éditer les notes"
                                 >
-                                    {parseFilePaths(task.notes || "").map((part, idx) =>
-                                        part.type === 'path' ? (
-                                            <button
-                                                key={idx}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    if (window.electronAPI?.openFolder) {
-                                                        window.electronAPI.openFolder(part.content);
-                                                    } else {
-                                                        alert(`Chemin détecté: ${part.content}\n(Disponible uniquement en mode Electron)`);
-                                                    }
-                                                }}
-                                                className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
-                                                title={`Ouvrir: ${part.content}`}
-                                            >
-                                                <ExternalLink className="h-3 w-3" />
-                                                {part.content}
-                                            </button>
-                                        ) : (
-                                            <span key={idx}>{part.content}</span>
-                                        )
-                                    )}
-                                </div>
+                                    <Edit3 className="h-3 w-3" />
+                                </button>
                             )}
                         </div>
-                    )}
+                        {isEditingNotes ? (
+                            <div className="space-y-2">
+                                <textarea
+                                    ref={notesTextareaRef}
+                                    value={localNotes}
+                                    onChange={(e) => setLocalNotes(e.target.value)}
+                                    onBlur={handleSaveNotes}
+                                    onKeyDown={handleNotesKeyDown}
+                                    className="w-full min-h-[100px] rounded-lg bg-white/10 border border-amber-400/30 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:bg-white/15 resize-y"
+                                    placeholder="Ajouter des notes... (Ctrl+Enter pour sauvegarder, Echap pour annuler)"
+                                />
+                                <div className="flex gap-2 text-xs text-slate-300">
+                                    <span>💡 Astuce: Utilisez des guillemets pour les chemins avec espaces</span>
+                                </div>
+                            </div>
+                        ) : task.notes ? (
+                            <div
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsEditingNotes(true);
+                                }}
+                                className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed cursor-pointer hover:text-white transition"
+                            >
+                                {parseFilePaths(task.notes).map((part, idx) =>
+                                    part.type === 'path' ? (
+                                        <button
+                                            key={idx}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (window.electronAPI?.openFolder) {
+                                                    window.electronAPI.openFolder(part.content);
+                                                } else {
+                                                    alert(`Chemin détecté: ${part.content}\n(Disponible uniquement en mode Electron)`);
+                                                }
+                                            }}
+                                            className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
+                                            title={`Ouvrir: ${part.content}`}
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            {part.content}
+                                        </button>
+                                    ) : (
+                                        <span key={idx}>{part.content}</span>
+                                    )
+                                )}
+                            </div>
+                        ) : (
+                            <span
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setIsEditingNotes(true);
+                                }}
+                                className="text-xs text-slate-500 italic cursor-pointer hover:text-amber-400 transition"
+                            >
+                                Ajouter une note...
+                            </span>
+                        )}
+                    </div>
 
                     {/* Subtasks Section */}
                     <SubtaskList task={task} />

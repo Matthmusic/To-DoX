@@ -2,9 +2,10 @@
 
 Document de planification des prochaines évolutions de l'application To-DoX.
 
-**Dernière mise à jour :** 27 février 2026
-**Version actuelle :** 2.0.10
+**Dernière mise à jour :** 11 mars 2026
+**Version actuelle :** 2.1.8
 **Roadmap précédente :** [ROADMAP.md](ROADMAP.md) (v2.0.8 — tout terminé ✅)
+**Changelog complet :** [../CHANGELOG.md](../CHANGELOG.md)
 
 ---
 

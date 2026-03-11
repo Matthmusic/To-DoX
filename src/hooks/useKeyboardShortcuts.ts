@@ -127,7 +127,7 @@ export function useDefaultShortcuts(callbacks: ShortcutsContextValue, isModalOpe
     {
       key: 'n',
       ctrl: true,
-      description: 'Focus sur QuickAdd (nouvelle tâche)',
+      description: 'Ouvrir la saisie rapide de tâche',
       category: 'ui',
       action: focusQuickAdd,
       disableInInput: true,
@@ -135,14 +135,14 @@ export function useDefaultShortcuts(callbacks: ShortcutsContextValue, isModalOpe
     {
       key: 'f',
       ctrl: true,
-      description: 'Focus sur la recherche',
+      description: 'Ouvrir / focus la recherche',
       category: 'ui',
       action: focusSearch,
       disableInInput: true,
     },
     {
       key: 'Escape',
-      description: 'Fermer les modaux/panels',
+      description: 'Fermer la fenêtre ou le panneau ouvert',
       category: 'ui',
       action: closeModals,
       disableInInput: false, // Escape fonctionne toujours
@@ -153,7 +153,7 @@ export function useDefaultShortcuts(callbacks: ShortcutsContextValue, isModalOpe
       key: 'a',
       ctrl: true,
       shift: true,
-      description: 'Ouvrir les archives',
+      description: 'Ouvrir les archives de tâches',
       category: 'navigation',
       action: openArchives,
       disableInInput: true,
@@ -169,7 +169,7 @@ export function useDefaultShortcuts(callbacks: ShortcutsContextValue, isModalOpe
     },
     {
       key: 'F1',
-      description: 'Afficher l\'aide des raccourcis',
+      description: 'Afficher cette aide',
       category: 'navigation',
       action: openHelp,
       disableInInput: false, // F1 fonctionne partout
@@ -179,7 +179,7 @@ export function useDefaultShortcuts(callbacks: ShortcutsContextValue, isModalOpe
     {
       key: 'e',
       ctrl: true,
-      description: 'Exporter les données',
+      description: 'Exporter les données (JSON)',
       category: 'actions',
       action: openExport,
       disableInInput: true,
