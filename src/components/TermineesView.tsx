@@ -71,7 +71,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
                             {projectTasks.map(task => {
                                 const isExpanded = expandedTasks[task.id] ?? false;
                                 const prio = PRIORITY_STYLE[task.priority];
-                                const completedSubtasks = task.subtasks.filter(s => s.done).length;
+                                const completedSubtasks = task.subtasks.filter(s => s.completed).length;
                                 return (
                                 <div key={task.id} className="transition-colors">
                                     {/* Ligne principale — clic = toggle expand */}
@@ -167,8 +167,8 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
                                                     </p>
                                                     {task.subtasks.map(s => (
                                                         <div key={s.id} className="flex items-center gap-2 text-xs">
-                                                            <CheckCircle2 className={`h-3 w-3 shrink-0 ${s.done ? 'text-emerald-400' : 'text-slate-600'}`} />
-                                                            <span className={s.done ? 'line-through text-slate-500' : 'text-slate-300'}>
+                                                            <CheckCircle2 className={`h-3 w-3 shrink-0 ${s.completed ? 'text-emerald-400' : 'text-slate-600'}`} />
+                                                            <span className={s.completed ? 'line-through text-slate-500' : 'text-slate-300'}>
                                                                 {s.title}
                                                             </span>
                                                         </div>
