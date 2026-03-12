@@ -158,6 +158,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "runAfterFinish": true,
+      "warningsAsErrors": false,
       "include": "build/installer.nsh"
     }
   }
