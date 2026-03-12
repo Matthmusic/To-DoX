@@ -3,8 +3,6 @@
 ; Ajoute une checkbox "Lancer au démarrage de Windows" sur la page de fin
 ; ─────────────────────────────────────────────────────────────────────────────
 
-; Les defines MUI_FINISHPAGE et la fonction ne s'appliquent qu'à l'installeur,
-; pas au build de l'uninstaller (BUILD_UNINSTALLER défini en ligne de commande).
 !macro customHeader
   !ifndef BUILD_UNINSTALLER
     !define MUI_FINISHPAGE_SHOWREADME ""
@@ -14,14 +12,18 @@
   !endif
 !macroend
 
-!ifndef BUILD_UNINSTALLER
+; La fonction n'est appelée que dans le contexte installeur (page de fin).
+; Dans le build de l'uninstaller elle est compilée mais jamais référencée :
+; on supprime l'avertissement 6010 pour éviter l'échec du build.
+!pragma warning push
+!pragma warning disable 6010
 Function todox_AddToStartup
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" \
     "To-DoX" '"$INSTDIR\To-DoX.exe"'
 FunctionEnd
-!endif
+!pragma warning pop
 
-; Nettoyage au désinstallation (supprime l'entrée si présente)
+; Nettoyage à la désinstallation (supprime l'entrée si présente)
 !macro customUnInstall
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "To-DoX"
 !macroend
