@@ -241,6 +241,9 @@ const useStore = create<StoreState>((set, get) => ({
         } else if (patch.status) {
             updatedPatch.completedAt = null;
         }
+        if (patch.status === 'review') {
+            updatedPatch.movedToReviewBy = get().currentUser ?? undefined;
+        }
 
         // Workflow review : si la tâche passe en "review" avec des réviseurs déjà définis → notifier
         if (patch.status === 'review') {

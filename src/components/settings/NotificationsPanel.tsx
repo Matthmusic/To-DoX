@@ -26,7 +26,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
     if (!window.electronAPI?.getLoginItem) return;
     window.electronAPI.getLoginItem().then(result => {
       setOpenAtLogin(result.openAtLogin);
-    }).catch(() => { /* silencieux en dev */ });
+    }).catch(() => { setOpenAtLogin(false); });
   }, []);
 
   const handleToggleStartup = async () => {

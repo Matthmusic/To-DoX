@@ -30,7 +30,7 @@ export function TitleBar({ onTaskClick }: TitleBarProps) {
     });
   })();
 
-  const unreadCount = appNotifications.filter(n => n.toUserId === currentUser && !n.readAt).length;
+  const unreadCount = appNotifications.filter(n => n.toUserId === currentUser && !n.readAt && !(n.deletedBy ?? []).includes(currentUser ?? '')).length;
 
   useEffect(() => {
     // Vérifier l'état initial
@@ -94,7 +94,7 @@ export function TitleBar({ onTaskClick }: TitleBarProps) {
               const isViewing = viewAsUser === user.id;
               // Tab actif : ma session OU je visionne ce user
               const isActive = isMyTab && !viewAsUser;
-              const unread = appNotifications.filter(n => n.toUserId === user.id && !n.readAt).length;
+              const unread = appNotifications.filter(n => n.toUserId === user.id && !n.readAt && !(n.deletedBy ?? []).includes(user.id)).length;
               return (
                 <button
                   key={user.id}

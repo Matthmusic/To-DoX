@@ -263,6 +263,7 @@ export interface Task {
   reviewRejectedBy?: string;    // ID de celui qui a demandé des corrections
   reviewRejectedAt?: number;    // Timestamp du rejet
   rejectionComment?: string;    // Commentaire obligatoire au rejet
+  movedToReviewBy?: string;     // ID de celui qui a soumis la tâche en révision
   convertedFromSubtask?: { parentTaskId: string; parentTaskTitle: string };
 }
 

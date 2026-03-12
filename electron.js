@@ -271,11 +271,11 @@ ipcMain.handle('get-app-version', () => {
 });
 
 ipcMain.handle('get-login-item', () => {
-  return app.getLoginItemSettings();
+  return app.getLoginItemSettings({ path: process.execPath });
 });
 
 ipcMain.handle('set-login-item', (_event, openAtLogin) => {
-  app.setLoginItemSettings({ openAtLogin });
+  app.setLoginItemSettings({ openAtLogin, path: process.execPath });
   return true;
 });
 

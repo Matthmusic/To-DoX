@@ -325,17 +325,23 @@ export function TimesheetView() {
     }
 
     // Projets sur lesquels l'utilisateur est/était affecté (assigné ou créateur)
+    // Inclut les projets archivés pour conserver l'historique de pointage
     const allProjectNames = useMemo(() => {
         const seen = new Set<string>();
         for (const t of tasks) {
-            if (!t.archived && !t.deletedAt && t.project) {
-                if (!selectedViewUserId || t.assignedTo.includes(selectedViewUserId) || t.createdBy === selectedViewUserId) {
-                    seen.add(t.project);
-                }
+            if (t.deletedAt || !t.project) continue;
+            if (!selectedViewUserId || t.assignedTo.includes(selectedViewUserId) || t.createdBy === selectedViewUserId) {
+                seen.add(t.project);
+            }
+        }
+        // Ajouter aussi les projets présents dans les saisies (cas projet entièrement supprimé)
+        for (const e of timeEntries) {
+            if (!selectedViewUserId || e.userId === selectedViewUserId) {
+                seen.add(e.project);
             }
         }
         return [...seen].sort();
-    }, [tasks, selectedViewUserId]);
+    }, [tasks, timeEntries, selectedViewUserId]);
 
     // ── Drag-and-drop reorder des lignes
     const dragSrcIdxRef = useRef<number | null>(null);

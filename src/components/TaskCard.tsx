@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { businessDayDelta, getProjectColor, getInitials } from "../utils";
-import { SubtaskList, parseFilePaths } from "./SubtaskList";
+import { SubtaskList, parseFilePaths, getPathDisplayName, getDroppedFilePath, formatPathForInsertion } from "./SubtaskList";
 import { TaskComments } from "./TaskComments";
 import useStore from "../store/useStore";
 import type { Task } from "../types";
@@ -48,6 +48,7 @@ export function TaskCard({
     const [showCorrectionInput, setShowCorrectionInput] = useState(false);
     const [correctionText, setCorrectionText] = useState("");
     const [localNotes, setLocalNotes] = useState(task.notes || "");
+    const [notesDropTarget, setNotesDropTarget] = useState(false);
     const userButtonRef = useRef<HTMLButtonElement>(null);
     const userPopoverRef = useRef<HTMLDivElement>(null);
     const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -297,7 +298,7 @@ export function TaskCard({
                             creatorUser && creatorUser.id !== "unassigned"
                                 ? "border-emerald-300/40 bg-emerald-300/15 text-emerald-200 hover:bg-emerald-300/25"
                                 : "border-slate-500/30 bg-slate-700/20 text-slate-400 hover:bg-slate-700/30"
-                        }`}
+                        } ${task.status === 'review' && task.movedToReviewBy && creatorUser?.id === task.movedToReviewBy ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-[#161b2e]" : ""}`}
                         title={creatorUser && creatorUser.id !== "unassigned" ? `Créée par ${creatorUser.name} - Cliquer pour gérer` : "Créateur inconnu - Cliquer pour gérer"}
                     >
                         {getInitials(creatorUser?.id !== "unassigned" ? creatorUser?.name : null)}
@@ -325,7 +326,7 @@ export function TaskCard({
                                     e.stopPropagation();
                                     onContextMenu(e, task);
                                 }}
-                                className="relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-300/40 bg-blue-300/15 text-blue-200 text-[10px] font-bold transition-all hover:scale-110 hover:bg-blue-300/25 cursor-pointer"
+                                className={`relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-300/40 bg-blue-300/15 text-blue-200 text-[10px] font-bold transition-all hover:scale-110 hover:bg-blue-300/25 cursor-pointer ${task.status === 'review' && task.movedToReviewBy && user!.id === task.movedToReviewBy ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-[#161b2e]" : ""}`}
                                 title={`Assignée à ${user!.name} - Cliquer pour gérer`}
                             >
                                 {getInitials(user!.name)}
@@ -592,7 +593,25 @@ export function TaskCard({
                                     onChange={(e) => setLocalNotes(e.target.value)}
                                     onBlur={handleSaveNotes}
                                     onKeyDown={handleNotesKeyDown}
-                                    className="w-full min-h-[100px] rounded-lg bg-white/10 border border-amber-400/30 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:bg-white/15 resize-y"
+                                    onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.stopPropagation(); setNotesDropTarget(true); } }}
+                                    onDragLeave={() => setNotesDropTarget(false)}
+                                    onDrop={(e) => {
+                                        if (e.dataTransfer.files.length === 0) return;
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setNotesDropTarget(false);
+                                        const file = e.dataTransfer.files[0];
+                                        const path = getDroppedFilePath(file);
+                                        if (!path) return;
+                                        const formattedPath = formatPathForInsertion(path);
+                                        const ta = e.currentTarget;
+                                        const start = ta.selectionStart ?? localNotes.length;
+                                        const end = ta.selectionEnd ?? localNotes.length;
+                                        const newNotes = localNotes.slice(0, start) + (start > 0 ? '\n' : '') + formattedPath + localNotes.slice(end);
+                                        setLocalNotes(newNotes);
+                                        updateTask(task.id, { notes: newNotes });
+                                    }}
+                                    className={`w-full min-h-[100px] rounded-lg border px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 focus:bg-white/15 resize-y transition ${notesDropTarget ? 'border-blue-400/60 bg-blue-400/10' : 'bg-white/10 border-amber-400/30'}`}
                                     placeholder="Ajouter des notes... (Ctrl+Enter pour sauvegarder, Echap pour annuler)"
                                 />
                                 <div className="flex gap-2 text-xs text-slate-300">
@@ -605,7 +624,23 @@ export function TaskCard({
                                     e.stopPropagation();
                                     setIsEditingNotes(true);
                                 }}
-                                className="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed cursor-pointer hover:text-white transition"
+                                onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.stopPropagation(); setNotesDropTarget(true); } }}
+                                onDragLeave={() => setNotesDropTarget(false)}
+                                onDrop={(e) => {
+                                    if (e.dataTransfer.files.length === 0) return;
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setNotesDropTarget(false);
+                                    const file = e.dataTransfer.files[0];
+                                    const path = getDroppedFilePath(file);
+                                    if (!path) return;
+                                    const formattedPath = formatPathForInsertion(path);
+                                    const newNotes = localNotes ? `${localNotes}\n${formattedPath}` : formattedPath;
+                                    setLocalNotes(newNotes);
+                                    updateTask(task.id, { notes: newNotes });
+                                }}
+                                className={`text-sm text-slate-300 whitespace-pre-wrap leading-relaxed cursor-pointer hover:text-white transition rounded-lg p-1 ${notesDropTarget ? 'border border-blue-400/60 bg-blue-400/10' : ''}`}
+                                title="Cliquer pour éditer · Déposer un fichier pour insérer son chemin"
                             >
                                 {parseFilePaths(task.notes).map((part, idx) =>
                                     part.type === 'path' ? (
@@ -619,11 +654,16 @@ export function TaskCard({
                                                     alert(`Chemin détecté: ${part.content}\n(Disponible uniquement en mode Electron)`);
                                                 }
                                             }}
+                                            onContextMenu={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                navigator.clipboard.writeText(part.content);
+                                            }}
                                             className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
-                                            title={`Ouvrir: ${part.content}`}
+                                            title={part.content}
                                         >
                                             <ExternalLink className="h-3 w-3" />
-                                            {part.content}
+                                            {getPathDisplayName(part.content)}
                                         </button>
                                     ) : (
                                         <span key={idx}>{part.content}</span>
