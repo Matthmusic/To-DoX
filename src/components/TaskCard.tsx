@@ -49,6 +49,9 @@ export function TaskCard({
     const [correctionText, setCorrectionText] = useState("");
     const [localNotes, setLocalNotes] = useState(task.notes || "");
     const [notesDropTarget, setNotesDropTarget] = useState(false);
+    const [cardFileDropTarget, setCardFileDropTarget] = useState(false);
+    const [isTextFocused, setIsTextFocused] = useState(false);
+    const preventNextDrag = useRef(false);
     const userButtonRef = useRef<HTMLButtonElement>(null);
     const userPopoverRef = useRef<HTMLDivElement>(null);
     const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -121,10 +124,13 @@ export function TaskCard({
         setLocalNotes(task.notes || "");
     }, [task.notes]);
 
-    // Auto-focus le textarea lors de l'édition
+    // Auto-focus + auto-resize le textarea lors de l'édition
     useEffect(() => {
         if (isEditingNotes && notesTextareaRef.current) {
-            notesTextareaRef.current.focus();
+            const ta = notesTextareaRef.current;
+            ta.focus();
+            ta.style.height = 'auto';
+            ta.style.height = Math.max(100, ta.scrollHeight) + 'px';
         }
     }, [isEditingNotes]);
 
@@ -196,15 +202,48 @@ export function TaskCard({
             {showLineBefore && <div className="absolute -top-1.5 left-0 right-0 h-0.5 rounded-full bg-blue-400 z-20 pointer-events-none" />}
         <motion.div
             ref={cardRef}
-            draggable
-            onDragStart={(e: any) => onDragStart(e as React.DragEvent, task.id)}
-            onDragOver={(e: any) => cardRef.current && onDragOverTask?.(e as React.DragEvent, task.id, cardRef.current)}
-            onDrop={(e: any) => onDropOnTask?.(e as React.DragEvent, task.id)}
-            onDragLeave={() => onDragLeaveTask?.()}
+            draggable={!isTextFocused}
+            onFocus={(e) => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) setIsTextFocused(true); }}
+            onBlur={(e) => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) setIsTextFocused(false); }}
+            onMouseDown={(e) => { preventNextDrag.current = !!(e.target as HTMLElement).closest('[data-nodrag]'); }}
+            onDragStart={(e: any) => {
+                if (isTextFocused || preventNextDrag.current) { e.preventDefault(); preventNextDrag.current = false; return; }
+                onDragStart(e as React.DragEvent, task.id);
+            }}
+            onDragOver={(e: any) => {
+                const dragEvent = e as React.DragEvent;
+                if (dragEvent.dataTransfer.types.includes('Files')) {
+                    dragEvent.preventDefault();
+                    dragEvent.stopPropagation();
+                    setCardFileDropTarget(true);
+                    return;
+                }
+                cardRef.current && onDragOverTask?.(dragEvent, task.id, cardRef.current);
+            }}
+            onDrop={(e: any) => {
+                const dragEvent = e as React.DragEvent;
+                if (dragEvent.dataTransfer.files.length > 0) {
+                    dragEvent.preventDefault();
+                    dragEvent.stopPropagation();
+                    setCardFileDropTarget(false);
+                    const file = dragEvent.dataTransfer.files[0];
+                    const path = getDroppedFilePath(file);
+                    if (!path) return;
+                    const formattedPath = formatPathForInsertion(path);
+                    const currentNotes = task.notes || '';
+                    const newNotes = currentNotes ? `${currentNotes}\n${formattedPath}` : formattedPath;
+                    setLocalNotes(newNotes);
+                    updateTask(task.id, { notes: newNotes });
+                    return;
+                }
+                onDropOnTask?.(dragEvent, task.id);
+            }}
+            onDragLeave={() => { setCardFileDropTarget(false); onDragLeaveTask?.(); }}
             onClick={() => setIsSubtasksExpanded(v => !v)}
             onContextMenu={(e) => onContextMenu(e, task)}
             className={`group relative mb-3 flex flex-col gap-3 rounded-2xl border border-white/5 bg-[#161b2e] p-4 shadow-lg transition-all hover:border-white/20 ${urgencyGlowClass} ${isDueToday ? "pulse-glow" : isOverdue ? "ring-1 ring-rose-500/50" : ""
-                } ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"} ${isDropTarget ? "ring-1 ring-blue-400/50" : ""}`}
+                } ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"} ${isDropTarget ? "ring-1 ring-blue-400/50" : ""} ${cardFileDropTarget ? "ring-2 ring-blue-400/70 border-blue-400/40 bg-blue-500/5" : ""}`}
+            title={cardFileDropTarget ? "Déposer pour ajouter le chemin à la note" : undefined}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -398,6 +437,14 @@ export function TaskCard({
                                         remainingDays <= 7 ? "text-amber-400" :
                                             "text-emerald-400"
                                 }`}>
+                                {task.status === "review" && task.movedToReviewAt && (() => {
+                                    const d = new Date(task.movedToReviewAt);
+                                    const dd = String(d.getDate()).padStart(2, '0');
+                                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                    const hh = String(d.getHours()).padStart(2, '0');
+                                    const mn = String(d.getMinutes()).padStart(2, '0');
+                                    return <span className="font-normal text-violet-400 mr-1">À réviser depuis ({dd}/{mm} {hh}:{mn})</span>;
+                                })()}
                                 {remainingDays < 0 ? `J+${Math.abs(remainingDays)}` : `J-${remainingDays} ouvrés`}
                             </span>
                         )
@@ -479,15 +526,22 @@ export function TaskCard({
                     {reviewerUsers.length > 0 && (
                         <div className="flex items-center gap-1.5">
                             <span className="text-[10px] text-slate-400">Réviseurs :</span>
-                            {reviewerUsers.map(user => (
-                                <span
-                                    key={user!.id}
-                                    className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-violet-400/40 bg-violet-400/15 text-violet-200 text-[9px] font-bold"
-                                    title={user!.name}
-                                >
-                                    {getInitials(user!.name)}
-                                </span>
-                            ))}
+                            {reviewerUsers.map(user => {
+                                const isMe = user!.id === currentUser;
+                                return (
+                                    <span
+                                        key={user!.id}
+                                        className={`inline-flex h-6 w-6 items-center justify-center rounded-full border text-[9px] font-bold transition-all ${
+                                            isMe
+                                                ? "border-violet-400 bg-violet-400/30 text-violet-100 ring-2 ring-violet-400 ring-offset-1 ring-offset-[#161b2e] animate-pulse"
+                                                : "border-violet-400/40 bg-violet-400/15 text-violet-200"
+                                        }`}
+                                        title={isMe ? `${user!.name} (vous — révision en attente)` : user!.name}
+                                    >
+                                        {getInitials(user!.name)}
+                                    </span>
+                                );
+                            })}
                         </div>
                     )}
                     {/* Boutons d'action de révision — visibles uniquement pour les réviseurs désignés */}
@@ -564,7 +618,7 @@ export function TaskCard({
 
             {/* Expanded Content: Notes + Subtasks */}
             {isSubtasksExpanded && (
-                <div onClick={e => e.stopPropagation()} className="mt-2 pt-2 border-t border-white/5 space-y-3">
+                <div data-nodrag onClick={e => e.stopPropagation()} className="mt-2 pt-2 border-t border-white/5 space-y-3">
                     {/* Notes Section — toujours visible quand la carte est dépliée */}
                     <div className="rounded-lg bg-white/5 border border-white/10 p-3 hover:border-amber-400/30 transition-colors">
                         <div className="flex items-center justify-between gap-2 mb-2">
@@ -590,7 +644,11 @@ export function TaskCard({
                                 <textarea
                                     ref={notesTextareaRef}
                                     value={localNotes}
-                                    onChange={(e) => setLocalNotes(e.target.value)}
+                                    onChange={(e) => {
+                                        setLocalNotes(e.target.value);
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = Math.max(100, e.target.scrollHeight) + 'px';
+                                    }}
                                     onBlur={handleSaveNotes}
                                     onKeyDown={handleNotesKeyDown}
                                     onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.stopPropagation(); setNotesDropTarget(true); } }}
@@ -622,6 +680,7 @@ export function TaskCard({
                             <div
                                 onClick={(e) => {
                                     e.stopPropagation();
+                                    if (window.getSelection()?.toString()) return;
                                     setIsEditingNotes(true);
                                 }}
                                 onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.stopPropagation(); setNotesDropTarget(true); } }}
@@ -639,7 +698,7 @@ export function TaskCard({
                                     setLocalNotes(newNotes);
                                     updateTask(task.id, { notes: newNotes });
                                 }}
-                                className={`text-sm text-slate-300 whitespace-pre-wrap leading-relaxed cursor-pointer hover:text-white transition rounded-lg p-1 ${notesDropTarget ? 'border border-blue-400/60 bg-blue-400/10' : ''}`}
+                                className={`text-sm text-slate-300 whitespace-pre-wrap leading-relaxed cursor-pointer hover:text-white transition rounded-lg p-1 select-text ${notesDropTarget ? 'border border-blue-400/60 bg-blue-400/10' : ''}`}
                                 title="Cliquer pour éditer · Déposer un fichier pour insérer son chemin"
                             >
                                 {parseFilePaths(task.notes).map((part, idx) =>
@@ -671,15 +730,30 @@ export function TaskCard({
                                 )}
                             </div>
                         ) : (
-                            <span
+                            <div
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setIsEditingNotes(true);
                                 }}
-                                className="text-xs text-slate-500 italic cursor-pointer hover:text-amber-400 transition"
+                                onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.stopPropagation(); setNotesDropTarget(true); } }}
+                                onDragLeave={() => setNotesDropTarget(false)}
+                                onDrop={(e) => {
+                                    if (e.dataTransfer.files.length === 0) return;
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setNotesDropTarget(false);
+                                    const file = e.dataTransfer.files[0];
+                                    const path = getDroppedFilePath(file);
+                                    if (!path) return;
+                                    const formattedPath = formatPathForInsertion(path);
+                                    setLocalNotes(formattedPath);
+                                    updateTask(task.id, { notes: formattedPath });
+                                }}
+                                className={`min-h-[40px] flex items-center rounded-lg border border-dashed px-3 py-2 text-xs italic cursor-pointer transition ${notesDropTarget ? 'border-blue-400/60 bg-blue-400/10 text-blue-300' : 'border-white/10 text-slate-500 hover:text-amber-400 hover:border-amber-400/30'}`}
+                                title="Cliquer pour écrire · Déposer un fichier ou dossier"
                             >
-                                Ajouter une note...
-                            </span>
+                                {notesDropTarget ? 'Déposer pour ajouter le chemin...' : 'Ajouter une note ou un fichier/dossier...'}
+                            </div>
                         )}
                     </div>
 

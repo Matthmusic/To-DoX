@@ -2,6 +2,8 @@ const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog, Notification, p
 const path = require('path');
 const fsSync = require('fs');
 const fs = fsSync.promises;
+const https = require('https');
+const http = require('http');
 const { pathToFileURL } = require('url');
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -688,6 +690,10 @@ ipcMain.handle('cast:get-receiver-url', async () => {
 // Arrêter le serveur Cast HTTP (utile quand l'app se ferme)
 app.on('before-quit', () => {
   castService.stopCastServer();
+  if (icsHttpServer) {
+    icsHttpServer.close();
+    icsHttpServer = null;
+  }
 });
 
 // Handler pour logger les erreurs dans un fichier
@@ -724,5 +730,113 @@ ${errorLog.componentStack}
   } catch (error) {
     console.error('❌ [ELECTRON] Impossible de logger l\'erreur:', error);
     return { success: false, error: error.message };
+  }
+});
+
+// ── Outlook / ICS ──────────────────────────────────────────────────────────
+
+// Serveur HTTP local pour abonnement live Outlook
+let icsHttpServer = null;
+let icsHttpFilePath = null;
+const ICS_SERVER_PORT = 27182;
+
+ipcMain.handle('outlook:start-http-server', async (_event, filePath) => {
+  try {
+    icsHttpFilePath = filePath;
+
+    // Fermer le serveur précédent s'il existe
+    if (icsHttpServer) {
+      await new Promise(resolve => icsHttpServer.close(resolve));
+      icsHttpServer = null;
+    }
+
+    icsHttpServer = http.createServer(async (req, res) => {
+      if (req.url === '/todox.ics' || req.url === '/') {
+        try {
+          const content = await fs.readFile(icsHttpFilePath, 'utf-8');
+          res.writeHead(200, {
+            'Content-Type': 'text/calendar; charset=utf-8',
+            'Content-Disposition': 'inline; filename="todox-tasks.ics"',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Access-Control-Allow-Origin': '*',
+          });
+          res.end(content);
+        } catch (err) {
+          res.writeHead(404);
+          res.end('ICS file not found');
+        }
+      } else {
+        res.writeHead(404);
+        res.end('Not found');
+      }
+    });
+
+    await new Promise((resolve, reject) => {
+      icsHttpServer.listen(ICS_SERVER_PORT, '127.0.0.1', resolve);
+      icsHttpServer.on('error', reject);
+    });
+
+    const url = `http://localhost:${ICS_SERVER_PORT}/todox.ics`;
+    console.log('🌐 [ICS SERVER] Démarré:', url);
+    return { success: true, url, port: ICS_SERVER_PORT };
+  } catch (err) {
+    console.error('❌ [ICS SERVER] Erreur démarrage:', err.message);
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('outlook:stop-http-server', async () => {
+  if (icsHttpServer) {
+    await new Promise(resolve => icsHttpServer.close(resolve));
+    icsHttpServer = null;
+    console.log('🛑 [ICS SERVER] Arrêté');
+  }
+  return { success: true };
+});
+
+ipcMain.handle('outlook:get-server-url', () => {
+  if (icsHttpServer && icsHttpServer.listening) {
+    return { success: true, url: `http://localhost:${ICS_SERVER_PORT}/todox.ics`, port: ICS_SERVER_PORT };
+  }
+  return { success: false };
+});
+
+// Fetch une URL ICS (HTTP/HTTPS GET natif Node.js)
+ipcMain.handle('outlook:fetch-url', (_event, url) => {
+  return new Promise((resolve) => {
+    try {
+      const parsedUrl = new URL(url);
+      const lib = parsedUrl.protocol === 'https:' ? https : http;
+      lib.get(url, { timeout: 15000 }, (res) => {
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => { data += chunk; });
+        res.on('end', () => resolve({ success: true, data }));
+        res.on('error', (err) => resolve({ success: false, error: err.message }));
+      }).on('error', (err) => resolve({ success: false, error: err.message }))
+        .on('timeout', () => resolve({ success: false, error: 'Timeout lors du fetch ICS' }));
+    } catch (err) {
+      resolve({ success: false, error: err.message });
+    }
+  });
+});
+
+// Écrire le fichier todox-tasks.ics
+ipcMain.handle('outlook:write-ics', async (_event, filePath, content) => {
+  try {
+    await fs.writeFile(filePath, content, 'utf-8');
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+// Obtenir le chemin de l'export ICS (même dossier que storagePath)
+ipcMain.handle('outlook:get-ics-path', (_event, storagePath) => {
+  try {
+    const icsPath = path.join(storagePath, 'todox-tasks.ics');
+    return { success: true, path: icsPath };
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 });

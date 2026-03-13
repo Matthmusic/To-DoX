@@ -68,6 +68,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLoginItem: () => ipcRenderer.invoke('get-login-item'),
   setLoginItem: (openAtLogin) => ipcRenderer.invoke('set-login-item', openAtLogin),
 
+  // Outlook / ICS
+  outlook: {
+    fetchUrl: (url) => ipcRenderer.invoke('outlook:fetch-url', url),
+    writeIcs: (filePath, content) => ipcRenderer.invoke('outlook:write-ics', filePath, content),
+    getIcsPath: (storagePath) => ipcRenderer.invoke('outlook:get-ics-path', storagePath),
+    startHttpServer: (icsPath) => ipcRenderer.invoke('outlook:start-http-server', icsPath),
+    stopHttpServer: () => ipcRenderer.invoke('outlook:stop-http-server'),
+    getServerUrl: () => ipcRenderer.invoke('outlook:get-server-url'),
+  },
+
   // Vérifier si on est dans Electron
   isElectron: true
 });

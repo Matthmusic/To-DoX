@@ -356,7 +356,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                                 )}
                             </span>
                         ) : (
-                            <span className="text-slate-500 italic">Notes... (déposer un fichier pour l'insérer)</span>
+                            <span className="text-slate-500 italic">Ajouter une note ou un fichier/dossier...</span>
                         )}
                     </div>
                 )}

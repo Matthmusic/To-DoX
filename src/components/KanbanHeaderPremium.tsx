@@ -25,6 +25,7 @@ import {
     X,
     ShieldAlert,
     LayoutTemplate,
+    Calendar,
 } from "lucide-react";
 import ToDoXLogo from "../assets/To Do X.svg";
 import { QuickAddPremium } from "./QuickAddPremium";
@@ -56,6 +57,7 @@ interface KanbanHeaderPremiumProps {
     onImport: () => void;
     onOpenHelp: () => void;
     onOpenTemplates: () => void;
+    onOpenOutlook: () => void;
     // Mentions non lues
     mentionCount: number;
     // Vue active
@@ -100,6 +102,7 @@ export function KanbanHeaderPremium({
     onImport,
     onOpenHelp,
     onOpenTemplates,
+    onOpenOutlook,
     mentionCount,
     activeView,
     onViewChange,
@@ -625,6 +628,7 @@ export function KanbanHeaderPremium({
                         <DropdownItem icon={Palette} label="Thèmes" onClick={onOpenThemes} />
                         <DropdownItem icon={Bell} label="Notifications" onClick={onOpenNotifications} />
                         <DropdownItem icon={LayoutTemplate} label="Templates" onClick={onOpenTemplates} />
+                        <DropdownItem icon={Calendar} label="Outlook / ICS" onClick={onOpenOutlook} />
                         <DropdownItem icon={Users} label="Utilisateurs" onClick={onOpenUsers} />
                         <DropdownItem icon={HardDrive} label="Stockage" onClick={onOpenStorage} />
 

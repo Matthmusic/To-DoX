@@ -71,6 +71,31 @@ export interface StoredData {
   savedReports?: SavedReport[];
   appNotifications?: AppNotification[];
   timeEntries?: TimeEntry[];
+  outlookConfig?: OutlookConfig;
+}
+
+/**
+ * Configuration de l'intégration Outlook / ICS
+ */
+export interface OutlookConfig {
+  enabled: boolean;
+  icsUrl: string;           // URL publiée par Outlook (lecture)
+  exportEnabled: boolean;   // Générer todox-tasks.ics (écriture)
+  lastSync: number | null;
+}
+
+/**
+ * Événement Outlook importé depuis un flux ICS
+ */
+export interface OutlookEvent {
+  uid: string;
+  title: string;
+  start: string;       // YYYY-MM-DD
+  end: string;         // YYYY-MM-DD (exclusif, comme DTEND en ICS)
+  allDay: boolean;
+  startTime?: string;  // "HH:mm" pour les réunions timed (non all-day)
+  endTime?: string;    // "HH:mm" pour les réunions timed (non all-day)
+  location?: string;
 }
 
 /**
@@ -124,6 +149,15 @@ export interface ElectronAPI {
   castGetReceiverUrl: () => Promise<{ success: boolean; receiverUrl?: string; error?: string }>;
   getLoginItem: () => Promise<{ openAtLogin: boolean }>;
   setLoginItem: (openAtLogin: boolean) => Promise<boolean>;
+  // Outlook / ICS
+  outlook: {
+    fetchUrl: (url: string) => Promise<{ success: boolean; data?: string; error?: string }>;
+    writeIcs: (filePath: string, content: string) => Promise<{ success: boolean; error?: string }>;
+    getIcsPath: (storagePath: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+    startHttpServer: (icsPath: string) => Promise<{ success: boolean; url?: string; port?: number; error?: string }>;
+    stopHttpServer: () => Promise<{ success: boolean }>;
+    getServerUrl: () => Promise<{ success: boolean; url?: string; port?: number }>;
+  };
 }
 
 export interface CastDevice {
@@ -264,6 +298,7 @@ export interface Task {
   reviewRejectedAt?: number;    // Timestamp du rejet
   rejectionComment?: string;    // Commentaire obligatoire au rejet
   movedToReviewBy?: string;     // ID de celui qui a soumis la tâche en révision
+  movedToReviewAt?: number;     // Timestamp du passage en révision
   convertedFromSubtask?: { parentTaskId: string; parentTaskTitle: string };
 }
 

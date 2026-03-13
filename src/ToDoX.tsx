@@ -49,6 +49,10 @@ import { NotificationsPanel } from "./components/settings/NotificationsPanel";
 // Composants thèmes
 import { ThemePanel } from "./components/settings/ThemePanel";
 import { TemplatesPanel } from "./components/settings/TemplatesPanel";
+import { OutlookPanel } from "./components/settings/OutlookPanel";
+
+// Hook Outlook
+import { useOutlookSync } from "./hooks/useOutlookSync";
 
 // Error Boundary
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -139,6 +143,7 @@ export default function ToDoX() {
         setFilterSearch,
         grouped,
         filteredTasks,
+        filterUser,
     } = useFilters(tasks, viewAsUser ?? currentUser);
 
     const {
@@ -168,6 +173,7 @@ export default function ToDoX() {
     );
     const [showThemesPanel, setShowThemesPanel] = useState(false);
     const [showTemplatesPanel, setShowTemplatesPanel] = useState(false);
+    const [showOutlookPanel, setShowOutlookPanel] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
     const [centeredTask, setCenteredTask] = useState<Task | null>(null);
     const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard' | 'terminées' | 'pointage'>('kanban');
@@ -316,6 +322,9 @@ export default function ToDoX() {
     // === NOTIFICATIONS SYSTÈME ===
     useNotifications();
 
+    // === OUTLOOK SYNC ===
+    const { fetchOutlookEvents, icsExportPath, icsServerUrl } = useOutlookSync();
+
     // === KEYBOARD SHORTCUTS ===
 
     // Détection d'un modal/panel ouvert (pour désactiver certains raccourcis)
@@ -331,6 +340,7 @@ export default function ToDoX() {
         showHelpPanel ||
         showNotificationsPanel ||
         showThemesPanel ||
+        showOutlookPanel ||
         contextMenu !== null;
 
     // Callbacks pour les raccourcis clavier
@@ -415,6 +425,7 @@ export default function ToDoX() {
                 onImport={handleImportClick}
                 onOpenHelp={() => setShowHelpPanel(true)}
                 onOpenTemplates={() => setShowTemplatesPanel(true)}
+                onOpenOutlook={() => setShowOutlookPanel(true)}
                 activeView={activeView}
                 onViewChange={setActiveView}
                 filterSearch={filterSearch}
@@ -446,6 +457,9 @@ export default function ToDoX() {
                     <TimelineView
                         filteredTasks={filteredTasks}
                         onTaskClick={(task, x, y) => setContextMenu({ x, y, task })}
+                        icsExportPath={icsExportPath}
+                        selectedUserId={filterUser !== 'all' ? filterUser : undefined}
+                        onRefreshOutlook={fetchOutlookEvents}
                     />
                 ) : activeView === 'terminées' ? (
                     <TermineesView
@@ -559,6 +573,15 @@ export default function ToDoX() {
             {showTemplatesPanel && (
                 <TemplatesPanel
                     onClose={() => setShowTemplatesPanel(false)}
+                />
+            )}
+
+            {showOutlookPanel && (
+                <OutlookPanel
+                    onClose={() => setShowOutlookPanel(false)}
+                    onSyncNow={fetchOutlookEvents}
+                    icsExportPath={icsExportPath}
+                    icsServerUrl={icsServerUrl}
                 />
             )}
 

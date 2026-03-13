@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { todayISO, uid } from '../utils';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
-import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention, TaskTemplate, SavedReport, AppNotification, TimeEntry } from '../types';
+import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention, TaskTemplate, SavedReport, AppNotification, TimeEntry, OutlookConfig, OutlookEvent } from '../types';
 
 interface StoreState {
     // State
@@ -113,6 +113,12 @@ interface StoreState {
     setTimeEntries: (entries: TimeEntry[]) => void;
     upsertTimeEntry: (project: string, date: string, hours: number, userId: string, note?: string) => void;
     deleteTimeEntry: (project: string, date: string, userId: string) => void;
+
+    // Intégration Outlook / ICS
+    outlookConfig: OutlookConfig;
+    outlookEvents: OutlookEvent[];         // transient (non persisté)
+    setOutlookConfig: (patch: Partial<OutlookConfig>) => void;
+    setOutlookEvents: (events: OutlookEvent[]) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -135,6 +141,13 @@ const useStore = create<StoreState>((set, get) => ({
     appNotifications: [],
     pendingReviewDialogTaskId: null,
     timeEntries: [],
+    outlookConfig: {
+        enabled: false,
+        icsUrl: '',
+        exportEnabled: false,
+        lastSync: null,
+    },
+    outlookEvents: [],
 
     notificationSettings: {
         enabled: true,
@@ -243,6 +256,7 @@ const useStore = create<StoreState>((set, get) => ({
         }
         if (patch.status === 'review') {
             updatedPatch.movedToReviewBy = get().currentUser ?? undefined;
+            updatedPatch.movedToReviewAt = Date.now();
         }
 
         // Workflow review : si la tâche passe en "review" avec des réviseurs déjà définis → notifier
@@ -812,6 +826,12 @@ const useStore = create<StoreState>((set, get) => ({
             )
         }));
     },
+
+    // ── Outlook / ICS ───────────────────────────────────────────────────────
+    setOutlookConfig: (patch) => {
+        set(state => ({ outlookConfig: { ...state.outlookConfig, ...patch } }));
+    },
+    setOutlookEvents: (events) => set({ outlookEvents: events }),
 }));
 
 export default useStore;
