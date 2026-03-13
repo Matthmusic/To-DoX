@@ -663,6 +663,12 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
 
     function switchView(mode: ViewMode) { setViewMode(mode); setOffset(0); }
 
+    // Indices des colonnes Lundi (pour overlay pleine hauteur)
+    const mondayIndices = useMemo(
+        () => days.map((d, i) => d.getDay() === 1 ? i : -1).filter(i => i !== -1),
+        [days]
+    );
+
     // Events Outlook visibles dans la fenêtre courante
     // Note : pour les réunions timed (ex: 14h-15h), ev.end === ev.start (même date ISO).
     // On calcule un effectiveEnd = start+1 jour dans ce cas pour que les barres s'affichent.
@@ -859,6 +865,20 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                     Aujourd'hui
                 </button>
 
+                {/* User en cours de visualisation */}
+                {(() => {
+                    const viewedUser = selectedUserId ? users.find(u => u.id === selectedUserId) : null;
+                    if (!viewedUser) return null;
+                    return (
+                        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Vue</span>
+                            <span className="text-sm font-bold" style={{ color: getUserColor(viewedUser.id) }}>
+                                {viewedUser.name.split(' ')[0]}
+                            </span>
+                        </div>
+                    );
+                })()}
+
                 <span className="hidden xl:flex items-center gap-1.5 text-[10px] text-white/20 font-medium ml-1">
                     <MousePointerClick className="h-3 w-3" />
                     Cliquer pour planifier · Ctrl+clic multi-sélection
@@ -879,7 +899,16 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
             {/* ── Grid ────────────────────────────────────────────────── */}
             <div ref={gridContainerRef} className="flex-1 overflow-auto rounded-2xl border border-white/10 bg-theme-secondary"
                 onClick={e => { if (e.target === e.currentTarget) setSelectedCells(new Set()); }}>
-                <div style={{ minWidth: `${SIDE_W + colW * days.length}px` }}>
+                <div style={{ minWidth: `${SIDE_W + colW * days.length}px` }} className="relative">
+
+                    {/* ── Overlays pleine hauteur : séparateurs de semaine (lundi) ── */}
+                    {mondayIndices.map(i => (
+                        <div key={i} className="absolute top-0 bottom-0 pointer-events-none z-[1]"
+                            style={{ left: SIDE_W + i * colW }}>
+                            <div className="absolute top-0 bottom-0 left-0 w-[1px] bg-white/15" />
+                            <div className="absolute top-0 bottom-0 left-[3px] w-[1px] bg-white/7" />
+                        </div>
+                    ))}
 
                     {/* ── Header row ── */}
                     <div className="flex sticky top-0 z-20 border-b border-white/10"
@@ -900,7 +929,6 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                     className={`relative flex flex-col items-center justify-end border-r border-white/5 last:border-r-0
                                         ${isToday   ? 'bg-cyan-500/20'  : ''}
                                         ${isWeekend ? 'bg-black/[0.22]' : ''}
-                                        ${isMonday && !isToday ? 'border-l border-l-white/20' : ''}
                                         ${isSat ? 'border-r border-r-white/10' : ''}`}
                                     style={{ width: colW, minWidth: colW, paddingBottom: '8px', paddingTop: '10px' }}>
 
@@ -909,6 +937,13 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                         <div className="absolute top-0 left-0 right-0 h-[3px] bg-cyan-400 rounded-b" />
                                     )}
 
+                                    {/* Double barre séparateur de semaine (lundi) */}
+                                    {isMonday && day.getDate() !== 1 && (
+                                        <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
+                                            <div className="absolute inset-y-0 left-0 w-[1px] bg-white/20" />
+                                            <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/10" />
+                                        </div>
+                                    )}
                                     {/* Double trait début de mois */}
                                     {day.getDate() === 1 && (
                                         <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
@@ -993,20 +1028,6 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                             >
                                                 <RefreshCw className="h-3 w-3" />
                                                 Actualiser
-                                            </button>
-                                        )}
-                                        {icsExportPath && window.electronAPI?.isElectron && (
-                                            <button
-                                                onClick={e => {
-                                                    e.stopPropagation();
-                                                    const fileUrl = `file:///${icsExportPath.replace(/\\/g, '/')}`;
-                                                    window.electronAPI?.openExternalUrl(fileUrl);
-                                                }}
-                                                className="flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 text-[10px] font-medium transition"
-                                                title="Envoyer le fichier .ics vers Outlook"
-                                            >
-                                                <ExternalLink className="h-3 w-3" />
-                                                Envoyer vers Outlook
                                             </button>
                                         )}
                                     </div>
@@ -1103,19 +1124,35 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                     )}
 
                     {/* ── Séparateur Outlook / To-DoX ── */}
-                    {outlookConfig.enabled && visibleOutlookEvents.length > 0 && flatRows.length > 0 && (
+                    {(outlookConfig.enabled && visibleOutlookEvents.length > 0 && flatRows.length > 0) || (icsExportPath && window.electronAPI?.isElectron && flatRows.length > 0) ? (
                         <div className="flex sticky left-0 z-10 border-b-2 border-indigo-500/40">
                             <div
-                                className="sticky left-0 z-10 px-4 py-1 text-[9px] font-bold uppercase tracking-widest text-indigo-400/60"
+                                className="sticky left-0 z-10 px-4 py-1 flex items-center gap-2"
                                 style={{ width: SIDE_W, minWidth: SIDE_W, backgroundColor: 'rgba(99,102,241,0.06)' }}
                             >
-                                Calendrier To-DoX
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-400/60">
+                                    Calendrier To-DoX
+                                </span>
+                                {icsExportPath && window.electronAPI?.isElectron && (
+                                    <button
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            const fileUrl = `file:///${icsExportPath.replace(/\\/g, '/')}`;
+                                            window.electronAPI?.openExternalUrl(fileUrl);
+                                        }}
+                                        className="flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 text-[10px] font-medium transition"
+                                        title="Envoyer le fichier .ics vers Outlook"
+                                    >
+                                        <ExternalLink className="h-3 w-3" />
+                                        Envoyer vers Outlook
+                                    </button>
+                                )}
                             </div>
                             {days.map(day => (
                                 <div key={toISO(day)} style={{ width: colW, minWidth: colW }} />
                             ))}
                         </div>
-                    )}
+                    ) : null}
 
                     {/* ── Empty state ── */}
                     {flatRows.length === 0 && (
@@ -1158,12 +1195,20 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                         const isBarEnd   = colIdx === row.barEndIdx;
 
                                         const isMonthStart = days[colIdx]?.getDate() === 1;
+                                        const isMondayCol  = days[colIdx]?.getDay() === 1;
                                         return (
                                             <div key={iso}
                                                 className={`relative border-r border-white/5 last:border-r-0 flex items-center
                                                 ${isToday ? 'bg-cyan-500/10' : ''}`}
                                                 style={{ width: colW, minWidth: colW, height: '42px' }}>
 
+                                                {/* Double barre séparateur de semaine (lundi) */}
+                                                {isMondayCol && !isMonthStart && (
+                                                    <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
+                                                        <div className="absolute inset-y-0 left-0 w-[1px] bg-white/18" />
+                                                        <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/8" />
+                                                    </div>
+                                                )}
                                                 {/* Double trait début de mois */}
                                                 {isMonthStart && (
                                                     <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
@@ -1334,6 +1379,13 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                                 ? `Cliquer pour modifier${assignedUsers.length > 0 ? ` (${assignedUsers.map(u => u.name.split(' ')[0]).join(', ')})` : ''} · Glisser pour étendre`
                                                 : 'Cliquer pour planifier · Glisser pour une plage'}
                                         >
+                                            {/* Double barre séparateur de semaine (lundi) */}
+                                            {days[colIdx]?.getDay() === 1 && days[colIdx]?.getDate() !== 1 && (
+                                                <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
+                                                    <div className="absolute inset-y-0 left-0 w-[1px] bg-white/18" />
+                                                    <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/8" />
+                                                </div>
+                                            )}
                                             {/* Double trait début de mois */}
                                             {days[colIdx]?.getDate() === 1 && (
                                                 <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
@@ -1397,14 +1449,14 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                             {/* Assignee avatars on bar (chaque cellule planifiée) */}
                                             {isPlanned && assignedUsers.length > 0 && !compact && (
                                                 <div className="absolute top-1/2 -translate-y-1/2 z-10 flex pointer-events-none"
-                                                    style={{ left: '8px' }}>
+                                                    style={{ left: '6px' }}>
                                                     {assignedUsers.slice(0, 3).map((user, i) => (
                                                         <div
                                                             key={user.id}
-                                                            className="h-4 w-4 rounded-full flex items-center justify-center text-[7px] font-bold text-white ring-1 ring-black/40"
+                                                            className="h-5 w-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white ring-1 ring-black/40"
                                                             style={{
                                                                 backgroundColor: getUserColor(user.id),
-                                                                marginLeft: i === 0 ? 0 : '-4px',
+                                                                marginLeft: i === 0 ? 0 : '-5px',
                                                                 zIndex: assignedUsers.length - i,
                                                             }}
                                                             title={user.name}>
@@ -1413,8 +1465,8 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                                     ))}
                                                     {assignedUsers.length > 3 && (
                                                         <div
-                                                            className="h-4 w-4 rounded-full flex items-center justify-center text-[6px] font-bold text-white ring-1 ring-black/40 bg-white/25"
-                                                            style={{ marginLeft: '-4px' }}>
+                                                            className="h-5 w-5 rounded-full flex items-center justify-center text-[7px] font-bold text-white ring-1 ring-black/40 bg-white/25"
+                                                            style={{ marginLeft: '-5px' }}>
                                                             +{assignedUsers.length - 3}
                                                         </div>
                                                     )}

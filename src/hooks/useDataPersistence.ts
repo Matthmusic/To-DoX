@@ -317,6 +317,29 @@ export function useDataPersistence() {
                             }
                             setPendingMentions(mergedM);
                         }
+                        // Fusion timeEntries (union par id, plus récent gagne)
+                        if (result.data.timeEntries) {
+                            const localEntries = useStore.getState().timeEntries;
+                            const fileEntries = result.data.timeEntries as TimeEntry[];
+                            const byId = new Map<string, TimeEntry>();
+                            for (const e of fileEntries) byId.set(e.id, e);
+                            for (const e of localEntries) {
+                                const existing = byId.get(e.id);
+                                if (!existing || e.updatedAt > existing.updatedAt) byId.set(e.id, e);
+                            }
+                            setTimeEntries(Array.from(byId.values()));
+                        }
+                        // appNotifications : union par id (fichier prioritaire pour readAt)
+                        if (result.data.appNotifications) {
+                            const localNotifs = useStore.getState().appNotifications;
+                            const fileNotifs = result.data.appNotifications as AppNotification[];
+                            const byId = new Map(fileNotifs.map(n => [n.id, n]));
+                            for (const n of localNotifs) if (!byId.has(n.id)) byId.set(n.id, n);
+                            setAppNotifications(Array.from(byId.values()));
+                        }
+                        // templates et savedReports : fichier prioritaire (source de vérité partagée)
+                        if (result.data.templates) setTemplates((result.data.templates as unknown[]).map(migrateTemplate));
+                        if (result.data.savedReports) setSavedReports(result.data.savedReports as SavedReport[]);
                         devLog('✅ [AUTO-RELOAD] data.json rechargé');
                     }
                 }
