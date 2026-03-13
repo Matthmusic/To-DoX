@@ -116,12 +116,13 @@ interface SubtaskItemProps {
     subtask: Subtask;
     task: Task;
     isDragging: boolean;
+    onGripMouseDown: () => void;
 }
 
 /**
  * Item individuel d'une sous-tâche
  */
-export function SubtaskItem({ subtask, task, isDragging }: SubtaskItemProps) {
+export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: SubtaskItemProps) {
     const { toggleSubtask, deleteSubtask, updateSubtaskTitle, addTask, users } = useStore();
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(subtask.title);
@@ -197,10 +198,13 @@ export function SubtaskItem({ subtask, task, isDragging }: SubtaskItemProps) {
                 onDragOver={handleFileDragOver}
                 onDragLeave={() => setIsFileDropTarget(false)}
                 onDrop={handleFileDrop}
-                className={`flex items-center gap-2 rounded-lg p-2 transition ${isDragging ? "opacity-50" : ""} ${isFileDropTarget ? "border border-blue-400/60 bg-blue-400/10" : "bg-white/5"}`}
+                className={`flex items-center gap-2 rounded-lg p-2 transition select-none ${isDragging ? "opacity-50" : ""} ${isFileDropTarget ? "border border-blue-400/60 bg-blue-400/10" : "bg-white/5"}`}
                 title="Déposer un fichier pour l'attacher"
             >
-                <GripVertical className="h-4 w-4 cursor-grab text-slate-400" />
+                <GripVertical
+                    className="h-4 w-4 cursor-grab text-slate-400 shrink-0"
+                    onMouseDown={onGripMouseDown}
+                />
                 <input
                     type="checkbox"
                     checked={subtask.completed}
@@ -235,7 +239,7 @@ export function SubtaskItem({ subtask, task, isDragging }: SubtaskItemProps) {
                 ) : (
                     <span
                         onDoubleClick={() => setIsEditing(true)}
-                        className={`flex-1 text-sm ${subtask.completed ? "text-slate-400 line-through" : "text-slate-200"} cursor-text`}
+                        className={`flex-1 text-sm ${subtask.completed ? "text-slate-400 line-through" : "text-slate-200"} cursor-default select-none`}
                         title="Double-cliquer pour éditer"
                     >
                         {parseFilePaths(subtask.title).map((part, idx) =>
@@ -314,6 +318,7 @@ export function SubtaskList({ task }: SubtaskListProps) {
     const { addSubtask, reorderSubtasks, templates, applyTemplateToTask } = useStore();
     const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const dragFromGrip = useRef(false);
     const [isNewDropTarget, setIsNewDropTarget] = useState(false);
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
     const templateDropdownRef = useRef<HTMLDivElement>(null);
@@ -342,14 +347,17 @@ export function SubtaskList({ task }: SubtaskListProps) {
     };
 
     const handleDragStart = (e: React.DragEvent, index: number) => {
+        if (!dragFromGrip.current) { e.preventDefault(); return; }
+        dragFromGrip.current = false;
         setDraggedIndex(index);
         e.dataTransfer.effectAllowed = "move";
+        e.stopPropagation(); // empêche TaskCard d'annuler ce drag via son handler data-nodrag
     };
 
     const handleDragOver = (e: React.DragEvent, index: number) => {
         e.preventDefault();
+        e.stopPropagation(); // empêche TaskCard de traiter ce dragover comme un drop de tâche
         if (draggedIndex === null || draggedIndex === index) return;
-
         reorderSubtasks(task.id, draggedIndex, index);
         setDraggedIndex(index);
     };
@@ -410,6 +418,7 @@ export function SubtaskList({ task }: SubtaskListProps) {
                             subtask={subtask}
                             task={task}
                             isDragging={draggedIndex === index}
+                            onGripMouseDown={() => { dragFromGrip.current = true; }}
                         />
                     </div>
                 ))}

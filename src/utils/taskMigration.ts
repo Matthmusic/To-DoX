@@ -129,6 +129,9 @@ export function migrateTask(raw: unknown, options: MigrationOptions): Task {
     reviewers: Array.isArray(data.reviewers)
       ? (data.reviewers as unknown[]).filter((r): r is string => typeof r === 'string' && r.length > 0)
       : undefined,
+    movedToReviewBy: typeof data.movedToReviewBy === 'string' ? data.movedToReviewBy : undefined,
+    movedToReviewAt: typeof data.movedToReviewAt === 'number' ? data.movedToReviewAt : undefined,
+    rejectionComment: typeof data.rejectionComment === 'string' ? data.rejectionComment : undefined,
   };
 }
 
