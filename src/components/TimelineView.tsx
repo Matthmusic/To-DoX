@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CalendarDays, Calendar, X, MousePointerClick, Monitor, ChevronDown, Lock, ExternalLink, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Calendar, X, MousePointerClick, Monitor, ChevronDown, Lock, ExternalLink, RefreshCw } from 'lucide-react';
 import type { Task, GanttDay, User, OutlookEvent } from '../types';
 import useStore from '../store/useStore';
 import { useTheme } from '../hooks/useTheme';
