@@ -36,6 +36,7 @@ const PRIORITY_STYLE = {
 };
 
 function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick, archiveTask, reopenTask }: TaskSectionProps) {
+    const { highlightedTaskId } = useStore();
     const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({});
     const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
 
@@ -74,7 +75,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
                                 const prio = PRIORITY_STYLE[task.priority];
                                 const completedSubtasks = task.subtasks.filter(s => s.completed).length;
                                 return (
-                                <div key={task.id} className="transition-colors">
+                                <div key={task.id} className={`transition-colors rounded-lg ${highlightedTaskId === task.id ? 'ring-2 ring-cyan-400 ring-offset-1 ring-offset-[#161b2e] animate-pulse' : ''}`}>
                                     {/* Ligne principale — clic = toggle expand */}
                                     <div
                                         className="flex items-start gap-3 px-4 py-3 hover:bg-white/[0.02] cursor-pointer group"

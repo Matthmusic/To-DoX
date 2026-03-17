@@ -217,13 +217,12 @@ export default function ToDoX() {
         // Si la tâche est dans le Kanban (pas done), naviguer et mettre en surbrillance
         if (task.status !== 'done') {
             setActiveView('kanban');
-            setHighlightedTaskId(taskId);
-            if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
-            highlightTimeoutRef.current = setTimeout(() => setHighlightedTaskId(null), 3500);
         } else {
-            // Tâche terminée → ouvrir le panneau d'édition classique
-            setContextMenu({ x: window.innerWidth, y: 48, task });
+            setActiveView('terminées');
         }
+        setHighlightedTaskId(taskId);
+        if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+        highlightTimeoutRef.current = setTimeout(() => setHighlightedTaskId(null), 3500);
     }, [tasks, setHighlightedTaskId]);
     useEffect(() => {
         const handler = (e: Event) => {
