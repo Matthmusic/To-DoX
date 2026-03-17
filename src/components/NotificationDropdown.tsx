@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Bell, CheckCircle2, RotateCcw, Eye, Clock, CheckCheck, Trash2 } from "lucide-react";
+import { Bell, CheckCircle2, RotateCcw, Eye, Clock, CheckCheck, Trash2, MessageCircle, AtSign } from "lucide-react";
 import useStore from "../store/useStore";
 import type { AppNotification } from "../types";
 
@@ -16,6 +16,8 @@ function getNotifIcon(type: AppNotification["type"]) {
         case "review_validated": return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />;
         case "review_rejected":  return <RotateCcw className="h-3.5 w-3.5 text-amber-400" />;
         case "review_stale":     return <Clock className="h-3.5 w-3.5 text-orange-400" />;
+        case "comment_mention":  return <AtSign className="h-3.5 w-3.5 text-cyan-400" />;
+        case "comment_added":    return <MessageCircle className="h-3.5 w-3.5 text-sky-400" />;
     }
 }
 

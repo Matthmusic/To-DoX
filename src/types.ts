@@ -248,7 +248,9 @@ export type AppNotifType =
   | 'review_requested'   // Assigné comme réviseur
   | 'review_validated'   // Tâche validée
   | 'review_rejected'    // Corrections demandées
-  | 'review_stale';      // En révision depuis trop longtemps
+  | 'review_stale'       // En révision depuis trop longtemps
+  | 'comment_mention'    // @mention dans un commentaire
+  | 'comment_added';     // Nouveau commentaire sur une tâche où on est impliqué
 
 /**
  * Notification in-app (workflow de révision)

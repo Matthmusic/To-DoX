@@ -478,15 +478,19 @@ const useStore = create<StoreState>((set, get) => ({
             }
         }));
 
-        // Détecter les @mentions et ajouter des notifications en attente
+        // Détecter les @mentions et notifier les utilisateurs concernés
+        const task = tasks.find(t => t.id === taskId);
+        const fromUser = users.find(u => u.id === currentUser);
+        const taskTitle = task?.title || 'une tâche';
+        const fromUserName = fromUser?.name || currentUser;
+
         const mentionedUsers = users.filter(u =>
             u.id !== currentUser && text.includes(`@${u.name}`)
         );
+        const mentionedIds = new Set(mentionedUsers.map(u => u.id));
+
         if (mentionedUsers.length > 0) {
-            const task = tasks.find(t => t.id === taskId);
-            const fromUser = users.find(u => u.id === currentUser);
-            const taskTitle = task?.title || 'une tâche';
-            const fromUserName = fromUser?.name || currentUser;
+            // pendingMentions (système existant)
             set(state => {
                 const updated = { ...state.pendingMentions };
                 mentionedUsers.forEach(u => {
@@ -494,6 +498,35 @@ const useStore = create<StoreState>((set, get) => ({
                     updated[u.id] = [...(updated[u.id] || []), mention];
                 });
                 return { pendingMentions: updated };
+            });
+            // AppNotification cloche
+            mentionedUsers.forEach(u => {
+                get().addAppNotification({
+                    type: 'comment_mention',
+                    taskId,
+                    taskTitle,
+                    fromUserId: currentUser,
+                    toUserId: u.id,
+                    message: `${fromUserName} vous a mentionné dans "${taskTitle}" : ${text.slice(0, 80)}${text.length > 80 ? '…' : ''}`,
+                });
+            });
+        }
+
+        // Notifier assignés et réviseurs (hors commentateur et déjà mentionnés)
+        if (task) {
+            const involved = [...new Set([
+                ...(task.assignedTo || []),
+                ...(task.reviewers || []),
+            ])].filter(id => id !== currentUser && !mentionedIds.has(id));
+            involved.forEach(toUserId => {
+                get().addAppNotification({
+                    type: 'comment_added',
+                    taskId,
+                    taskTitle,
+                    fromUserId: currentUser,
+                    toUserId,
+                    message: `${fromUserName} a commenté "${taskTitle}" : ${text.slice(0, 80)}${text.length > 80 ? '…' : ''}`,
+                });
             });
         }
     },
