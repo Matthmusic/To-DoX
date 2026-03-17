@@ -73,13 +73,9 @@ export function TitleBar({ onTaskClick }: TitleBarProps) {
         <img
           src={logoSvg}
           alt="To-DoX"
-          className="h-5 w-auto"
+          className="h-6 w-auto"
           style={{
             filter: `drop-shadow(0 0 8px ${activeTheme.palette.primary}66)`,
-            WebkitMaskImage: 'url(' + logoSvg + ')',
-            WebkitMaskSize: 'contain',
-            WebkitMaskRepeat: 'no-repeat',
-            backgroundColor: activeTheme.palette.primary,
             WebkitAppRegion: 'drag',
             pointerEvents: 'none'
           } as React.CSSProperties}
