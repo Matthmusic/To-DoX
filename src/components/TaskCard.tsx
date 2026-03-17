@@ -40,7 +40,7 @@ export function TaskCard({
     onDragLeaveTask,
     dropIndicator,
 }: TaskCardProps) {
-    const { directories, users, projectColors, updateTask, comments, currentUser, validateTask, requestCorrections, convertSubtaskBack } = useStore();
+    const { directories, users, projectColors, updateTask, comments, currentUser, validateTask, requestCorrections, convertSubtaskBack, highlightedTaskId } = useStore();
     const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
     const [showUserPopover, setShowUserPopover] = useState(false);
     const [subtaskOriginMenu, setSubtaskOriginMenu] = useState<{ x: number; y: number } | null>(null);
@@ -242,7 +242,7 @@ export function TaskCard({
             onClick={() => setIsSubtasksExpanded(v => !v)}
             onContextMenu={(e) => onContextMenu(e, task)}
             className={`group relative mb-3 flex flex-col gap-3 rounded-2xl border border-white/5 bg-[#161b2e] p-4 shadow-lg transition-all hover:border-white/20 ${urgencyGlowClass} ${isDueToday ? "pulse-glow" : isOverdue ? "ring-1 ring-rose-500/50" : ""
-                } ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"} ${isDropTarget ? "ring-1 ring-blue-400/50" : ""} ${cardFileDropTarget ? "ring-2 ring-blue-400/70 border-blue-400/40 bg-blue-500/5" : ""}`}
+                } ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"} ${isDropTarget ? "ring-1 ring-blue-400/50" : ""} ${cardFileDropTarget ? "ring-2 ring-blue-400/70 border-blue-400/40 bg-blue-500/5" : ""} ${highlightedTaskId === task.id ? "ring-2 ring-cyan-400 ring-offset-1 ring-offset-[#161b2e] animate-pulse" : ""}`}
             title={cardFileDropTarget ? "Déposer pour ajouter le chemin à la note" : undefined}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

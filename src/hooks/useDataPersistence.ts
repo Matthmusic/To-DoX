@@ -98,6 +98,9 @@ export function useDataPersistence() {
 
     const lastFileHash = useRef<string | null>(null);
     const lastCommentsHash = useRef<string | null>(null);
+    // Dernier état connu des timeEntries en fichier — utilisé pour merger au save
+    // et éviter d'écraser les entrées d'autres utilisateurs dans la fenêtre de 2s
+    const lastKnownFileTimeEntries = useRef<TimeEntry[]>([]);
 
     // ─── Chargement initial ────────────────────────────────────────────────────
     useEffect(() => {
@@ -209,7 +212,10 @@ export function useDataPersistence() {
                         if (result.data.templates) setTemplates((result.data.templates as unknown[]).map(migrateTemplate));
                         if (result.data.savedReports) setSavedReports(result.data.savedReports as SavedReport[]);
                         if (result.data.appNotifications) setAppNotifications(result.data.appNotifications as AppNotification[]);
-                        if (result.data.timeEntries) setTimeEntries(result.data.timeEntries as TimeEntry[]);
+                        if (result.data.timeEntries) {
+                            setTimeEntries(result.data.timeEntries as TimeEntry[]);
+                            lastKnownFileTimeEntries.current = result.data.timeEntries as TimeEntry[];
+                        }
                         if (result.data.outlookConfig) setOutlookConfig(result.data.outlookConfig as OutlookConfig);
                         // Note: themeSettings ignoré (clé dédiée 'theme_settings')
 
@@ -327,7 +333,9 @@ export function useDataPersistence() {
                                 const existing = byId.get(e.id);
                                 if (!existing || e.updatedAt > existing.updatedAt) byId.set(e.id, e);
                             }
-                            setTimeEntries(Array.from(byId.values()));
+                            const merged = Array.from(byId.values());
+                            setTimeEntries(merged);
+                            lastKnownFileTimeEntries.current = merged;
                         }
                         // appNotifications : union par id (fichier prioritaire pour readAt)
                         if (result.data.appNotifications) {
@@ -388,7 +396,20 @@ export function useDataPersistence() {
             if (window.electronAPI?.isElectron && storagePath) {
                 try {
                     const filePath = storagePath + '/data.json';
-                    const dataPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, pendingMentions, templates, savedReports, appNotifications, timeEntries, outlookConfig };
+                    // Merger les timeEntries locaux avec le dernier état connu du fichier
+                    // pour ne jamais écraser les entrées d'autres utilisateurs non encore rechargées
+                    let safeTimeEntries = timeEntries;
+                    if (lastKnownFileTimeEntries.current.length > 0) {
+                        const byId = new Map<string, TimeEntry>();
+                        for (const e of lastKnownFileTimeEntries.current) byId.set(e.id, e);
+                        for (const e of timeEntries) {
+                            const existing = byId.get(e.id);
+                            if (!existing || e.updatedAt >= existing.updatedAt) byId.set(e.id, e);
+                        }
+                        safeTimeEntries = Array.from(byId.values());
+                    }
+                    lastKnownFileTimeEntries.current = safeTimeEntries;
+                    const dataPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, pendingMentions, templates, savedReports, appNotifications, timeEntries: safeTimeEntries, outlookConfig };
                     devLog('💾 [SAVE] data.json...');
                     const saveResult = await window.electronAPI.saveData(filePath, dataPayload);
                     if (saveResult && !saveResult.success) {

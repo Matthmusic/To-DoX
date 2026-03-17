@@ -132,7 +132,7 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
 export default function ToDoX() {
     // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, renameProject, currentUser, viewAsUser, pendingMentions, clearPendingMentions, appNotifications, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, renameProject, currentUser, viewAsUser, pendingMentions, clearPendingMentions, appNotifications, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId, setHighlightedTaskId } = useStore();
 
     const mentionCount = currentUser ? (pendingMentions[currentUser] || []).length : 0;
 
@@ -210,10 +210,21 @@ export default function ToDoX() {
     }, [appNotifications, currentUser]);
 
     // Écouter l'event custom déclenché depuis TitleBar (clic sur notif)
+    const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleOpenTaskById = useCallback((taskId: string) => {
         const task = tasks.find(t => t.id === taskId);
-        if (task) setContextMenu({ x: window.innerWidth, y: 48, task });
-    }, [tasks]);
+        if (!task) return;
+        // Si la tâche est dans le Kanban (pas done), naviguer et mettre en surbrillance
+        if (task.status !== 'done') {
+            setActiveView('kanban');
+            setHighlightedTaskId(taskId);
+            if (highlightTimeoutRef.current) clearTimeout(highlightTimeoutRef.current);
+            highlightTimeoutRef.current = setTimeout(() => setHighlightedTaskId(null), 3500);
+        } else {
+            // Tâche terminée → ouvrir le panneau d'édition classique
+            setContextMenu({ x: window.innerWidth, y: 48, task });
+        }
+    }, [tasks, setHighlightedTaskId]);
     useEffect(() => {
         const handler = (e: Event) => {
             const taskId = (e as CustomEvent<{ taskId: string }>).detail?.taskId;

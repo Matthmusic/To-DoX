@@ -119,6 +119,10 @@ interface StoreState {
     outlookEvents: OutlookEvent[];         // transient (non persisté)
     setOutlookConfig: (patch: Partial<OutlookConfig>) => void;
     setOutlookEvents: (events: OutlookEvent[]) => void;
+
+    // UI transient — mise en surbrillance d'une tâche (depuis notif)
+    highlightedTaskId: string | null;
+    setHighlightedTaskId: (id: string | null) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -148,6 +152,7 @@ const useStore = create<StoreState>((set, get) => ({
         lastSync: null,
     },
     outlookEvents: [],
+    highlightedTaskId: null,
 
     notificationSettings: {
         enabled: true,
@@ -832,6 +837,7 @@ const useStore = create<StoreState>((set, get) => ({
         set(state => ({ outlookConfig: { ...state.outlookConfig, ...patch } }));
     },
     setOutlookEvents: (events) => set({ outlookEvents: events }),
+    setHighlightedTaskId: (id) => set({ highlightedTaskId: id }),
 }));
 
 export default useStore;
