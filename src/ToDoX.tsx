@@ -337,7 +337,7 @@ export default function ToDoX() {
     useNotifications();
 
     // === OUTLOOK SYNC ===
-    const { fetchOutlookEvents, icsExportPath, icsServerUrl } = useOutlookSync();
+    const { fetchOutlookEvents, icsExportPath, icsViewPath, icsServerUrl } = useOutlookSync();
 
     // === KEYBOARD SHORTCUTS ===
 
@@ -484,9 +484,9 @@ export default function ToDoX() {
                     <TimelineView
                         filteredTasks={filteredTasks}
                         onTaskClick={isReadOnly ? () => {} : (task, x, y) => setContextMenu({ x, y, task })}
-                        icsExportPath={icsExportPath}
+                        icsExportPath={isReadOnly ? icsViewPath : icsExportPath}
                         selectedUserId={filterUser !== 'all' ? filterUser : undefined}
-                        onRefreshOutlook={fetchOutlookEvents}
+                        onRefreshOutlook={isReadOnly ? undefined : fetchOutlookEvents}
                         readOnly={isReadOnly}
                     />
                 ) : activeView === 'terminées' ? (
