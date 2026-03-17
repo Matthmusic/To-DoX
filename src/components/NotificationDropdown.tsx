@@ -41,9 +41,10 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
 
     const unreadCount = myNotifs.filter(n => !n.readAt).length;
 
-    // Centré horizontalement, positionné sous l'ancre
+    // Centré sous la cloche
     const pos = anchorRef.current?.getBoundingClientRect();
-    const top = pos ? pos.bottom + 8 : 48;
+    const top = pos ? pos.bottom + 6 : 48;
+    const bellCenterX = pos ? pos.left + pos.width / 2 : window.innerWidth / 2;
 
     useEffect(() => {
         function handleClick(e: MouseEvent) {
@@ -60,8 +61,15 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
     return createPortal(
         <div
             ref={dropdownRef}
-            className="fixed z-[99998] w-[min(calc(100vw-1rem),24rem)] max-h-[480px] flex flex-col rounded-2xl border border-white/15 bg-[#0f1629] shadow-2xl backdrop-blur-xl overflow-hidden"
-            style={{ top, left: '50%', transform: 'translateX(-50%)' }}
+            className="fixed z-[99998] flex flex-col rounded-2xl border border-white/15 shadow-2xl overflow-hidden"
+            style={{
+                top,
+                left: bellCenterX,
+                transform: 'translateX(-50%)',
+                width: 'min(calc(100vw - 2rem), 30rem)',
+                maxHeight: '60vh',
+                backgroundColor: '#0f1629',
+            }}
         >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
