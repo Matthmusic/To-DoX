@@ -45,3 +45,8 @@ tsc_errors.txt
 
 # Accidental output file
 nul
+
+# Test reports
+playwright-report/
+test-results/
+.temp-excluded/
