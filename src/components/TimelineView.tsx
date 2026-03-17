@@ -997,8 +997,8 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                         })}
                     </div>
 
-                    {/* ── Section Calendrier Outlook ── */}
-                    {outlookConfig.enabled && visibleOutlookEvents.length > 0 && (
+                    {/* ── Section Calendrier Outlook ── (masquée en consultation : events = user connecté, pas user consulté) */}
+                    {!readOnly && outlookConfig.enabled && visibleOutlookEvents.length > 0 && (
                         <>
                             {/* Header de section collapsible */}
                             <div
@@ -1125,7 +1125,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                     )}
 
                     {/* ── Séparateur Outlook / To-DoX ── */}
-                    {(outlookConfig.enabled && visibleOutlookEvents.length > 0 && flatRows.length > 0) || (icsExportPath && window.electronAPI?.isElectron && flatRows.length > 0) ? (
+                    {((!readOnly && outlookConfig.enabled && visibleOutlookEvents.length > 0 && flatRows.length > 0) || (icsExportPath && window.electronAPI?.isElectron && flatRows.length > 0)) ? (
                         <div className="flex sticky left-0 z-10 border-b-2 border-indigo-500/40">
                             <div
                                 className="sticky left-0 z-10 px-4 py-1 flex items-center gap-2"
