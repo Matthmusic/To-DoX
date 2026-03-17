@@ -12,6 +12,7 @@ interface TimelineViewProps {
     icsExportPath?: string | null;
     selectedUserId?: string;
     onRefreshOutlook?: () => void;
+    readOnly?: boolean;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────
@@ -324,7 +325,7 @@ function GanttCellPopover({
  * - La ligne projet affiche une barre allant du premier jour planifié (ou première
  *   échéance) jusqu'à la dernière échéance des tâches du projet.
  */
-export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, selectedUserId, onRefreshOutlook }: TimelineViewProps) {
+export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, selectedUserId, onRefreshOutlook, readOnly = false }: TimelineViewProps) {
     const { projectColors, updateTask, users, outlookConfig, outlookEvents } = useStore();
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
@@ -1272,7 +1273,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                         hover:bg-white/[0.04] transition-colors"
                                     style={{ width: SIDE_W, minWidth: SIDE_W, backgroundColor: 'var(--bg-secondary)' }}
                                     onClick={() => setSelectedTask(task)}
-                                    onContextMenu={e => { e.preventDefault(); onTaskClick(task, e.clientX, e.clientY); }}
+                                    onContextMenu={readOnly ? undefined : e => { e.preventDefault(); onTaskClick(task, e.clientX, e.clientY); }}
                                 >
                                     <div className="flex items-center gap-1.5 flex-shrink-0 ml-4">
                                         <span className="text-white/15 text-xs">└</span>
@@ -1370,11 +1371,11 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                                 ${isSelected ? 'ring-1 ring-inset ring-white/20' : ''}`}
                                             style={{
                                                 width: colW, minWidth: colW,
-                                                cursor: dragVisual?.taskId === task.id ? 'crosshair' : 'pointer',
+                                                cursor: readOnly ? 'default' : dragVisual?.taskId === task.id ? 'crosshair' : 'pointer',
                                             }}
-                                            onMouseDown={e => handleCellMouseDown(e, task, iso)}
-                                            onMouseEnter={() => handleCellMouseEnter(task, iso)}
-                                            onContextMenu={e => { e.preventDefault(); setActiveCell({ taskId: task.id, date: iso, rect: e.currentTarget.getBoundingClientRect() }); }}
+                                            onMouseDown={readOnly ? undefined : e => handleCellMouseDown(e, task, iso)}
+                                            onMouseEnter={readOnly ? undefined : () => handleCellMouseEnter(task, iso)}
+                                            onContextMenu={readOnly ? undefined : e => { e.preventDefault(); setActiveCell({ taskId: task.id, date: iso, rect: e.currentTarget.getBoundingClientRect() }); }}
                                             title={isPlanned
                                                 ? `Cliquer pour modifier${assignedUsers.length > 0 ? ` (${assignedUsers.map(u => u.name.split(' ')[0]).join(', ')})` : ''} · Glisser pour étendre`
                                                 : 'Cliquer pour planifier · Glisser pour une plage'}

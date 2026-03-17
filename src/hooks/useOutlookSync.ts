@@ -20,6 +20,7 @@ export function useOutlookSync() {
         storagePath,
         outlookConfig,
         currentUser,
+        viewAsUser,
         setOutlookEvents,
         setOutlookConfig,
     } = useStore();
@@ -110,7 +111,9 @@ export function useOutlookSync() {
                 const pathRes = await window.electronAPI!.outlook.getIcsPath(storagePath);
                 if (!pathRes.success || !pathRes.path) return;
 
-                const icsContent = generateIcs(tasks, currentUser);
+                // Exporter pour l'utilisateur en cours de visualisation (viewAsUser en consultation, sinon currentUser)
+                const exportUserId = viewAsUser ?? currentUser;
+                const icsContent = generateIcs(tasks, exportUserId);
                 const writeRes = await window.electronAPI!.outlook.writeIcs(pathRes.path, icsContent);
 
                 if (writeRes.success) {
@@ -127,7 +130,7 @@ export function useOutlookSync() {
         return () => {
             if (exportTimer.current) clearTimeout(exportTimer.current);
         };
-    }, [tasks, currentUser, outlookConfig.exportEnabled, storagePath]);
+    }, [tasks, currentUser, viewAsUser, outlookConfig.exportEnabled, storagePath]);
 
     // ─── Serveur HTTP local pour abonnement live Outlook ──────────────────────
     useEffect(() => {

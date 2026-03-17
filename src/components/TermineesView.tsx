@@ -6,6 +6,7 @@ import type { Task } from '../types';
 
 interface TermineesViewProps {
     onTaskClick: (task: Task, x: number, y: number) => void;
+    readOnly?: boolean;
 }
 
 function groupByProject(tasks: Task[]): Map<string, Task[]> {
@@ -189,7 +190,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
     );
 }
 
-export function TermineesView({ onTaskClick }: TermineesViewProps) {
+export function TermineesView({ onTaskClick, readOnly = false }: TermineesViewProps) {
     const { tasks, users, currentUser, projectColors, archiveTask, reopenTask } = useStore();
 
     const doneTasks = useMemo(() => {
@@ -242,7 +243,7 @@ export function TermineesView({ onTaskClick }: TermineesViewProps) {
                         ) : (
                             <TaskSection
                                 grouped={myGrouped}
-                                canAct={true}
+                                canAct={!readOnly}
                                 projectColors={projectColors}
                                 getUserName={getUserName}
                                 onTaskClick={onTaskClick}

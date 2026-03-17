@@ -146,6 +146,9 @@ export default function ToDoX() {
         filterUser,
     } = useFilters(tasks, viewAsUser ?? currentUser);
 
+    // Mode consultation : on visualise un autre utilisateur → pas de modification possible
+    const isReadOnly = !!viewAsUser && viewAsUser !== currentUser;
+
     const {
         handleDragStart,
         handleDragStartProject,
@@ -436,34 +439,49 @@ export default function ToDoX() {
                 showSearch={showSearch}
             />
 
+            {/* Bandeau mode consultation */}
+            {isReadOnly && (() => {
+                const viewedUser = users.find(u => u.id === viewAsUser);
+                const firstName = viewedUser?.name?.split(' ')[0] ?? viewAsUser;
+                return (
+                    <div className="flex items-center justify-center gap-2 px-4 py-1.5 border-b border-amber-500/25 bg-amber-500/8 text-amber-300 text-xs select-none">
+                        <span className="font-semibold uppercase tracking-wider text-amber-400/70 text-[10px]">Consultation</span>
+                        <span className="text-amber-300/50">·</span>
+                        <span>Vous visualisez les données de <strong className="text-amber-200">{firstName}</strong> — modifications désactivées</span>
+                    </div>
+                );
+            })()}
+
             {/* MAIN CONTENT */}
             <ErrorBoundary name="KanbanBoard">
                 {activeView === 'kanban' ? (
                     <KanbanBoard
                         grouped={grouped}
                         collapsedProjects={collapsedProjects}
-                        onDragStartProject={handleDragStartProject}
-                        onDragStartTask={handleDragStart}
-                        onDrop={handleDrop}
-                        onClickTask={(task) => setContextMenu({ x: window.innerWidth, y: 48, task })}
-                        onContextMenuTask={handleContextMenu}
+                        onDragStartProject={isReadOnly ? () => {} : handleDragStartProject}
+                        onDragStartTask={isReadOnly ? () => {} : handleDragStart}
+                        onDrop={isReadOnly ? () => {} : handleDrop}
+                        onClickTask={isReadOnly ? () => {} : (task) => setContextMenu({ x: window.innerWidth, y: 48, task })}
+                        onContextMenuTask={isReadOnly ? () => {} : handleContextMenu}
                         onSetProjectDirectory={() => setShowDirPanel(true)}
-                        onDragOverTask={handleDragOverTask}
-                        onDropOnTask={handleDropOnTask}
-                        onDragLeaveTask={handleDragLeaveTask}
-                        dropIndicator={dropIndicator}
+                        onDragOverTask={isReadOnly ? () => {} : handleDragOverTask}
+                        onDropOnTask={isReadOnly ? () => {} : handleDropOnTask}
+                        onDragLeaveTask={isReadOnly ? () => {} : handleDragLeaveTask}
+                        dropIndicator={isReadOnly ? null : dropIndicator}
                     />
                 ) : activeView === 'timeline' ? (
                     <TimelineView
                         filteredTasks={filteredTasks}
-                        onTaskClick={(task, x, y) => setContextMenu({ x, y, task })}
+                        onTaskClick={isReadOnly ? () => {} : (task, x, y) => setContextMenu({ x, y, task })}
                         icsExportPath={icsExportPath}
                         selectedUserId={filterUser !== 'all' ? filterUser : undefined}
                         onRefreshOutlook={fetchOutlookEvents}
+                        readOnly={isReadOnly}
                     />
                 ) : activeView === 'terminées' ? (
                     <TermineesView
-                        onTaskClick={(task, x, y) => setContextMenu({ x, y, task })}
+                        onTaskClick={isReadOnly ? () => {} : (task, x, y) => setContextMenu({ x, y, task })}
+                        readOnly={isReadOnly}
                     />
                 ) : activeView === 'pointage' ? (
                     <TimesheetView />
