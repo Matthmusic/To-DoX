@@ -1,17 +1,27 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { DropIndicator } from "../hooks/useDragAndDrop";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     ClipboardList, AlertTriangle, Paperclip, FileText, MoreHorizontal,
     FolderOpen, ChevronDown, ChevronRight, Star, User, ExternalLink, Edit3, MessageCircle,
-    CheckCircle2, RotateCcw, ArrowDownToLine
+    CheckCircle2, RotateCcw, ArrowDownToLine, Eye, EyeOff
 } from "lucide-react";
 import { createPortal } from "react-dom";
 import { businessDayDelta, getProjectColor, getInitials } from "../utils";
+import { alertModal } from "../utils/confirm";
 import { SubtaskList, parseFilePaths, getPathDisplayName, getDroppedFilePath, formatPathForInsertion } from "./SubtaskList";
 import { TaskComments } from "./TaskComments";
 import useStore from "../store/useStore";
 import type { Task } from "../types";
+
+const COMPACT_CARDS_KEY = "todox_compact_cards";
+function getCompactCards(): Set<string> {
+    try { return new Set(JSON.parse(localStorage.getItem(COMPACT_CARDS_KEY) || "[]")); }
+    catch { return new Set(); }
+}
+function saveCompactCards(ids: Set<string>) {
+    localStorage.setItem(COMPACT_CARDS_KEY, JSON.stringify([...ids]));
+}
 
 interface TaskCardProps {
     task: Task;
@@ -41,6 +51,7 @@ export function TaskCard({
     dropIndicator,
 }: TaskCardProps) {
     const { directories, users, projectColors, updateTask, comments, currentUser, validateTask, requestCorrections, convertSubtaskBack, highlightedTaskId } = useStore();
+    const [isCompact, setIsCompact] = useState(() => getCompactCards().has(task.id));
     const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
     const [showUserPopover, setShowUserPopover] = useState(false);
     const [subtaskOriginMenu, setSubtaskOriginMenu] = useState<{ x: number; y: number } | null>(null);
@@ -104,11 +115,6 @@ export function TaskCard({
         return "hover:shadow-[0_0_0_1px_rgba(52,211,153,0.35),0_0_24px_rgba(52,211,153,0.35)]";
     })();
 
-    // Find assigned users (multiple)
-    const assignedUsers = useMemo(() => {
-        return task.assignedTo.map(userId => users.find(u => u.id === userId)).filter(Boolean);
-    }, [task.assignedTo, users]);
-
     // Find reviewer users
     const reviewerUsers = useMemo(() => {
         return (task.reviewers || []).map(userId => users.find(u => u.id === userId)).filter(Boolean);
@@ -118,6 +124,44 @@ export function TaskCard({
     const creatorUser = useMemo(() => {
         return users.find(u => u.id === task.createdBy) || users.find(u => u.id === "unassigned");
     }, [task.createdBy, users]);
+
+    // Pastilles unifiées : créateur + assignés dédupliqués, avec rôles combinés
+    const unifiedUserBadges = useMemo(() => {
+        const reviewerIds = new Set(task.reviewers || []);
+        const assignedIds = new Set(task.assignedTo);
+        const seen = new Set<string>();
+        const result: Array<{ userId: string; name: string; isCreator: boolean; isReviewer: boolean }> = [];
+
+        // Créateur en premier
+        if (creatorUser && creatorUser.id !== 'unassigned') {
+            seen.add(creatorUser.id);
+            result.push({
+                userId: creatorUser.id,
+                name: creatorUser.name,
+                isCreator: true,
+                isReviewer: reviewerIds.has(creatorUser.id),
+            });
+        }
+        // Assignés non encore affichés
+        for (const userId of task.assignedTo) {
+            if (seen.has(userId) || userId === 'unassigned') continue;
+            const user = users.find(u => u.id === userId);
+            if (!user) continue;
+            seen.add(userId);
+            result.push({
+                userId: user.id,
+                name: user.name,
+                isCreator: false,
+                isReviewer: reviewerIds.has(user.id),
+            });
+        }
+
+        // Si personne : pastille vide
+        if (result.length === 0 && !assignedIds.has('unassigned') && task.assignedTo.length === 0) {
+            return null; // afficher placeholder
+        }
+        return result.length > 0 ? result : null;
+    }, [creatorUser, task.assignedTo, task.reviewers, users]);
 
     // Synchroniser localNotes avec task.notes
     useEffect(() => {
@@ -283,8 +327,13 @@ export function TaskCard({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                convertSubtaskBack(task.id);
+                                const result = convertSubtaskBack(task.id);
                                 setSubtaskOriginMenu(null);
+                                if (result === 'parent_not_found') {
+                                    alertModal(`La tâche parente "${task.convertedFromSubtask!.parentTaskTitle}" a été supprimée. Impossible de reconvertir en sous-tâche.`);
+                                } else if (result === 'parent_deleted') {
+                                    alertModal(`Reconverti en sous-tâche. Note : la tâche parente "${task.convertedFromSubtask!.parentTaskTitle}" est archivée.`);
+                                }
                             }}
                             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
                         >
@@ -302,21 +351,101 @@ export function TaskCard({
             )}
 
             {/* Header: Title + Actions */}
-            <div className="flex items-start justify-between gap-2">
-                <h4 className="text-base font-bold text-white leading-snug line-clamp-2 uppercase">
-                    {task.title}
-                </h4>
-                <div className="flex items-center gap-1">
+            <div className={`flex ${isCompact ? "items-center" : "items-start"} justify-between gap-2`}>
+                <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    {/* Toggle vue compacte */}
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setIsCompact(v => { const next = !v; const ids = getCompactCards(); next ? ids.add(task.id) : ids.delete(task.id); saveCompactCards(ids); return next; }); }}
+                        className="shrink-0 rounded p-0.5 text-slate-600 transition hover:text-slate-300"
+                        title={isCompact ? "Afficher le détail" : "Réduire la carte"}
+                    >
+                        {isCompact ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                    <h4 className={`font-bold text-white leading-snug uppercase ${isCompact ? "text-sm line-clamp-1" : "text-base line-clamp-2"}`}>
+                        {task.title}
+                    </h4>
+                    {/* Indicateurs inline — visibles uniquement en mode compact */}
+                    {isCompact && (
+                        <>
+                            <span className={`shrink-0 h-2 w-2 rounded-full ${
+                                task.priority === 'high' ? 'bg-rose-400' :
+                                task.priority === 'med' ? 'bg-amber-400' : 'bg-emerald-400'
+                            }`} />
+                            {showStagnationAlert && <AlertTriangle className="shrink-0 h-3 w-3 text-orange-400" />}
+                            {task.notes && <FileText className="shrink-0 h-3 w-3 text-amber-500/70" />}
+                            {totalSubtasks > 0 && (
+                                <span className="shrink-0 text-[10px] text-slate-500 tabular-nums">{completedSubtasks}/{totalSubtasks}</span>
+                            )}
+                            <span className={`shrink-0 ml-1 text-[10px] font-bold tabular-nums ${
+                                remainingDays === null ? "text-slate-500" :
+                                remainingDays < 0 ? "text-rose-400" :
+                                remainingDays < 3 ? "text-rose-400" :
+                                remainingDays <= 7 ? "text-amber-400" : "text-emerald-400"
+                            }`}>
+                                {task.status === "done"
+                                    ? (completionDateLabel ?? "✓")
+                                    : remainingDays !== null
+                                        ? (remainingDays < 0 ? `J+${Math.abs(remainingDays)}` : `J-${remainingDays}`)
+                                        : ""}
+                            </span>
+                        </>
+                    )}
+                </div>
+                <div className={`flex items-center gap-1 ${isCompact ? "shrink-0" : ""}`}>
+                    {/* ── Pastilles utilisateurs (créateur + assignés, dédupliqués) ── */}
+                    {isCompact ? (
+                        /* Mode compact : uniquement le bouton ⋯ */
+                        <button
+                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+                            onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
+                        >
+                            <MoreHorizontal className="h-4 w-4" />
+                        </button>
+                    ) : (<>
+                    {unifiedUserBadges === null ? (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
+                            className="relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-500/30 bg-slate-700/20 text-slate-400 transition-all hover:scale-110 hover:bg-slate-700/30 cursor-pointer"
+                            title="Non assignée - Cliquer pour assigner"
+                        >
+                            <User className="h-3.5 w-3.5" />
+                        </button>
+                    ) : (
+                        unifiedUserBadges.map((badge, idx) => (
+                            <button
+                                key={badge.userId}
+                                type="button"
+                                ref={idx === 0 ? userButtonRef : undefined}
+                                onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
+                                className={`relative inline-flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-bold transition-all hover:scale-110 cursor-pointer ${
+                                    badge.isCreator
+                                        ? "border-emerald-300/40 bg-emerald-300/15 text-emerald-200 hover:bg-emerald-300/25"
+                                        : "border-blue-300/40 bg-blue-300/15 text-blue-200 hover:bg-blue-300/25"
+                                } ${
+                                    badge.isReviewer
+                                        ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-[#161b2e]"
+                                        : ""
+                                }`}
+                                title={`${badge.name}${badge.isCreator ? " (créateur)" : ""}${badge.isReviewer ? " (réviseur)" : ""} — Cliquer pour gérer`}
+                            >
+                                {getInitials(badge.name)}
+                            </button>
+                        ))
+                    )}
+                    {/* ── Favoris — position fixe après les users ── */}
                     <button
                         onClick={(e) => { e.stopPropagation(); handleToggleFavorite(e); }}
                         className={`rounded-lg p-1.5 transition ${task.favorite
                             ? "text-amber-400 hover:bg-amber-400/20"
                             : "text-slate-400 hover:bg-white/10 hover:text-amber-400"
-                            }`}
+                        }`}
                         title={task.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                     >
                         <Star className="h-4 w-4" fill={task.favorite ? "currentColor" : "none"} />
                     </button>
+                    {/* ── Dossier — position fixe après les users ── */}
                     {task.project && (
                         <button
                             onClick={(e) => { e.stopPropagation(); handleOpenFolder(e); }}
@@ -326,53 +455,7 @@ export function TaskCard({
                             <FolderOpen className="h-4 w-4" />
                         </button>
                     )}
-                    {/* Créateur */}
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onContextMenu(e, task);
-                        }}
-                        className={`relative inline-flex h-7 w-7 items-center justify-center rounded-full border text-[10px] font-bold transition-all hover:scale-110 cursor-pointer ${
-                            creatorUser && creatorUser.id !== "unassigned"
-                                ? "border-emerald-300/40 bg-emerald-300/15 text-emerald-200 hover:bg-emerald-300/25"
-                                : "border-slate-500/30 bg-slate-700/20 text-slate-400 hover:bg-slate-700/30"
-                        } ${task.status === 'review' && task.movedToReviewBy && creatorUser?.id === task.movedToReviewBy ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-[#161b2e]" : ""}`}
-                        title={creatorUser && creatorUser.id !== "unassigned" ? `Créée par ${creatorUser.name} - Cliquer pour gérer` : "Créateur inconnu - Cliquer pour gérer"}
-                    >
-                        {getInitials(creatorUser?.id !== "unassigned" ? creatorUser?.name : null)}
-                    </button>
-                    {/* Affecté à (multiple) */}
-                    {assignedUsers.length === 0 ? (
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onContextMenu(e, task);
-                            }}
-                            className="relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-500/30 bg-slate-700/20 text-slate-400 transition-all hover:scale-110 hover:bg-slate-700/30 cursor-pointer"
-                            title="Non assignée - Cliquer pour assigner"
-                        >
-                            <User className="h-3.5 w-3.5" />
-                        </button>
-                    ) : (
-                        assignedUsers.map((user, idx) => (
-                            <button
-                                key={user!.id}
-                                type="button"
-                                ref={idx === 0 ? userButtonRef : undefined}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onContextMenu(e, task);
-                                }}
-                                className={`relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-blue-300/40 bg-blue-300/15 text-blue-200 text-[10px] font-bold transition-all hover:scale-110 hover:bg-blue-300/25 cursor-pointer ${task.status === 'review' && task.movedToReviewBy && user!.id === task.movedToReviewBy ? "ring-2 ring-violet-400 ring-offset-1 ring-offset-[#161b2e]" : ""}`}
-                                title={`Assignée à ${user!.name} - Cliquer pour gérer`}
-                            >
-                                {getInitials(user!.name)}
-                            </button>
-                        ))
-                    )}
-                    {/* Commentaires */}
+                    {/* ── Commentaires ── */}
                     {commentCount > 0 && (
                         <button
                             onClick={(e) => { e.stopPropagation(); setIsSubtasksExpanded(true); }}
@@ -383,18 +466,28 @@ export function TaskCard({
                             <span className="text-[9px] font-bold">{commentCount}</span>
                         </button>
                     )}
+                    {/* ── Plus ── */}
                     <button
                         className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onContextMenu(e, task);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
                     >
                         <MoreHorizontal className="h-4 w-4" />
                     </button>
+                    </>)}
                 </div>
             </div>
 
+            {/* ── Contenu détaillé (masqué en mode compact) ── */}
+            <AnimatePresence initial={false}>
+            {!isCompact && (
+            <motion.div
+                key="full-content"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden flex flex-col gap-3"
+            >
             {/* Badges Row */}
             <div className="flex flex-wrap items-center gap-2">
                 {task.project && (
@@ -766,6 +859,9 @@ export function TaskCard({
                     </div>
                 </div>
             )}
+            </motion.div>
+            )}
+            </AnimatePresence>
             </div>
             {/* Popover retiré - les initiales sont maintenant affichées directement sur les badges */}
         </motion.div>

@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.1.18",
+    "version": "2.1.19",
     "description": {
       "short": "Kanban intelligent avec interface mobile-first, workflow de revision et notifications.",
       "long": "To-DoX est une application Kanban moderne pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recurrence, des templates, un dashboard KPIs, une vue Timeline/Gantt, un workflow de revision complet, une vue Terminees, des notifications in-app, une interface responsive mobile-first (burger menu, onglets Kanban), ainsi que l'export et l'import des donnees. Les donnees sont stockees localement et peuvent etre synchronisees via OneDrive."

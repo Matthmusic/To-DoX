@@ -13,6 +13,7 @@ interface KanbanBoardProps {
     onDrop: (e: React.DragEvent, status: string) => void;
     onClickTask: (task: Task, x: number, y: number) => void;
     onContextMenuTask: (e: React.MouseEvent, task: Task) => void;
+    onContextMenuProject?: (project: string) => void;
     onSetProjectDirectory: () => void;
     onDragOverTask?: (e: React.DragEvent, taskId: string, el: HTMLElement) => void;
     onDropOnTask?: (e: React.DragEvent, taskId: string) => void;
@@ -35,6 +36,7 @@ export function KanbanBoard({
     onDrop,
     onClickTask,
     onContextMenuTask,
+    onContextMenuProject,
     onSetProjectDirectory,
     onDragOverTask,
     onDropOnTask,
@@ -61,6 +63,7 @@ export function KanbanBoard({
                     onDragStartTask={onDragStartTask}
                     onClickTask={onClickTask}
                     onContextMenuTask={onContextMenuTask}
+                    onContextMenuProject={onContextMenuProject}
                     onSetProjectDirectory={onSetProjectDirectory}
                     onDragOverTask={onDragOverTask}
                     onDropOnTask={onDropOnTask}

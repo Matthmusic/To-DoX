@@ -182,8 +182,9 @@ export default function ToDoX() {
     const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard' | 'terminées' | 'pointage'>('kanban');
     const importFileRef = useRef<HTMLInputElement>(null);
     const searchInputRef = useRef<{ focus: () => void }>(null);
-    const quickAddRef = useRef<{ focus: () => void }>(null);
+    const quickAddRef = useRef<{ focus: () => void; prefillProject: (project: string) => void }>(null);
     const [quickAddTrigger, setQuickAddTrigger] = useState(0);
+    const [quickAddWithProject, setQuickAddWithProject] = useState<{ count: number; project: string } | null>(null);
 
     // Persist collapsed state
     useEffect(() => {
@@ -446,6 +447,7 @@ export default function ToDoX() {
                 searchInputRef={searchInputRef}
                 quickAddRef={quickAddRef}
                 triggerOpenQuickAdd={quickAddTrigger}
+                triggerOpenWithProject={quickAddWithProject ?? undefined}
                 showSearch={showSearch}
             />
 
@@ -473,6 +475,7 @@ export default function ToDoX() {
                         onDrop={isReadOnly ? () => {} : handleDrop}
                         onClickTask={isReadOnly ? () => {} : (task) => setContextMenu({ x: window.innerWidth, y: 48, task })}
                         onContextMenuTask={isReadOnly ? () => {} : handleContextMenu}
+                        onContextMenuProject={isReadOnly ? undefined : (project) => setQuickAddWithProject(prev => ({ count: (prev?.count ?? 0) + 1, project }))}
                         onSetProjectDirectory={() => setShowDirPanel(true)}
                         onDragOverTask={isReadOnly ? () => {} : handleDragOverTask}
                         onDropOnTask={isReadOnly ? () => {} : handleDropOnTask}

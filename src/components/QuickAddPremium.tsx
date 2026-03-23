@@ -87,7 +87,7 @@ function ProjectExistsModal({ existingProject, onUseExisting, onCreateNew, onCan
  *
  * Expose une méthode focus() via ref pour permettre le focus programmatique depuis les raccourcis clavier
  */
-export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) => {
+export const QuickAddPremium = forwardRef<{ focus: () => void; prefillProject: (project: string) => void }>((_props, ref) => {
     const { addTask, projectHistory, users, directories, projectColors, setDirectories, setProjectColor, currentUser } = useStore();
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
@@ -117,10 +117,15 @@ export const QuickAddPremium = forwardRef<{ focus: () => void }>((_props, ref) =
     const userPickerRef = useRef<HTMLDivElement>(null);
     const userButtonRef = useRef<HTMLButtonElement>(null);
 
-    // Exposer la méthode focus() pour les raccourcis clavier
+    // Exposer focus() pour les raccourcis clavier et prefillProject() pour le clic droit sur un projet
     useImperativeHandle(ref, () => ({
         focus: () => {
             inputRef.current?.focus();
+        },
+        prefillProject: (project: string) => {
+            setProjectName(project);
+            setIsFocused(true);
+            setTimeout(() => inputRef.current?.focus(), 0);
         },
     }));
 

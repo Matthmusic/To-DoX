@@ -4,7 +4,7 @@ import { QuickAddPremium } from '../components/QuickAddPremium';
 
 // Wrapper pour fournir la ref imperative handle
 function QuickAddWrapper() {
-  const ref = useRef<{ focus: () => void }>(null);
+  const ref = useRef<{ focus: () => void; prefillProject: (project: string) => void }>(null);
   return (
     <div className="w-full max-w-2xl p-4">
       <QuickAddPremium ref={ref} />

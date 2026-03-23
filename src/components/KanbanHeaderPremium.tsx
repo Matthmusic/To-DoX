@@ -69,9 +69,11 @@ interface KanbanHeaderPremiumProps {
     searchInputRef?: React.RefObject<{ focus: () => void } | null>;
     showSearch: boolean;
     // QuickAdd
-    quickAddRef?: React.RefObject<{ focus: () => void } | null>;
+    quickAddRef?: React.RefObject<{ focus: () => void; prefillProject: (project: string) => void } | null>;
     /** Incrémenter pour ouvrir le panneau QuickAdd et focus l'input (Ctrl+N) */
     triggerOpenQuickAdd?: number;
+    /** Ouvrir le QuickAdd avec un projet prérempli (clic droit sur en-tête projet) */
+    triggerOpenWithProject?: { count: number; project: string };
 }
 
 /**
@@ -112,6 +114,7 @@ export function KanbanHeaderPremium({
     showSearch,
     quickAddRef,
     triggerOpenQuickAdd,
+    triggerOpenWithProject,
 }: KanbanHeaderPremiumProps) {
     const { tasks, projectColors, currentUser, viewAsUser, setProjectColor } = useStore();
     const { activeTheme } = useTheme();
@@ -162,6 +165,15 @@ export function KanbanHeaderPremium({
         setShowQuickAdd(true);
         // Le focus est géré par l'effet showQuickAdd ci-dessus
     }, [triggerOpenQuickAdd]);
+
+    // Ouvrir le QuickAdd avec un projet prérempli (clic droit sur en-tête projet)
+    useEffect(() => {
+        if (!triggerOpenWithProject?.count) return;
+        setShowQuickAdd(true);
+        setTimeout(() => {
+            quickAddRef?.current?.prefillProject(triggerOpenWithProject.project);
+        }, 120);
+    }, [triggerOpenWithProject, quickAddRef]);
 
     // Fermer le burger menu lors d'un clic à l'extérieur
     useEffect(() => {

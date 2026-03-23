@@ -5,7 +5,23 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) — Versioning
 
 ---
 
-## [2.1.9] — 2026-03-11 (actuel)
+## [2.1.19] — 2026-03-23 (actuel)
+
+### ✨ Ajouts
+- **Vue compacte des TaskCard** : bouton `Eye/EyeOff` à gauche du titre pour réduire une carte à une seule ligne (titre + point priorité + date + indicateurs). État persisté en localStorage (`todox_compact_cards`).
+- **Clic droit sur en-tête projet** : mini menu contextuel qui ouvre le QuickAdd avec le projet prérempli.
+
+### 🔧 Améliorations
+- **Auto-assignation des réviseurs** : ajouter un réviseur l'affecte automatiquement à la tâche s'il ne l'était pas déjà.
+- **Pastilles utilisateurs unifiées** : créateur + assignés dédupliqués (plus de doublon si même personne), réviseurs signalés par un contour violet. Ordre des boutons stabilisé : `[users] [★] [📁] [💬] [⋯]`.
+
+### 🐛 Corrections
+- **`convertSubtaskBack` — parent archivé** : la tâche était supprimée silencieusement sans être reconvertie. Fix : reconversion autorisée vers parent archivé avec message informatif.
+- **`convertSubtaskBack` — parent supprimé** : même bug destructeur silencieux. Fix : la tâche n'est plus touchée, `alertModal` explicite affiché.
+
+---
+
+## [2.1.9] — 2026-03-11
 
 ### ✨ Ajouts
 - **Démarrage automatique avec Windows** : toggle dans Paramètres → Notifications pour lancer To-DoX au démarrage de Windows (`app.setLoginItemSettings`).

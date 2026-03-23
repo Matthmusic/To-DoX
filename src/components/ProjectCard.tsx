@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { TaskCard } from "./TaskCard";
 import { getProjectColor } from "../utils";
 import useStore from "../store/useStore";
@@ -17,6 +18,7 @@ interface ProjectCardProps {
     onDragStartTask: (e: React.DragEvent, taskId: string) => void;
     onClickTask: (task: Task, x: number, y: number) => void;
     onContextMenuTask: (e: React.MouseEvent, task: Task) => void;
+    onContextMenuProject?: (project: string) => void;
     onSetProjectDirectory: (project: string) => void;
     onDragOverTask?: (e: React.DragEvent, taskId: string, el: HTMLElement) => void;
     onDropOnTask?: (e: React.DragEvent, taskId: string) => void;
@@ -36,16 +38,25 @@ export function ProjectCard({
     onDragStartTask,
     onClickTask,
     onContextMenuTask,
+    onContextMenuProject,
     onSetProjectDirectory,
     onDragOverTask,
     onDropOnTask,
     onDragLeaveTask,
     dropIndicator,
 }: ProjectCardProps) {
-    // Note: onSetProjectDirectory is still passed down because it triggers a modal in ToDoX.jsx
-
     const { projectColors } = useStore();
     const projectColor = getProjectColor(project, projectColors);
+
+    const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+
+    // Fermer le menu au clic ailleurs
+    useEffect(() => {
+        if (!ctxMenu) return;
+        const close = () => setCtxMenu(null);
+        document.addEventListener("mousedown", close);
+        return () => document.removeEventListener("mousedown", close);
+    }, [ctxMenu]);
 
     return (
         <div
@@ -55,6 +66,11 @@ export function ProjectCard({
             <div
                 className={`flex cursor-pointer items-center justify-between px-3 py-2 transition hover:brightness-110 ${projectColor.bg}`}
                 onClick={() => onToggleCollapse(project)}
+                onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setCtxMenu({ x: e.clientX, y: e.clientY });
+                }}
             >
                 <div className="flex items-center gap-2">
                     {isCollapsed ? <ChevronRight className={`h-4 w-4 ${projectColor.text}`} /> : <ChevronDown className={`h-4 w-4 ${projectColor.text}`} />}
@@ -64,6 +80,31 @@ export function ProjectCard({
                     </span>
                 </div>
             </div>
+
+            {/* Mini menu contextuel */}
+            {ctxMenu && createPortal(
+                <div
+                    style={{
+                        top: Math.min(ctxMenu.y, window.innerHeight - 60),
+                        left: Math.min(ctxMenu.x, window.innerWidth - 220),
+                    }}
+                    className="fixed z-[99999] min-w-[210px] rounded-lg border border-white/10 bg-slate-800 py-1 shadow-xl"
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setCtxMenu(null);
+                            onContextMenuProject?.(project);
+                        }}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                    >
+                        <Plus className="h-4 w-4 text-slate-400" />
+                        Nouvelle tâche dans ce projet
+                    </button>
+                </div>,
+                document.body
+            )}
 
             <AnimatePresence initial={false}>
                 {!isCollapsed && (
@@ -91,7 +132,6 @@ export function ProjectCard({
                                 dropIndicator={dropIndicator}
                             />
                         ))}
-                        {/* Drop zone placeholder logic if needed */}
                     </motion.div>
                 )}
             </AnimatePresence>

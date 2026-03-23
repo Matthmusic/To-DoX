@@ -41,7 +41,7 @@ interface StoreState {
     addTask: (data: TaskData) => void;
     updateTask: (id: string, patch: Partial<Task>) => void;
     removeTask: (id: string) => void;
-    convertSubtaskBack: (taskId: string) => void;
+    convertSubtaskBack: (taskId: string) => 'ok' | 'parent_deleted' | 'parent_not_found';
     moveTask: (id: string, status: string) => void;
     archiveTask: (id: string) => void;
     unarchiveTask: (id: string) => void;
@@ -332,13 +332,15 @@ const useStore = create<StoreState>((set, get) => ({
 
     convertSubtaskBack: (taskId) => {
         const task = get().tasks.find(t => t.id === taskId);
-        if (!task?.convertedFromSubtask) return;
+        if (!task?.convertedFromSubtask) return 'parent_not_found';
         const { parentTaskId } = task.convertedFromSubtask;
-        const parentExists = get().tasks.some(t => t.id === parentTaskId && !t.deletedAt && !t.archived);
-        if (parentExists) {
-            get().addSubtask(parentTaskId, task.title);
-        }
+        const parentTask = get().tasks.find(t => t.id === parentTaskId);
+        // Parent introuvable ou définitivement supprimé → impossible, on ne touche pas à la tâche
+        if (!parentTask || parentTask.deletedAt) return 'parent_not_found';
+        // Parent archivé → reconversion possible (sous-tâche rattachée à la tâche archivée)
+        get().addSubtask(parentTaskId, task.title);
         get().removeTask(taskId);
+        return parentTask.archived ? 'parent_deleted' : 'ok';
     },
 
     moveTask: (id, status) => {
@@ -736,7 +738,16 @@ const useStore = create<StoreState>((set, get) => ({
         const now = Date.now();
 
         set(state => ({
-            tasks: state.tasks.map(t => t.id === taskId ? { ...t, reviewers, updatedAt: now } : t)
+            tasks: state.tasks.map(t => {
+                if (t.id !== taskId) return t;
+                // Auto-assigner les réviseurs non encore affectés
+                const newAssignees = reviewers.filter(r => !t.assignedTo.includes(r) && r !== 'unassigned');
+                const baseAssigned = t.assignedTo.filter(id => id !== 'unassigned');
+                const updatedAssignedTo = newAssignees.length > 0
+                    ? [...baseAssigned, ...newAssignees]
+                    : t.assignedTo;
+                return { ...t, reviewers, assignedTo: updatedAssignedTo, updatedAt: now };
+            })
         }));
 
         reviewers.forEach(reviewerId => {
