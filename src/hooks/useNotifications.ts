@@ -7,17 +7,17 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import useStore from '../store/useStore';
-import { businessDayDelta } from '../utils';
+import { businessDayDelta, devLog, devWarn, devError } from '../utils';
 import { playSoundFile } from '../utils/sound';
 
 // Constantes
 const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
 export function useNotifications() {
-  const { tasks, notificationSettings, currentUser, pendingMentions, clearPendingMentions } = useStore();
+  const { tasks, notificationSettings, currentUser } = useStore();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const notifiedTasksRef = useRef<Set<string>>(new Set()); // Éviter les doublons notifs tâches
-  const shownMentionIds = useRef(new Set<string>()); // Éviter les doublons @mention
+
 
   // Vérifier si on est en heures calmes
   const isQuietHours = useCallback((): boolean => {
@@ -41,13 +41,13 @@ export function useNotifications() {
 
     // Vérifier heures calmes
     if (isQuietHours()) {
-      console.log('🔕 Notification bloquée (heures calmes):', title);
+      devLog('🔕 Notification bloquée (heures calmes):', title);
       return;
     }
 
     // Vérifier si Electron disponible
     if (!window.electronAPI) {
-      console.warn('⚠️ Notifications non disponibles (mode web)');
+      devWarn('⚠️ Notifications non disponibles (mode web)');
       return;
     }
 
@@ -55,7 +55,7 @@ export function useNotifications() {
       // Demander permission si nécessaire
       const hasPermission = await window.electronAPI.requestNotificationPermission();
       if (!hasPermission) {
-        console.warn('⚠️ Permission de notification refusée');
+        devWarn('⚠️ Permission de notification refusée');
         return;
       }
 
@@ -68,13 +68,13 @@ export function useNotifications() {
         try {
           await playSoundFile(notificationSettings.soundFile);
         } catch (audioError) {
-          console.warn('⚠️ Impossible de jouer le son:', audioError);
+          devWarn('⚠️ Impossible de jouer le son:', audioError);
         }
       }
 
-      console.log('✅ Notification envoyée:', title);
+      devLog('✅ Notification envoyée:', title);
     } catch (error) {
-      console.error('❌ Erreur notification:', error);
+      devError('❌ Erreur notification:', error);
     }
   }, [isQuietHours, notificationSettings.sound, notificationSettings.soundFile]);
 
@@ -198,7 +198,7 @@ export function useNotifications() {
   useEffect(() => {
     const resetInterval = setInterval(() => {
       notifiedTasksRef.current.clear();
-      console.log('🔄 Cache des notifications réinitialisé');
+      devLog('🔄 Cache des notifications réinitialisé');
     }, 24 * 60 * 60 * 1000); // 24h
 
     return () => clearInterval(resetInterval);
@@ -208,7 +208,7 @@ export function useNotifications() {
   useEffect(() => {
     // ⛔ Ne pas démarrer les notifications si aucun utilisateur n'est connecté
     if (!currentUser) {
-      console.log('⏸️ Notifications en pause (aucun utilisateur connecté)');
+      devLog('⏸️ Notifications en pause (aucun utilisateur connecté)');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -231,7 +231,7 @@ export function useNotifications() {
     const intervalMs = notificationSettings.checkInterval * 60 * 1000; // Convertir minutes en ms
     intervalRef.current = setInterval(checkTasksForNotifications, intervalMs);
 
-    console.log(`🔔 Notifications activées pour l'utilisateur (vérification toutes les ${notificationSettings.checkInterval} min)`);
+    devLog(`🔔 Notifications activées pour l'utilisateur (vérification toutes les ${notificationSettings.checkInterval} min)`);
 
     return () => {
       if (intervalRef.current) {
@@ -240,33 +240,6 @@ export function useNotifications() {
       }
     };
   }, [notificationSettings.enabled, notificationSettings.checkInterval, checkTasksForNotifications, currentUser]);
-
-  // Notifications @mention — réagit en temps réel, respecte les quiet hours et le son
-  useEffect(() => {
-    if (!currentUser || currentUser === 'unassigned') return;
-    const mentions = pendingMentions[currentUser];
-    if (!mentions || mentions.length === 0) return;
-
-    const newMentions = mentions.filter(m => !shownMentionIds.current.has(m.commentId));
-    if (newMentions.length === 0) return;
-
-    const grouped = newMentions.reduce<Record<string, string[]>>((acc, m) => {
-      if (!acc[m.fromUserName]) acc[m.fromUserName] = [];
-      acc[m.fromUserName].push(m.taskTitle);
-      return acc;
-    }, {});
-
-    Object.entries(grouped).forEach(([from, taskTitles]) => {
-      const uniqueTitles = [...new Set(taskTitles)];
-      const body = uniqueTitles.length === 1
-        ? `Dans "${uniqueTitles[0]}"`
-        : `Dans ${uniqueTitles.length} tâches`;
-      sendNotification(`${from} vous a mentionné(e)`, body, `mention-${currentUser}-${Date.now()}`);
-    });
-
-    newMentions.forEach(m => shownMentionIds.current.add(m.commentId));
-    clearPendingMentions(currentUser);
-  }, [currentUser, pendingMentions, sendNotification, clearPendingMentions]);
 
   return {
     isEnabled: notificationSettings.enabled,

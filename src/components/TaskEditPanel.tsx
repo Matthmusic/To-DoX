@@ -8,8 +8,15 @@ import useStore from "../store/useStore";
 import type { Task, TaskData, RecurrenceType } from "../types";
 import { confirmModal, alertModal } from "../utils/confirm";
 import { formatDateFull } from "../utils";
-import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw, Calendar, ExternalLink } from "lucide-react";
-import { parseFilePaths, getDroppedFilePath, formatPathForInsertion, getPathDisplayName } from "./SubtaskList";
+import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw, Calendar, ExternalLink, Link2, Link2Off } from "lucide-react";
+import { LinkedTextContent } from "./LinkedTextContent";
+import {
+    getPathDisplayName,
+    hasSupportedLinkDropPayload,
+    insertDroppedText,
+    parseFilePaths,
+    resolveDroppedLinkFromDataTransfer,
+} from "../utils/taskLinks";
 
 interface TaskEditPanelProps {
     task: Task;
@@ -22,7 +29,7 @@ interface TaskEditPanelProps {
  * Panneau d'édition pour clic droit sur une tâche
  */
 export function TaskEditPanel({ task: initialTask, position, onClose, centered = false }: TaskEditPanelProps) {
-    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate, setReviewers, currentUser } = useStore();
+    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate, setReviewers, setTaskParent, currentUser, storagePath } = useStore();
     const sortedUsers = [...users].sort((a, b) => {
         if (a.id === currentUser) return -1;
         if (b.id === currentUser) return 1;
@@ -48,7 +55,10 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
     const [notesDropTarget, setNotesDropTarget] = useState(false);
     const [notesEditDropTarget, setNotesEditDropTarget] = useState(false);
     const notesRef = useRef<HTMLTextAreaElement>(null);
+    const notesContainerRef = useRef<HTMLDivElement>(null);
+    const notesStateRef = useRef({ localNotes, notesEditing, storagePath, taskId: task.id, onUpdate, setLocalNotes, setNotesDropTarget, setNotesEditDropTarget, setNotesEditing });
     const [showDateDropdown, setShowDateDropdown] = useState(false);
+    const [parentSearch, setParentSearch] = useState("");
 
     // Synchroniser les états locaux quand la tâche change (pour les champs texte)
     useEffect(() => {
@@ -69,6 +79,45 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
             onUpdate(task.id, updates);
         }
     }, [localTitle, localProject, localNotes, task.title, task.project, task.notes, task.id, onUpdate]);
+
+
+    // Sync stateRef pour le listener natif drop
+    useEffect(() => {
+        notesStateRef.current = { localNotes, notesEditing, storagePath, taskId: task.id, onUpdate, setLocalNotes, setNotesDropTarget, setNotesEditDropTarget, setNotesEditing };
+    });
+
+    // Listener natif notes — React onDrop ne reçoit pas les drops OLE Outlook en Electron
+    useEffect(() => {
+        const el = notesContainerRef.current;
+        if (!el) return;
+        const nativeDrop = async (e: DragEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const s = notesStateRef.current;
+            s.setNotesDropTarget(false);
+            s.setNotesEditDropTarget(false);
+            console.log('[NATIVE DROP panel notes]', e.dataTransfer?.files?.length, e.dataTransfer?.files?.[0]?.name);
+            if (!e.dataTransfer) return;
+            let start: number | undefined;
+            let end: number | undefined;
+            if (s.notesEditing && notesRef.current) {
+                start = notesRef.current.selectionStart ?? s.localNotes.length;
+                end   = notesRef.current.selectionEnd   ?? s.localNotes.length;
+            }
+            const resolution = await resolveDroppedLinkFromDataTransfer(
+                e.dataTransfer as Pick<DataTransfer, 'files' | 'getData'>,
+                { storagePath: s.storagePath }
+            );
+            if (!resolution) return;
+            if ('error' in resolution) { await alertModal(resolution.error); return; }
+            const newNotes = insertDroppedText(s.localNotes, resolution.insertedText, { start, end });
+            s.setLocalNotes(newNotes);
+            s.onUpdate(s.taskId, { notes: newNotes });
+            if (!s.notesEditing) s.setNotesEditing(true);
+        };
+        el.addEventListener('drop', nativeDrop);
+        return () => el.removeEventListener('drop', nativeDrop);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         function closeOnClick(e: MouseEvent) {
@@ -246,6 +295,64 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                     ))}
                 </div>
 
+                {/* Tâche parente */}
+                <label className="mt-2 text-xs text-indigo-400">Tâche parente</label>
+                {task.parentTaskId ? (() => {
+                    const parent = tasks.find(t => t.id === task.parentTaskId);
+                    return (
+                        <div className="flex items-center gap-2 rounded-2xl border border-indigo-400/20 bg-indigo-400/5 px-3 py-2">
+                            <Link2 className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+                            <span className="flex-1 text-sm text-indigo-200 truncate">{parent?.title ?? '(tâche introuvable)'}</span>
+                            <button
+                                onClick={() => setTaskParent(task.id, null)}
+                                className="shrink-0 rounded p-0.5 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 transition"
+                                title="Délier du parent"
+                            >
+                                <Link2Off className="h-3.5 w-3.5" />
+                            </button>
+                        </div>
+                    );
+                })() : (
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={parentSearch}
+                            onChange={(e) => setParentSearch(e.target.value)}
+                            placeholder="Rechercher une tâche parente..."
+                            className="w-full rounded-2xl border border-indigo-400/20 bg-indigo-400/5 px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-400/50"
+                        />
+                        {parentSearch.trim().length >= 2 && (() => {
+                            const q = parentSearch.toLowerCase();
+                            // Récupérer tous les enfants directs de la tâche courante pour éviter les cycles
+                            const childIds = new Set(tasks.filter(t => t.parentTaskId === task.id).map(t => t.id));
+                            const candidates = tasks.filter(t =>
+                                t.id !== task.id &&
+                                !t.archived &&
+                                !t.deletedAt &&
+                                !childIds.has(t.id) &&
+                                t.parentTaskId !== task.id &&
+                                t.title.toLowerCase().includes(q)
+                            ).slice(0, 8);
+                            if (candidates.length === 0) return null;
+                            return (
+                                <div className="absolute z-50 mt-1 w-full rounded-xl border border-white/10 bg-slate-800 shadow-xl overflow-hidden">
+                                    {candidates.map(t => (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => { setTaskParent(task.id, t.id); setParentSearch(""); }}
+                                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/10 transition"
+                                        >
+                                            <Link2 className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+                                            <span className="truncate">{t.title}</span>
+                                            <span className="ml-auto shrink-0 text-[10px] text-slate-500">{t.project}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            );
+                        })()}
+                    </div>
+                )}
+
                 {/* Historique de révision */}
                 {(task.reviewValidatedBy || task.reviewRejectedBy) && (
                     <>
@@ -278,6 +385,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                     </>
                 )}
 
+                <div ref={notesContainerRef}>
                 <label className="mt-2 text-xs text-slate-400">Notes</label>
                 {notesEditing ? (
                     <textarea
@@ -288,23 +396,12 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                             if (localNotes !== (task.notes || "")) onUpdate(task.id, { notes: localNotes });
                             setNotesEditing(false);
                         }}
-                        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setNotesEditDropTarget(true); } }}
-                        onDragLeave={() => setNotesEditDropTarget(false)}
-                        onDrop={(e) => {
-                            if (e.dataTransfer.files.length === 0) return;
+                        onDragOver={(e) => {
+                            if (!hasSupportedLinkDropPayload(e.dataTransfer)) return;
                             e.preventDefault();
-                            setNotesEditDropTarget(false);
-                            const file = e.dataTransfer.files[0];
-                            const path = getDroppedFilePath(file);
-                            if (!path) return;
-                            const formattedPath = formatPathForInsertion(path);
-                            const ta = e.currentTarget;
-                            const start = ta.selectionStart ?? localNotes.length;
-                            const end = ta.selectionEnd ?? localNotes.length;
-                            const newNotes = localNotes.slice(0, start) + (localNotes.slice(0, start).length > 0 ? '\n' : '') + formattedPath + localNotes.slice(end);
-                            setLocalNotes(newNotes);
-                            onUpdate(task.id, { notes: newNotes });
+                            setNotesEditDropTarget(true);
                         }}
+                        onDragLeave={() => setNotesEditDropTarget(false)}
                         className={`rounded-2xl border px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] transition ${notesEditDropTarget ? 'border-blue-400/60 bg-blue-400/10' : 'border-white/15 bg-white/5'}`}
                         rows={3}
                         autoFocus
@@ -312,26 +409,19 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                 ) : (
                     <div
                         onClick={() => { setNotesEditing(true); setTimeout(() => notesRef.current?.focus(), 10); }}
-                        onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setNotesDropTarget(true); } }}
-                        onDragLeave={() => setNotesDropTarget(false)}
-                        onDrop={(e) => {
-                            if (e.dataTransfer.files.length === 0) return;
+                        onDragOver={(e) => {
+                            if (!hasSupportedLinkDropPayload(e.dataTransfer)) return;
                             e.preventDefault();
-                            setNotesDropTarget(false);
-                            const file = e.dataTransfer.files[0];
-                            const path = getDroppedFilePath(file);
-                            if (!path) return;
-                            const formattedPath = formatPathForInsertion(path);
-                            const newNotes = localNotes ? `${localNotes}\n${formattedPath}` : formattedPath;
-                            setLocalNotes(newNotes);
-                            onUpdate(task.id, { notes: newNotes });
+                            setNotesDropTarget(true);
                         }}
+                        onDragLeave={() => setNotesDropTarget(false)}
                         className={`min-h-[60px] cursor-text rounded-2xl border px-2 py-1 text-sm transition ${notesDropTarget ? 'border-blue-400/60 bg-blue-400/10' : 'border-white/15 bg-white/5'}`}
                         title="Cliquer pour éditer · Déposer un fichier pour insérer son chemin"
                     >
                         {localNotes ? (
                             <span className="whitespace-pre-wrap leading-relaxed">
-                                {parseFilePaths(localNotes).map((part, idx) =>
+                                <LinkedTextContent text={localNotes} />
+                                {false && parseFilePaths(localNotes).map((part, idx) =>
                                     part.type === 'path' ? (
                                         <button
                                             key={idx}
@@ -360,6 +450,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                         )}
                     </div>
                 )}
+                </div>{/* /notesContainerRef */}
 
                 {/* Récurrence */}
                 <label className="mt-2 text-xs text-slate-400 flex items-center gap-1">

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { todayISO } from "./utils";
+import { todayISO, devError } from "./utils";
 import { migrateTask } from "./utils/taskMigration";
 
 // Store and Types
@@ -132,9 +132,11 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
 export default function ToDoX() {
     // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, renameProject, currentUser, viewAsUser, pendingMentions, clearPendingMentions, appNotifications, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId, setHighlightedTaskId } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, renameProject, currentUser, viewAsUser, appNotifications, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId, setHighlightedTaskId } = useStore();
 
-    const mentionCount = currentUser ? (pendingMentions[currentUser] || []).length : 0;
+    const mentionCount = currentUser
+        ? appNotifications.filter(n => !n.readAt && !n.deletedBy?.includes(currentUser) && n.toUserId === currentUser && n.type === 'comment_mention').length
+        : 0;
 
     const {
         filterProject,
@@ -157,6 +159,7 @@ export default function ToDoX() {
         handleDropOnTask,
         handleDragLeaveTask,
         dropIndicator,
+        nestTarget,
     } = useDragAndDrop();
 
     // UI State Management
@@ -317,7 +320,7 @@ export default function ToDoX() {
 
                 alertModal(`Import réussi ! ${parsed.tasks?.length || 0} tâche(s) importée(s) et fusionnée(s).`);
             } catch (error) {
-                console.error("Import error:", error);
+                devError("Import error:", error);
                 alertModal("Erreur d'import : fichier JSON invalide");
             }
         };
@@ -420,7 +423,6 @@ export default function ToDoX() {
                 mentionCount={mentionCount}
                 onOpenNotifications={() => {
                     setShowNotificationsPanel(true);
-                    if (currentUser) clearPendingMentions(currentUser);
                 }}
                 notificationsEnabled={notificationsEnabled}
                 onToggleNotifications={() => {
@@ -481,36 +483,45 @@ export default function ToDoX() {
                         onDropOnTask={isReadOnly ? () => {} : handleDropOnTask}
                         onDragLeaveTask={isReadOnly ? () => {} : handleDragLeaveTask}
                         dropIndicator={isReadOnly ? null : dropIndicator}
+                        nestTarget={isReadOnly ? null : nestTarget}
                     />
                 ) : activeView === 'timeline' ? (
-                    <TimelineView
-                        filteredTasks={filteredTasks}
-                        onTaskClick={isReadOnly ? () => {} : (task, x, y) => setContextMenu({ x, y, task })}
-                        icsExportPath={isReadOnly ? icsViewPath : icsExportPath}
-                        selectedUserId={filterUser !== 'all' ? filterUser : undefined}
-                        onRefreshOutlook={isReadOnly ? undefined : fetchOutlookEvents}
-                        readOnly={isReadOnly}
-                    />
+                    <ErrorBoundary name="TimelineView">
+                        <TimelineView
+                            filteredTasks={filteredTasks}
+                            onTaskClick={isReadOnly ? () => {} : (task, x, y) => setContextMenu({ x, y, task })}
+                            icsExportPath={isReadOnly ? icsViewPath : icsExportPath}
+                            selectedUserId={filterUser !== 'all' ? filterUser : undefined}
+                            onRefreshOutlook={isReadOnly ? undefined : fetchOutlookEvents}
+                            readOnly={isReadOnly}
+                        />
+                    </ErrorBoundary>
                 ) : activeView === 'terminées' ? (
                     <TermineesView
                         onTaskClick={isReadOnly ? () => {} : (task, x, y) => setContextMenu({ x, y, task })}
                         readOnly={isReadOnly}
                     />
                 ) : activeView === 'pointage' ? (
-                    <TimesheetView />
+                    <ErrorBoundary name="TimesheetView">
+                        <TimesheetView />
+                    </ErrorBoundary>
                 ) : (
-                    <DashboardView />
+                    <ErrorBoundary name="DashboardView">
+                        <DashboardView />
+                    </ErrorBoundary>
                 )}
             </ErrorBoundary>
 
             {/* MODALS & PANELS */}
             <ErrorBoundary name="Modals">
             {contextMenu && (
-                <TaskEditPanel
-                    task={contextMenu.task}
-                    position={contextMenu.x !== null && contextMenu.y !== null ? { x: contextMenu.x, y: contextMenu.y } : { x: 0, y: 0 }}
-                    onClose={() => setContextMenu(null)}
-                />
+                <ErrorBoundary name="TaskEditPanel">
+                    <TaskEditPanel
+                        task={contextMenu.task}
+                        position={contextMenu.x !== null && contextMenu.y !== null ? { x: contextMenu.x, y: contextMenu.y } : { x: 0, y: 0 }}
+                        onClose={() => setContextMenu(null)}
+                    />
+                </ErrorBoundary>
             )}
             {centeredTask && createPortal(
                 <div
@@ -535,9 +546,11 @@ export default function ToDoX() {
             )}
 
             {showWeeklyReportPanel && (
-                <WeeklyReportModal
-                    onClose={() => setShowWeeklyReportPanel(false)}
-                />
+                <ErrorBoundary name="WeeklyReportModal">
+                    <WeeklyReportModal
+                        onClose={() => setShowWeeklyReportPanel(false)}
+                    />
+                </ErrorBoundary>
             )}
 
             {showArchivePanel && (

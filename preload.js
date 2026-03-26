@@ -76,6 +76,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     startHttpServer: (icsPath) => ipcRenderer.invoke('outlook:start-http-server', icsPath),
     stopHttpServer: () => ipcRenderer.invoke('outlook:stop-http-server'),
     getServerUrl: () => ipcRenderer.invoke('outlook:get-server-url'),
+    saveDroppedMail: (storagePath, fileName, bytes) => ipcRenderer.invoke('outlook:save-dropped-mail', storagePath, fileName, bytes),
   },
 
   // Vérifier si on est dans Electron

@@ -421,6 +421,36 @@ async function ensureDirectory(dirPath) {
   }
 }
 
+function sanitizeDroppedMailFileName(fileName) {
+  if (typeof fileName !== 'string') return null;
+
+  const withoutPath = path.basename(fileName).trim();
+  if (!withoutPath) return null;
+
+  const cleaned = withoutPath
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleaned) return null;
+
+  const withExtension = cleaned.toLowerCase().endsWith('.msg') ? cleaned : `${cleaned}.msg`;
+  return withExtension.length > 180 ? withExtension.slice(0, 180) : withExtension;
+}
+
+async function buildUniqueMailPath(mailDir, fileName) {
+  const parsed = path.parse(fileName);
+  let candidatePath = path.join(mailDir, fileName);
+  let index = 1;
+
+  while (await fileExists(candidatePath)) {
+    candidatePath = path.join(mailDir, `${parsed.name}-${index}${parsed.ext}`);
+    index += 1;
+  }
+
+  return candidatePath;
+}
+
 // Handler pour obtenir le chemin de stockage par défaut
 ipcMain.handle('get-storage-path', () => {
   const storagePath = getDefaultOneDrivePath();
@@ -836,6 +866,30 @@ ipcMain.handle('outlook:get-ics-path', (_event, storagePath) => {
   try {
     const icsPath = path.join(storagePath, 'todox-tasks.ics');
     return { success: true, path: icsPath };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+ipcMain.handle('outlook:save-dropped-mail', async (_event, storagePath, fileName, bytes) => {
+  try {
+    if (!storagePath) {
+      return { success: false, error: 'Chemin de stockage Outlook indisponible' };
+    }
+
+    const safeFileName = sanitizeDroppedMailFileName(fileName);
+    if (!safeFileName) {
+      return { success: false, error: 'Nom de fichier Outlook invalide' };
+    }
+
+    const mailDir = path.join(storagePath, 'outlook-mails');
+    await ensureDirectory(mailDir);
+
+    const outputPath = await buildUniqueMailPath(mailDir, safeFileName);
+    const normalizedBytes = bytes instanceof Uint8Array ? bytes : Uint8Array.from(bytes || []);
+    await fs.writeFile(outputPath, Buffer.from(normalizedBytes));
+
+    return { success: true, path: outputPath };
   } catch (err) {
     return { success: false, error: err.message };
   }

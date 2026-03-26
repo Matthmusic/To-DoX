@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.1.19",
+    "version": "2.1.22",
     "description": {
       "short": "Kanban intelligent avec interface mobile-first, workflow de revision et notifications.",
       "long": "To-DoX est une application Kanban moderne pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recurrence, des templates, un dashboard KPIs, une vue Timeline/Gantt, un workflow de revision complet, une vue Terminees, des notifications in-app, une interface responsive mobile-first (burger menu, onglets Kanban), ainsi que l'export et l'import des donnees. Les donnees sont stockees localement et peuvent etre synchronisees via OneDrive."
@@ -72,9 +72,28 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.18.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.22.exe"
   },
   "changelog": {
+    "2.1.22": {
+      "date": "2026-03-26",
+      "changes": [
+        "Fix: affectations de sous-tâches ne disparaissent plus (mergeTasksByUpdatedAt : comparaison stricte > au lieu de >=)",
+        "Fix: sous-tâches à nouveau visibles en vue compacte et normale des TaskCard",
+        "Drag & drop natif Electron : remplacement des handlers React onDrop par des listeners DOM natifs (compatibilité OLE/Windows)",
+        "Suppression du message d'erreur Outlook lors d'un drag — ignore silencieux"
+      ]
+    },
+    "2.1.19": {
+      "date": "2026-03-23",
+      "changes": [
+        "Vue compacte des TaskCard : bouton Eye/EyeOff pour réduire une carte à une ligne",
+        "Clic droit sur en-tête projet : mini menu contextuel avec QuickAdd projet prérempli",
+        "Auto-assignation des réviseurs à la tâche s'ils n'étaient pas déjà assignés",
+        "Pastilles utilisateurs unifiées : créateur + assignés dédupliqués, réviseurs en contour violet",
+        "Fix convertSubtaskBack : parent archivé ou supprimé ne détruit plus la tâche silencieusement"
+      ]
+    },
     "2.1.16": {
       "date": "2026-03-17",
       "changes": [

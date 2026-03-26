@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import useStore from '../store/useStore';
 import { PRESET_THEMES, DEFAULT_THEME } from '../themes/presets';
+import { devLog } from '../utils';
 import type { Theme, ThemeMode } from '../types';
 
 /**
@@ -34,7 +35,7 @@ export function useTheme() {
 
   // Appliquer le thème (mettre à jour les CSS variables + forcer recalcul du gradient)
   const applyTheme = (theme: Theme, customAccent?: string) => {
-    console.log('[applyTheme] Applying theme:', theme.name, theme.palette);
+    devLog('[applyTheme] Applying theme:', theme.name, theme.palette);
     const root = document.documentElement;
     const body = document.body;
     const palette = theme.palette;
@@ -84,7 +85,7 @@ export function useTheme() {
       rootDiv.style.color = palette.textPrimary;
     }
 
-    console.log('[applyTheme] Theme applied:', {
+    devLog('[applyTheme] Theme applied:', {
       name: theme.name,
       bgPrimary: palette.bgPrimary,
       textPrimary: palette.textPrimary,

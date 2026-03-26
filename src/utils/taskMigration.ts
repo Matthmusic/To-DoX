@@ -85,6 +85,12 @@ const normalizeSubtasks = (value: unknown): Subtask[] => {
       createdAt: toNumber(item.createdAt, Date.now()),
       completedAt: typeof item.completedAt === 'number' ? item.completedAt : null,
       completedBy: typeof item.completedBy === 'string' ? item.completedBy : null,
+      // Préserver les champs optionnels sans les effacer lors de la migration
+      assignedTo: Array.isArray(item.assignedTo)
+        ? (item.assignedTo as unknown[]).filter((x): x is string => typeof x === 'string' && x.length > 0)
+        : undefined,
+      startDate: typeof item.startDate === 'string' ? item.startDate : undefined,
+      endDate: typeof item.endDate === 'string' ? item.endDate : undefined,
     });
   }
 
@@ -140,7 +146,9 @@ export function mergeTasksByUpdatedAt(existing: Task[], incoming: Task[]): Task[
   existing.forEach((t) => map.set(t.id, t));
   incoming.forEach((t) => {
     const current = map.get(t.id);
-    if (!current || t.updatedAt >= current.updatedAt) {
+    // Utiliser > strict : si timestamps égaux, garder la version en mémoire
+    // (évite que le polling écrase des changements locaux non encore persistés)
+    if (!current || t.updatedAt > current.updatedAt) {
       map.set(t.id, t);
     }
   });

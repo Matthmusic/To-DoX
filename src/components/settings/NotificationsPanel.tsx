@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { NOTIFICATION_SOUNDS } from '../../constants';
 import { playSoundFile } from '../../utils/sound';
+import { devWarn } from '../../utils';
 
 interface NotificationsPanelProps {
   onClose: () => void;
@@ -60,7 +61,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
       audio.onended = () => setPlayingSound(null);
       audio.onerror = () => setPlayingSound(null);
     } catch (error) {
-      console.warn('⚠️ Impossible de jouer l\'aperçu sonore:', error);
+      devWarn('⚠️ Impossible de jouer l\'aperçu sonore:', error);
       setPlayingSound(null);
     }
   };

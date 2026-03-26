@@ -1,10 +1,42 @@
 import { create } from 'zustand';
-import { todayISO, uid } from '../utils';
+import { todayISO, uid, devWarn } from '../utils';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
-import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, PendingMention, TaskTemplate, SavedReport, AppNotification, TimeEntry, OutlookConfig, OutlookEvent } from '../types';
+import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, TaskTemplate, SavedReport, AppNotification, TimeEntry, OutlookConfig, OutlookEvent } from '../types';
 
-interface StoreState {
+/**
+ * Calcule la prochaine occurrence d'une tâche récurrente.
+ * Retourne la nouvelle Task ou null si la récurrence est terminée / absente.
+ */
+function buildRecurringTask(completedTask: Task, now: number): Task | null {
+    if (!completedTask.recurrence) return null;
+    const { type, endsAt } = completedTask.recurrence;
+    if (endsAt && now >= endsAt) return null;
+
+    const baseDate = completedTask.due ? new Date(completedTask.due) : new Date();
+    const nextDate = new Date(baseDate);
+    if (type === 'daily') nextDate.setDate(nextDate.getDate() + 1);
+    else if (type === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+    else if (type === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+    const nextISO = nextDate.toISOString().split('T')[0];
+
+    return {
+        ...completedTask,
+        id: uid(),
+        status: 'todo',
+        completedAt: null,
+        due: nextISO,
+        createdAt: now,
+        updatedAt: now,
+        archived: false,
+        archivedAt: null,
+        deletedAt: null,
+        order: 0,
+        subtasks: completedTask.subtasks.map(st => ({ ...st, completed: false, completedAt: null })),
+    };
+}
+
+export interface StoreState {
     // State
     tasks: Task[];
     directories: Directories;
@@ -42,6 +74,7 @@ interface StoreState {
     updateTask: (id: string, patch: Partial<Task>) => void;
     removeTask: (id: string) => void;
     convertSubtaskBack: (taskId: string) => 'ok' | 'parent_deleted' | 'parent_not_found';
+    setTaskParent: (childId: string, parentId: string | null) => void;
     moveTask: (id: string, status: string) => void;
     archiveTask: (id: string) => void;
     unarchiveTask: (id: string) => void;
@@ -52,6 +85,9 @@ interface StoreState {
     toggleSubtask: (taskId: string, subtaskId: string) => void;
     deleteSubtask: (taskId: string, subtaskId: string) => void;
     updateSubtaskTitle: (taskId: string, subtaskId: string, title: string) => void;
+    assignSubtask: (taskId: string, subtaskId: string, userId: string) => void;
+    unassignSubtask: (taskId: string, subtaskId: string, userId: string) => void;
+    setSubtaskDates: (taskId: string, subtaskId: string, patch: { startDate?: string | null; endDate?: string | null }) => void;
     reorderSubtasks: (taskId: string, start: number, end: number) => void;
 
     // Comments
@@ -59,11 +95,6 @@ interface StoreState {
     setComments: (comments: Record<string, Comment[]>) => void;
     addComment: (taskId: string, text: string) => void;
     deleteComment: (taskId: string, commentId: string) => void;
-
-    // Pending mention notifications
-    pendingMentions: Record<string, PendingMention[]>;
-    setPendingMentions: (m: Record<string, PendingMention[]>) => void;
-    clearPendingMentions: (userId: string) => void;
 
     // Task reorder
     reorderTask: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
@@ -139,7 +170,6 @@ const useStore = create<StoreState>((set, get) => ({
     isLoadingData: true,
     saveError: null,
     comments: {},
-    pendingMentions: {},
     templates: [],
     savedReports: [],
     appNotifications: [],
@@ -205,7 +235,7 @@ const useStore = create<StoreState>((set, get) => ({
         const currentUser = get().currentUser;
 
         if (!currentUser || currentUser === "unassigned") {
-            console.error("Tentative de création de tâche sans utilisateur connecté");
+            devWarn("Tentative de création de tâche sans utilisateur connecté");
             return;
         }
 
@@ -289,36 +319,12 @@ const useStore = create<StoreState>((set, get) => ({
             tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updatedPatch, updatedAt: now } : t))
         }));
 
-        // Récurrence : si la tâche passe en "done" et a une récurrence, créer la prochaine occurrence
+        // Récurrence : si la tâche passe en "done", créer la prochaine occurrence si applicable
         if (patch.status === "done") {
-            const task = get().tasks.find(t => t.id === id);
-            if (task?.recurrence) {
-                const { type, endsAt } = task.recurrence;
-                if (!endsAt || now < endsAt) {
-                    // Calculer la prochaine date d'échéance
-                    const baseDate = task.due ? new Date(task.due) : new Date();
-                    const nextDate = new Date(baseDate);
-                    if (type === 'daily') nextDate.setDate(nextDate.getDate() + 1);
-                    else if (type === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
-                    else if (type === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
-                    const nextISO = nextDate.toISOString().split('T')[0];
-
-                    const nextTask: Task = {
-                        ...task,
-                        id: uid(),
-                        status: 'todo',
-                        completedAt: null,
-                        due: nextISO,
-                        createdAt: now,
-                        updatedAt: now,
-                        archived: false,
-                        archivedAt: null,
-                        deletedAt: null,
-                        order: 0,
-                        subtasks: task.subtasks.map(st => ({ ...st, completed: false, completedAt: null })),
-                    };
-                    set(state => ({ tasks: [nextTask, ...state.tasks] }));
-                }
+            const completedTask = get().tasks.find(t => t.id === id);
+            if (completedTask) {
+                const nextTask = buildRecurringTask(completedTask, now);
+                if (nextTask) set(state => ({ tasks: [nextTask, ...state.tasks] }));
             }
         }
     },
@@ -341,6 +347,16 @@ const useStore = create<StoreState>((set, get) => ({
         get().addSubtask(parentTaskId, task.title);
         get().removeTask(taskId);
         return parentTask.archived ? 'parent_deleted' : 'ok';
+    },
+
+    setTaskParent: (childId, parentId) => {
+        set(state => ({
+            tasks: state.tasks.map(t =>
+                t.id === childId
+                    ? { ...t, parentTaskId: parentId ?? undefined, updatedAt: Date.now() }
+                    : t
+            ),
+        }));
     },
 
     moveTask: (id, status) => {
@@ -444,6 +460,45 @@ const useStore = create<StoreState>((set, get) => ({
         }));
     },
 
+    assignSubtask: (taskId, subtaskId, userId) => {
+        set(state => ({
+            tasks: state.tasks.map(t => {
+                if (t.id !== taskId) return t;
+                const sts = (t.subtasks || []).map(st => {
+                    if (st.id !== subtaskId) return st;
+                    const current = st.assignedTo || [];
+                    return current.includes(userId) ? st : { ...st, assignedTo: [...current, userId] };
+                });
+                return { ...t, subtasks: sts, updatedAt: Date.now() };
+            })
+        }));
+    },
+
+    unassignSubtask: (taskId, subtaskId, userId) => {
+        set(state => ({
+            tasks: state.tasks.map(t => {
+                if (t.id !== taskId) return t;
+                const sts = (t.subtasks || []).map(st => {
+                    if (st.id !== subtaskId) return st;
+                    return { ...st, assignedTo: (st.assignedTo || []).filter(id => id !== userId) };
+                });
+                return { ...t, subtasks: sts, updatedAt: Date.now() };
+            })
+        }));
+    },
+
+    setSubtaskDates: (taskId, subtaskId, patch) => {
+        set(state => ({
+            tasks: state.tasks.map(t => {
+                if (t.id !== taskId) return t;
+                const sts = (t.subtasks || []).map(st =>
+                    st.id === subtaskId ? { ...st, ...patch } : st
+                );
+                return { ...t, subtasks: sts, updatedAt: Date.now() };
+            })
+        }));
+    },
+
     reorderSubtasks: (taskId, start, end) => {
         set(state => ({
             tasks: state.tasks.map(t => {
@@ -492,15 +547,6 @@ const useStore = create<StoreState>((set, get) => ({
         const mentionedIds = new Set(mentionedUsers.map(u => u.id));
 
         if (mentionedUsers.length > 0) {
-            // pendingMentions (système existant)
-            set(state => {
-                const updated = { ...state.pendingMentions };
-                mentionedUsers.forEach(u => {
-                    const mention: PendingMention = { commentId, taskId, taskTitle, fromUserId: currentUser, fromUserName };
-                    updated[u.id] = [...(updated[u.id] || []), mention];
-                });
-                return { pendingMentions: updated };
-            });
             // AppNotification cloche
             mentionedUsers.forEach(u => {
                 get().addAppNotification({
@@ -543,16 +589,6 @@ const useStore = create<StoreState>((set, get) => ({
                 ),
             }
         }));
-    },
-
-    // Pending mentions
-    setPendingMentions: (pendingMentions) => set({ pendingMentions }),
-    clearPendingMentions: (userId) => {
-        set(state => {
-            const updated = { ...state.pendingMentions };
-            delete updated[userId];
-            return { pendingMentions: updated };
-        });
     },
 
     // Projects

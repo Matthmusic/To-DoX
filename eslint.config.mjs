@@ -20,4 +20,7 @@ export default defineConfig([globalIgnores(['dist']), {
     ecmaVersion: 2020,
     globals: globals.browser,
   },
+  rules: {
+    'no-console': 'warn',
+  },
 }, ...storybook.configs["flat/recommended"]])

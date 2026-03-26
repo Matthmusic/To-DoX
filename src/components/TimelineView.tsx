@@ -1,10 +1,20 @@
 import { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Calendar, X, MousePointerClick, Monitor, ChevronDown, Lock, ExternalLink, RefreshCw } from 'lucide-react';
+import { Calendar, X, Monitor, ExternalLink } from 'lucide-react';
 import type { Task, GanttDay, User, OutlookEvent } from '../types';
 import useStore from '../store/useStore';
+import { PROJECT_HEX_COLORS } from '../constants';
 import { useTheme } from '../hooks/useTheme';
 import { TaskCard } from './TaskCard';
+import {
+    STATUS_COLOR, STATUS_BORDER, SIDE_W, MIN_COL_W, MONTH_SHORT, DAY_SHORT,
+    toISO, getMondayOf, formatShortDate, addDaysIso, getUserColor, getUserInitials, getWeekNumber,
+    MONTH_FR, PRIORITY_COLOR,
+    type ViewMode, type FlatRow, type ActiveCell, type DragState,
+} from './timeline/timeline.utils';
+import { GanttCellPopover } from './timeline/GanttCellPopover';
+import { GanttToolbar } from './timeline/GanttToolbar';
+import { OutlookCalendarSection } from './timeline/OutlookCalendarSection';
 
 interface TimelineViewProps {
     filteredTasks: Task[];
@@ -13,306 +23,6 @@ interface TimelineViewProps {
     selectedUserId?: string;
     onRefreshOutlook?: () => void;
     readOnly?: boolean;
-}
-
-// ── Constants ─────────────────────────────────────────────────────────────
-
-const STATUS_COLOR: Record<string, string> = {
-    todo:   'rgba(59,130,246,0.65)',
-    doing:  'rgba(34,211,238,0.65)',
-    review: 'rgba(234,179,8,0.65)',
-    done:   'rgba(34,197,94,0.45)',
-};
-const STATUS_BORDER: Record<string, string> = {
-    todo:   '#3b82f6',
-    doing:  '#22d3ee',
-    review: '#eab308',
-    done:   '#22c55e',
-};
-const STATUS_LABEL: Record<string, string> = {
-    todo: 'À faire', doing: 'En cours', review: 'Revue', done: 'Terminé',
-};
-const PRIORITY_COLOR: Record<string, string> = {
-    high: '#ef4444',
-    med:  '#f59e0b',
-    low:  '#22c55e',
-};
-// Doit correspondre EXACTEMENT à l'ordre de PROJECT_COLORS dans constants.ts
-// pour que les couleurs soient cohérentes entre le Kanban et la Timeline
-const PROJECT_PALETTE = [
-    '#60a5fa', // [0] blue-400
-    '#22d3ee', // [1] cyan-400
-    '#34d399', // [2] emerald-400
-    '#facc15', // [3] yellow-400
-    '#fb923c', // [4] orange-400
-    '#fb7185', // [5] rose-400
-    '#c084fc', // [6] purple-400
-    '#818cf8', // [7] indigo-400
-    '#94a3b8', // [8] slate-400
-];
-
-// Palette séparée pour les avatars utilisateurs (plus vibrante)
-const USER_PALETTE = [
-    '#22d3ee', '#a78bfa', '#34d399', '#f59e0b',
-    '#f87171', '#60a5fa', '#fb923c', '#e879f9',
-    '#818cf8', '#2dd4bf',
-];
-const MONTH_FR    = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-const MONTH_SHORT = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
-const DAY_SHORT   = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-
-type ViewMode = '1week' | '2weeks' | 'rolling' | '1month' | '2months';
-
-// ── Helpers ───────────────────────────────────────────────────────────────
-
-function toISO(d: Date): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-}
-
-function getMondayOf(date: Date): Date {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    const day = d.getDay();
-    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-    return d;
-}
-
-function formatShortDate(iso: string): string {
-    const [, m, d] = iso.split('-');
-    return `${parseInt(d)} ${MONTH_SHORT[parseInt(m) - 1]}`;
-}
-
-function addDaysIso(iso: string, n: number): string {
-    const d = new Date(iso + 'T00:00:00');
-    d.setDate(d.getDate() + n);
-    return toISO(d);
-}
-
-function getUserColor(userId: string): string {
-    let hash = 0;
-    for (let i = 0; i < userId.length; i++) {
-        hash = ((hash << 5) - hash) + userId.charCodeAt(i);
-        hash |= 0;
-    }
-    return USER_PALETTE[Math.abs(hash) % USER_PALETTE.length];
-}
-
-function getUserInitials(user: User): string {
-    const parts = user.name.trim().split(/\s+/);
-    if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
-    return user.name.substring(0, 2).toUpperCase();
-}
-
-/** ISO week number (01–53) */
-function getWeekNumber(date: Date): string {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return String(Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)).padStart(2, '0');
-}
-
-// Layout constants
-const SIDE_W = 380;
-// Largeur minimale par colonne (plancher si l'espace disponible est insuffisant)
-const MIN_COL_W: Record<ViewMode, number> = { '1week': 60, '2weeks': 40, 'rolling': 40, '1month': 22, '2months': 18 };
-
-// Row types for flat rendering
-type ProjectRow = {
-    type: 'project';
-    project: string;
-    color: string;
-    count: number;
-    barStartIdx: number;
-    barEndIdx: number;
-    barLeftCapped: boolean;
-    barRightCapped: boolean;
-};
-type TaskRow = { type: 'task'; task: Task; project: string; isLast: boolean };
-type FlatRow = ProjectRow | TaskRow;
-
-// Active cell popover state
-interface ActiveCell {
-    taskId: string;
-    date: string;
-    rect: DOMRect;
-}
-
-// Drag-to-range state
-interface DragState {
-    taskId: string;
-    startDate: string;
-    currentDate: string;
-    /** toujours 'add' — la suppression se fait via le popover */
-    mode: 'add';
-    /** userIds hérités de la cellule source (si elle était planifiée) */
-    sourceUserIds?: string[];
-    startRect: DOMRect;
-    /** Ctrl enfoncé au mousedown → sélection multiple */
-    ctrlKey: boolean;
-}
-
-// ── GanttCellPopover ──────────────────────────────────────────────────────
-
-interface GanttCellPopoverProps {
-    activeCell: ActiveCell;
-    filteredTasks: Task[];
-    users: User[];
-    onClose: () => void;
-    onSetGanttUsers: (taskId: string, date: string, userIds: string[]) => void;
-    onRemoveGanttDay: (taskId: string, date: string) => void;
-}
-
-function GanttCellPopover({
-    activeCell, filteredTasks, users, onClose, onSetGanttUsers, onRemoveGanttDay,
-}: GanttCellPopoverProps) {
-    const task = filteredTasks.find(t => t.id === activeCell.taskId);
-    const panelRef = useRef<HTMLDivElement>(null);
-
-    // Ferme sur mousedown hors du panel, et sur contextmenu hors du panel
-    // (sans preventDefault sur contextmenu → les cellules reçoivent l'event)
-    useEffect(() => {
-        const handleOutside = (e: MouseEvent) => {
-            if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-                onClose();
-            }
-        };
-        document.addEventListener('mousedown', handleOutside, true);
-        document.addEventListener('contextmenu', handleOutside, true);
-        return () => {
-            document.removeEventListener('mousedown', handleOutside, true);
-            document.removeEventListener('contextmenu', handleOutside, true);
-        };
-    }, [onClose]);
-
-    if (!task) return null;
-
-    const ganttDays  = task.ganttDays ?? [];
-    const ganttDay   = ganttDays.find(d => d.date === activeCell.date);
-    const isPlanned  = !!ganttDay;
-    const assigneeIds = ganttDay?.userIds ?? [];
-
-    const POPOVER_W = 220;
-    const { rect } = activeCell;
-    const left  = Math.min(Math.max(8, rect.left), window.innerWidth - POPOVER_W - 8);
-    const below = rect.bottom + 260 < window.innerHeight;
-    const top   = below ? rect.bottom + 4 : rect.top - 264;
-
-    // Propose only the task's assignees; fallback to all users
-    const taskUsers = task.assignedTo.length > 0
-        ? users.filter(u => task.assignedTo.includes(u.id))
-        : users;
-
-    const toggleUser = (userId: string) => {
-        const isSelected = assigneeIds.includes(userId);
-        const newIds = isSelected
-            ? assigneeIds.filter(id => id !== userId)
-            : [...assigneeIds, userId];
-        onSetGanttUsers(activeCell.taskId, activeCell.date, newIds);
-        // Ne pas fermer → multi-sélection
-    };
-
-    return createPortal(
-        <>
-
-            {/* Popover */}
-            <div
-                ref={panelRef}
-                className="fixed z-50 rounded-xl border border-white/15 shadow-2xl overflow-hidden"
-                style={{ left, top, width: POPOVER_W, backgroundColor: 'var(--bg-secondary)' }}
-                onMouseDown={e => e.stopPropagation()}
-                onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }}
-            >
-                {/* Header */}
-                <div className="px-3 pt-2.5 pb-2 border-b border-white/10">
-                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">
-                        {formatShortDate(activeCell.date)}
-                    </p>
-                    <p className="text-xs font-semibold text-white/70 truncate mt-0.5">
-                        {task.title}
-                    </p>
-                    {assigneeIds.length > 0 && (
-                        <p className="text-[10px] text-white/35 mt-0.5">
-                            {assigneeIds.length} assigné{assigneeIds.length > 1 ? 's' : ''}
-                        </p>
-                    )}
-                </div>
-
-                {/* User picker — multi-select */}
-                <div className="p-1.5 flex flex-col gap-0.5 max-h-52 overflow-y-auto">
-                    {/* Aucun assigné (clear) */}
-                    <button
-                        onClick={() => { onSetGanttUsers(activeCell.taskId, activeCell.date, []); onClose(); }}
-                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left w-full ${
-                            isPlanned && assigneeIds.length === 0
-                                ? 'bg-white/10 text-white/90'
-                                : 'text-white/50 hover:bg-white/[0.06] hover:text-white/80'
-                        }`}
-                    >
-                        <div className="h-5 w-5 rounded-full border border-white/20 flex items-center justify-center flex-shrink-0">
-                            <span className="text-[8px] text-white/30">—</span>
-                        </div>
-                        <span className="truncate flex-1">Aucun assigné</span>
-                        {isPlanned && assigneeIds.length === 0 && (
-                            <span className="text-white/40 text-[10px]">✓</span>
-                        )}
-                    </button>
-
-                    {/* Users — checkboxes */}
-                    {taskUsers.map(user => {
-                        const isSelected = assigneeIds.includes(user.id);
-                        return (
-                            <button
-                                key={user.id}
-                                onClick={() => toggleUser(user.id)}
-                                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left w-full ${
-                                    isSelected
-                                        ? 'bg-white/10 text-white/90'
-                                        : 'text-white/50 hover:bg-white/[0.06] hover:text-white/80'
-                                }`}
-                            >
-                                <div
-                                    className="h-5 w-5 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-bold text-white"
-                                    style={{ backgroundColor: getUserColor(user.id) }}
-                                >
-                                    {getUserInitials(user)}
-                                </div>
-                                <span className="truncate flex-1">{user.name.split(' ')[0]}</span>
-                                {/* Checkbox visuel */}
-                                <div className={`h-4 w-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors ${
-                                    isSelected
-                                        ? 'border-transparent bg-white/30'
-                                        : 'border-white/20 bg-transparent'
-                                }`}>
-                                    {isSelected && (
-                                        <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" fill="none" stroke="white" strokeWidth="2">
-                                            <polyline points="1.5,5 4,7.5 8.5,2" />
-                                        </svg>
-                                    )}
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Remove */}
-                {isPlanned && (
-                    <div className="px-1.5 pb-1.5 pt-1 border-t border-white/10">
-                        <button
-                            onClick={() => { onRemoveGanttDay(activeCell.taskId, activeCell.date); onClose(); }}
-                            className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-colors w-full"
-                        >
-                            Retirer ce jour
-                        </button>
-                    </div>
-                )}
-            </div>
-        </>,
-        document.body
-    );
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
@@ -343,7 +53,6 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
     const [hoveredOutlookEvent, setHoveredOutlookEvent] = useState<{ ev: OutlookEvent; rect: DOMRect } | null>(null);
     const [showMonthPicker, setShowMonthPicker]         = useState(false);
     const [pickerYear, setPickerYear]                   = useState(new Date().getFullYear());
-    const monthPickerRef    = useRef<HTMLDivElement>(null);
     const gridContainerRef  = useRef<HTMLDivElement>(null);
     const [gridWidth, setGridWidth] = useState(0);
 
@@ -431,14 +140,14 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
     // ── Helpers ───────────────────────────────────────────────────────────
     function getProjectColor(project: string): string {
         if (project in projectColors) {
-            return PROJECT_PALETTE[projectColors[project] % PROJECT_PALETTE.length];
+            return PROJECT_HEX_COLORS[projectColors[project] % PROJECT_HEX_COLORS.length];
         }
         // Fallback hash identique à utils.ts getProjectColor
         let hash = 0;
         for (let i = 0; i < project.length; i++) {
             hash = project.charCodeAt(i) + ((hash << 5) - hash);
         }
-        return PROJECT_PALETTE[Math.abs(hash) % PROJECT_PALETTE.length];
+        return PROJECT_HEX_COLORS[Math.abs(hash) % PROJECT_HEX_COLORS.length];
     }
 
     // ── Gantt day store actions ───────────────────────────────────────────
@@ -476,18 +185,6 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
         if (!task) return;
         updateTask(taskId, { ganttDays: (task.ganttDays ?? []).filter(d => d.date !== date) });
     };
-
-    // Ferme le month picker sur clic extérieur
-    useEffect(() => {
-        if (!showMonthPicker) return;
-        const handleOutside = (e: MouseEvent) => {
-            if (monthPickerRef.current && !monthPickerRef.current.contains(e.target as Node)) {
-                setShowMonthPicker(false);
-            }
-        };
-        document.addEventListener('mousedown', handleOutside);
-        return () => document.removeEventListener('mousedown', handleOutside);
-    }, [showMonthPicker]);
 
     // Navigation rapide via le month picker — bascule toujours en vue Mois
     const handleMonthPickerSelect = (year: number, month: number) => {
@@ -708,194 +405,21 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
         <div className="hidden md:flex flex-col h-full gap-3 p-4 overflow-hidden">
 
             {/* ── Toolbar ─────────────────────────────────────────────── */}
-            <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-
-                {/* Sélecteur de vue — sliding pill */}
-                {(() => {
-                    const MODES: { key: ViewMode; label: string }[] = [
-                        { key: '1week',   label: '1 sem.' },
-                        { key: '2weeks',  label: '2 sem.' },
-                        { key: 'rolling', label: '↻ Auj.' },
-                        { key: '1month',  label: '1 mois' },
-                        { key: '2months', label: '2 mois' },
-                    ];
-                    const btnW = 68;
-                    const activeIdx = MODES.findIndex(m => m.key === viewMode);
-                    return (
-                        <div className="relative flex p-[3px] rounded-xl bg-white/5 border border-white/[0.12]" style={{ width: MODES.length * btnW + 6 }}>
-                            <div
-                                className="absolute top-[3px] bottom-[3px] left-[3px] rounded-lg pointer-events-none transition-transform duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]"
-                                style={{
-                                    width: btnW,
-                                    transform: `translateX(${activeIdx * btnW}px)`,
-                                    backgroundColor: `${primaryColor}1e`,
-                                    boxShadow: `inset 0 0 0 1px ${primaryColor}40, 0 1px 3px rgba(0,0,0,0.3)`,
-                                }}
-                            />
-                            {MODES.map(m => (
-                                <button
-                                    key={m.key}
-                                    onClick={() => switchView(m.key)}
-                                    className={`relative z-10 flex items-center justify-center py-[7px] text-xs font-semibold transition-colors duration-150 ${
-                                        viewMode === m.key ? '' : 'text-white/35 hover:text-white/55'
-                                    }`}
-                                    style={{ width: btnW, color: viewMode === m.key ? primaryColor : undefined }}
-                                >
-                                    {m.label}
-                                </button>
-                            ))}
-                        </div>
-                    );
-                })()}
-
-                {/* Pod de navigation unifié */}
-                <div className="flex items-center rounded-xl bg-white/5 border border-white/[0.12] divide-x divide-white/[0.08]">
-
-                    {/* Saut arrière rapide */}
-                    <button
-                        onClick={() => setOffset(o => o - (viewMode === '2months' ? 2 : viewMode === '1month' ? 3 : 4))}
-                        title={viewMode === '2months' ? '− 2 périodes' : viewMode === '1month' ? '− 3 périodes' : '− 4 périodes'}
-                        className="px-2 py-[7px] hover:bg-white/10 text-white/22 hover:text-white/65 transition-colors rounded-l-xl"
-                    >
-                        <ChevronsLeft className="h-3.5 w-3.5" />
-                    </button>
-
-                    <button
-                        onClick={() => setOffset(o => o - 1)}
-                        className="px-2.5 py-[7px] hover:bg-white/10 text-white/45 hover:text-white transition-colors"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </button>
-
-                    {/* Période — click pour ouvrir le month picker */}
-                    <div className="relative">
-                        <button
-                            onClick={() => {
-                                setPickerYear(days[0]?.getFullYear() ?? new Date().getFullYear());
-                                setShowMonthPicker(p => !p);
-                            }}
-                            className="flex items-center gap-1 px-4 py-[7px] min-w-[180px] justify-center hover:bg-white/5 transition-colors group"
-                        >
-                            <span className="text-sm font-bold text-white/85 group-hover:text-white transition-colors select-none">
-                                {periodLabel}
-                            </span>
-                            <ChevronDown className={`h-3 w-3 text-white/30 transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {/* Month picker dropdown */}
-                        {showMonthPicker && (
-                            <div
-                                ref={monthPickerRef}
-                                className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 rounded-2xl border border-white/15 shadow-2xl p-3"
-                                style={{ width: 236, backgroundColor: 'var(--bg-secondary)' }}
-                                onMouseDown={e => e.stopPropagation()}
-                            >
-                                {/* Navigation année */}
-                                <div className="flex items-center justify-between mb-2.5 px-1">
-                                    <button
-                                        onClick={() => setPickerYear(y => y - 1)}
-                                        className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
-                                    >
-                                        <ChevronLeft className="h-3.5 w-3.5" />
-                                    </button>
-                                    <span className="text-sm font-bold text-white/75">{pickerYear}</span>
-                                    <button
-                                        onClick={() => setPickerYear(y => y + 1)}
-                                        className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
-                                    >
-                                        <ChevronRight className="h-3.5 w-3.5" />
-                                    </button>
-                                </div>
-                                {/* Grille des mois */}
-                                <div className="grid grid-cols-3 gap-1">
-                                    {MONTH_SHORT.map((m, idx) => {
-                                        const todayD = new Date();
-                                        const isThisMonth = pickerYear === todayD.getFullYear() && idx === todayD.getMonth();
-                                        const isActive = !!days[0] && pickerYear === days[0].getFullYear() && idx === days[0].getMonth();
-                                        return (
-                                            <button
-                                                key={idx}
-                                                onClick={() => handleMonthPickerSelect(pickerYear, idx)}
-                                                className={`py-2 rounded-xl text-xs font-semibold transition-all ${
-                                                    isActive
-                                                        ? ''
-                                                        : isThisMonth
-                                                            ? 'text-white/60 ring-1 ring-inset ring-white/20 hover:ring-white/30 hover:text-white/80'
-                                                            : 'text-white/35 hover:text-white/70 hover:bg-white/[0.06]'
-                                                }`}
-                                                style={isActive ? {
-                                                    backgroundColor: `${primaryColor}28`,
-                                                    color: primaryColor,
-                                                    boxShadow: `inset 0 0 0 1px ${primaryColor}48`,
-                                                } : {}}
-                                            >
-                                                {m}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <button
-                        onClick={() => setOffset(o => o + 1)}
-                        className="px-2.5 py-[7px] hover:bg-white/10 text-white/45 hover:text-white transition-colors"
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </button>
-
-                    {/* Saut avant rapide */}
-                    <button
-                        onClick={() => setOffset(o => o + (viewMode === '2months' ? 2 : viewMode === '1month' ? 3 : 4))}
-                        title={viewMode === '2months' ? '+ 2 périodes' : viewMode === '1month' ? '+ 3 périodes' : '+ 4 périodes'}
-                        className="px-2 py-[7px] hover:bg-white/10 text-white/22 hover:text-white/65 transition-colors rounded-r-xl"
-                    >
-                        <ChevronsRight className="h-3.5 w-3.5" />
-                    </button>
-                </div>
-
-                {/* Aujourd'hui */}
-                <button
-                    onClick={() => { setOffset(0); setShowMonthPicker(false); }}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all"
-                    style={{ borderColor: `${primaryColor}40`, backgroundColor: `${primaryColor}12`, color: primaryColor }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${primaryColor}28`)}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = `${primaryColor}12`)}
-                >
-                    Aujourd'hui
-                </button>
-
-                {/* User en cours de visualisation */}
-                {(() => {
-                    const viewedUser = selectedUserId ? users.find(u => u.id === selectedUserId) : null;
-                    if (!viewedUser) return null;
-                    return (
-                        <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
-                            <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Vue</span>
-                            <span className="text-sm font-bold" style={{ color: getUserColor(viewedUser.id) }}>
-                                {viewedUser.name.split(' ')[0]}
-                            </span>
-                        </div>
-                    );
-                })()}
-
-                <span className="hidden xl:flex items-center gap-1.5 text-[10px] text-white/20 font-medium ml-1">
-                    <MousePointerClick className="h-3 w-3" />
-                    Cliquer pour planifier · Ctrl+clic multi-sélection
-                </span>
-
-                {/* Légende */}
-                <div className="ml-auto flex items-center gap-1.5 flex-wrap">
-                    {(Object.entries(STATUS_LABEL) as [string, string][]).map(([status, label]) => (
-                        <span key={status} className="flex items-center gap-1.5 text-[10px] font-semibold px-2 py-1 rounded-lg border"
-                            style={{ borderColor: `${STATUS_BORDER[status]}40`, backgroundColor: `${STATUS_COLOR[status]}18`, color: STATUS_BORDER[status] }}>
-                            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: STATUS_BORDER[status] }} />
-                            {label}
-                        </span>
-                    ))}
-                </div>
-            </div>
+            <GanttToolbar
+                viewMode={viewMode}
+                switchView={switchView}
+                setOffset={setOffset}
+                periodLabel={periodLabel}
+                days={days}
+                showMonthPicker={showMonthPicker}
+                setShowMonthPicker={setShowMonthPicker}
+                pickerYear={pickerYear}
+                setPickerYear={setPickerYear}
+                handleMonthPickerSelect={handleMonthPickerSelect}
+                primaryColor={primaryColor}
+                selectedUserId={selectedUserId}
+                users={users}
+            />
 
             {/* ── Grid ────────────────────────────────────────────────── */}
             <div ref={gridContainerRef} className="flex-1 overflow-auto rounded-2xl border border-white/10 bg-theme-secondary"
@@ -997,131 +521,20 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                         })}
                     </div>
 
-                    {/* ── Section Calendrier Outlook ── (masquée en consultation : events = user connecté, pas user consulté) */}
+                    {/* ── Section Calendrier Outlook ── (masquée en consultation) */}
                     {!readOnly && outlookConfig.enabled && visibleOutlookEvents.length > 0 && (
-                        <>
-                            {/* Header de section collapsible */}
-                            <div
-                                className="flex border-b border-indigo-500/30 cursor-pointer select-none"
-                                style={{ backgroundColor: 'rgba(99,102,241,0.10)' }}
-                                onClick={toggleOutlookCollapsed}
-                            >
-                                <div
-                                    className="sticky left-0 z-10 flex items-center gap-2 px-4 py-2 border-r border-indigo-500/20"
-                                    style={{ width: SIDE_W, minWidth: SIDE_W, backgroundColor: 'rgba(99,102,241,0.12)' }}
-                                >
-                                    <ChevronDown
-                                        className={`h-3.5 w-3.5 text-indigo-400 transition-transform ${outlookCollapsed ? '-rotate-90' : ''}`}
-                                    />
-                                    <Calendar className="h-3.5 w-3.5 text-indigo-400" />
-                                    <span className="text-xs font-bold text-indigo-300 uppercase tracking-widest">
-                                        Calendrier Outlook
-                                    </span>
-                                    <span className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold">
-                                        {visibleOutlookEvents.length}
-                                    </span>
-                                    <div className="ml-auto flex items-center gap-1.5 shrink-0">
-                                        {onRefreshOutlook && (
-                                            <button
-                                                onClick={e => { e.stopPropagation(); onRefreshOutlook(); }}
-                                                className="flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 text-[10px] font-medium transition"
-                                                title="Recharger le calendrier Outlook"
-                                            >
-                                                <RefreshCw className="h-3 w-3" />
-                                                Actualiser
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                {/* Cellules vides pour aligner les colonnes */}
-                                {days.map(day => (
-                                    <div
-                                        key={toISO(day)}
-                                        style={{ width: colW, minWidth: colW }}
-                                        className="border-r border-white/5 last:border-r-0"
-                                    />
-                                ))}
-                            </div>
-
-                            {/* Lignes d'events Outlook */}
-                            {!outlookCollapsed && visibleOutlookEvents.map(ev => {
-                                return (
-                                    <div
-                                        key={ev.uid}
-                                        className="flex border-b border-white/5 group"
-                                        style={{ backgroundColor: 'rgba(99,102,241,0.06)' }}
-                                    >
-                                        {/* Label left */}
-                                        <div
-                                            className="sticky left-0 z-10 flex items-center gap-2 px-4 py-2 border-r border-white/5 overflow-hidden"
-                                            style={{ width: SIDE_W, minWidth: SIDE_W, backgroundColor: 'rgba(99,102,241,0.08)' }}
-                                        >
-                                            <Lock className="h-3 w-3 text-indigo-400/60 shrink-0" />
-                                            {/* Heure de la réunion (si non all-day) */}
-                                            {!ev.allDay && ev.startTime && (
-                                                <span className="shrink-0 text-[10px] font-bold text-indigo-400 tabular-nums">
-                                                    {ev.startTime}{ev.endTime && ev.endTime !== ev.startTime ? `–${ev.endTime}` : ''}
-                                                </span>
-                                            )}
-                                            <span
-                                                className="text-xs text-indigo-200/80 truncate"
-                                                title={ev.location ? `${ev.title} — ${ev.location}` : ev.title}
-                                            >
-                                                {ev.title}
-                                            </span>
-                                            {ev.location && (
-                                                <span className="text-[10px] text-indigo-400/50 truncate hidden lg:block">
-                                                    {ev.location}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {/* Cellules Gantt */}
-                                        {days.map(day => {
-                                            const iso = toISO(day);
-                                            // Pour les réunions same-day (DTEND = DTSTART), on force end = start+1j
-                                            const effectiveEnd   = ev.end > ev.start ? ev.end : addDaysIso(ev.start, 1);
-                                            const isInEvent      = iso >= ev.start && iso < effectiveEnd;
-                                            const isStart        = iso === ev.start;
-                                            const isEnd          = iso === addDaysIso(effectiveEnd, -1);
-                                            // Premier cell visible : soit le vrai début, soit le bord gauche si l'event débute avant la plage
-                                            const isFirstVisible = isInEvent && (isStart || iso === rangeStart);
-                                            return (
-                                                <div
-                                                    key={iso}
-                                                    className="relative border-r border-white/5 last:border-r-0"
-                                                    style={{ width: colW, minWidth: colW, height: 34 }}
-                                                    onMouseEnter={isInEvent ? e => setHoveredOutlookEvent({ ev, rect: e.currentTarget.getBoundingClientRect() }) : undefined}
-                                                    onMouseLeave={isInEvent ? () => setHoveredOutlookEvent(null) : undefined}
-                                                >
-                                                    {isInEvent && (
-                                                        <div
-                                                            className="absolute inset-y-[6px] overflow-hidden flex items-center transition-colors"
-                                                            style={{
-                                                                left: isStart ? '4px' : '0',
-                                                                right: isEnd ? '4px' : '0',
-                                                                backgroundColor: hoveredOutlookEvent?.ev.uid === ev.uid ? 'rgba(99,102,241,0.55)' : 'rgba(99,102,241,0.35)',
-                                                                borderTop: '1px solid rgba(129,140,248,0.5)',
-                                                                borderBottom: '1px solid rgba(129,140,248,0.5)',
-                                                                borderLeft: isStart ? '2px solid rgba(129,140,248,0.8)' : 'none',
-                                                                borderRight: isEnd ? '2px solid rgba(129,140,248,0.8)' : 'none',
-                                                                borderRadius: isStart && isEnd ? '4px' : isStart ? '4px 0 0 4px' : isEnd ? '0 4px 4px 0' : '0',
-                                                            }}
-                                                        >
-                                                            {isFirstVisible && (
-                                                                <span className="px-1.5 text-[9px] font-semibold text-indigo-100 truncate leading-none select-none whitespace-nowrap">
-                                                                    {!ev.allDay && ev.startTime ? `${ev.startTime} ` : ''}{ev.title}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                );
-                            })}
-                        </>
+                        <OutlookCalendarSection
+                            visibleOutlookEvents={visibleOutlookEvents}
+                            outlookCollapsed={outlookCollapsed}
+                            toggleOutlookCollapsed={toggleOutlookCollapsed}
+                            onRefreshOutlook={onRefreshOutlook}
+                            days={days}
+                            colW={colW}
+                            rangeStart={rangeStart}
+                            hoveredOutlookEventUid={hoveredOutlookEvent?.ev.uid ?? null}
+                            onHoverEvent={(ev, rect) => setHoveredOutlookEvent({ ev, rect })}
+                            onLeaveEvent={() => setHoveredOutlookEvent(null)}
+                        />
                     )}
 
                     {/* ── Séparateur Outlook / To-DoX ── */}

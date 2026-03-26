@@ -45,6 +45,21 @@ export interface ProjectColor {
     glow: string;
 }
 
+/** Valeurs hex correspondant exactement à PROJECT_COLORS (même index).
+ *  Utilisé partout où des hex sont nécessaires (canvas Timeline, exports, etc.)
+ *  pour éviter la duplication et garantir la cohérence avec les badges Kanban. */
+export const PROJECT_HEX_COLORS: string[] = [
+    '#60a5fa', // [0] blue-400
+    '#22d3ee', // [1] cyan-400
+    '#34d399', // [2] emerald-400
+    '#facc15', // [3] yellow-400
+    '#fb923c', // [4] orange-400
+    '#fb7185', // [5] rose-400
+    '#c084fc', // [6] purple-400
+    '#818cf8', // [7] indigo-400
+    '#94a3b8', // [8] slate-400
+];
+
 // Couleurs de projet pour les badges
 export const PROJECT_COLORS: ProjectColor[] = [
     { border: "border-blue-400/40", bg: "bg-blue-400/15", text: "text-blue-200", ring: "ring-blue-400/60", glow: "shadow-blue-500/30" },

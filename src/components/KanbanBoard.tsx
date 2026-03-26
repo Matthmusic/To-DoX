@@ -19,6 +19,7 @@ interface KanbanBoardProps {
     onDropOnTask?: (e: React.DragEvent, taskId: string) => void;
     onDragLeaveTask?: () => void;
     dropIndicator?: DropIndicator | null;
+    nestTarget?: string | null;
 }
 
 const kanbanStatuses = STATUSES.filter(s => s.kanban);
@@ -42,6 +43,7 @@ export function KanbanBoard({
     onDropOnTask,
     onDragLeaveTask,
     dropIndicator,
+    nestTarget,
 }: KanbanBoardProps) {
     const { toggleProjectCollapse } = useStore();
     const [activeMobileTab, setActiveMobileTab] = useState(0);
@@ -69,6 +71,7 @@ export function KanbanBoard({
                     onDropOnTask={onDropOnTask}
                     onDragLeaveTask={onDragLeaveTask}
                     dropIndicator={dropIndicator}
+                    nestTarget={nestTarget}
                 />
             );
         })

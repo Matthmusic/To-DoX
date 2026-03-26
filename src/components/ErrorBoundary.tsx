@@ -36,7 +36,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    // Logger l'erreur
+    // Logger l'erreur — intentionnellement visible en production
+    // eslint-disable-next-line no-console
     console.error('❌ Error Boundary caught an error:', error, errorInfo);
 
     // Sauvegarder l'errorInfo dans le state
@@ -53,6 +54,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       };
 
       window.electronAPI.logError(errorLog).catch((err) => {
+        // eslint-disable-next-line no-console
         console.error('Failed to log error to file:', err);
       });
     }

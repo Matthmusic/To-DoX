@@ -1,3 +1,5 @@
+import { devLog } from '../utils';
+
 const SOUND_URL_CACHE = new Map<string, string>();
 
 function normalizeSoundFileName(soundFile: string): string {
@@ -78,14 +80,14 @@ export async function resolveSoundUrl(soundFile: string): Promise<string> {
 
   const cachedUrl = SOUND_URL_CACHE.get(normalizedFileName);
   if (cachedUrl) {
-    console.log('🔊 [SOUND] Using cached URL:', cachedUrl);
+    devLog('🔊 [SOUND] Using cached URL:', cachedUrl);
     return cachedUrl;
   }
 
   const electronUrl = await resolveElectronSoundUrl(normalizedFileName);
-  console.log('🔊 [SOUND] Electron URL:', electronUrl);
+  devLog('🔊 [SOUND] Electron URL:', electronUrl);
   const resolvedUrl = electronUrl || buildRelativeSoundUrl(normalizedFileName);
-  console.log('🔊 [SOUND] Resolved URL:', resolvedUrl);
+  devLog('🔊 [SOUND] Resolved URL:', resolvedUrl);
   SOUND_URL_CACHE.set(normalizedFileName, resolvedUrl);
 
   return resolvedUrl;
@@ -102,21 +104,21 @@ export async function playSoundFile(soundFile: string): Promise<HTMLAudioElement
   const fallbackAbsoluteUrl = buildAbsoluteSoundUrl(normalizedFileName);
   const candidates = uniqueUrls([primaryUrl, fallbackRelativeUrl, fallbackAbsoluteUrl]);
 
-  console.log('🔊 [SOUND] Trying candidates:', candidates);
+  devLog('🔊 [SOUND] Trying candidates:', candidates);
   let lastError: unknown = null;
 
   for (const candidate of candidates) {
-    console.log('🔊 [SOUND] Trying:', candidate);
+    devLog('🔊 [SOUND] Trying:', candidate);
     const audio = new Audio(candidate);
     audio.preload = 'auto';
 
     try {
       await waitForAudioToLoad(audio);
       await audio.play();
-      console.log('✅ [SOUND] Success with:', candidate);
+      devLog('✅ [SOUND] Success with:', candidate);
       return audio;
     } catch (error) {
-      console.log('❌ [SOUND] Failed:', candidate, error);
+      devLog('❌ [SOUND] Failed:', candidate, error);
       lastError = error;
     }
   }

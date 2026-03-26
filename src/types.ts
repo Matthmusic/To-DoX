@@ -66,7 +66,6 @@ export interface StoredData {
   notificationSettings?: NotificationSettings;
   themeSettings?: ThemeSettings;
   comments?: Record<string, Comment[]>;
-  pendingMentions?: Record<string, PendingMention[]>;
   templates?: TaskTemplate[];
   savedReports?: SavedReport[];
   appNotifications?: AppNotification[];
@@ -157,6 +156,7 @@ export interface ElectronAPI {
     startHttpServer: (icsPath: string) => Promise<{ success: boolean; url?: string; port?: number; error?: string }>;
     stopHttpServer: () => Promise<{ success: boolean }>;
     getServerUrl: () => Promise<{ success: boolean; url?: string; port?: number }>;
+    saveDroppedMail: (storagePath: string, fileName: string, bytes: Uint8Array) => Promise<{ success: boolean; path?: string; error?: string }>;
   };
 }
 
@@ -202,6 +202,9 @@ export interface Subtask {
   createdAt: number;
   completedAt: number | null;
   completedBy: string | null;
+  assignedTo?: string[];      // IDs des utilisateurs affectés (multi)
+  startDate?: string | null;  // YYYY-MM-DD — début pour la timeline
+  endDate?: string | null;    // YYYY-MM-DD — fin pour la timeline
 }
 
 /**
@@ -302,6 +305,7 @@ export interface Task {
   movedToReviewBy?: string;     // ID de celui qui a soumis la tâche en révision
   movedToReviewAt?: number;     // Timestamp du passage en révision
   convertedFromSubtask?: { parentTaskId: string; parentTaskTitle: string };
+  parentTaskId?: string;            // ID de la tâche parente (hiérarchie de tâches)
 }
 
 /**
@@ -375,17 +379,6 @@ export interface Comment {
   text: string;
   createdAt: number;
   deletedAt: number | null; // Soft-delete pour sync multi-user
-}
-
-/**
- * Mention en attente de notification (pour alerter un utilisateur quand il se connecte)
- */
-export interface PendingMention {
-  commentId: string;
-  taskId: string;
-  taskTitle: string;
-  fromUserId: string;
-  fromUserName: string;
 }
 
 /**

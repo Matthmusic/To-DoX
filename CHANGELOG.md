@@ -5,7 +5,17 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) — Versioning
 
 ---
 
-## [2.1.19] — 2026-03-23 (actuel)
+## [2.1.22] — 2026-03-26 (actuel)
+
+### 🐛 Corrections
+- **Affectations de sous-tâches persistantes** : `mergeTasksByUpdatedAt` utilise désormais `>` strict — le polling ne remplace plus l'état mémoire quand les timestamps sont égaux.
+- **Sous-tâches visibles en vue compacte/normale** : `TaskSubtasksFooter` restauré avec prop `task` et liste compacte.
+- **Drag & drop natif Electron** : remplacement des handlers React `onDrop` par des `addEventListener('drop')` natifs (`SubtaskList`, `TaskNotesSection`, `TaskEditPanel`) — compatibilité OLE/Windows.
+- **Suppression du message d'erreur Outlook** : un drag depuis Outlook est désormais ignoré silencieusement.
+
+---
+
+## [2.1.19] — 2026-03-23
 
 ### ✨ Ajouts
 - **Vue compacte des TaskCard** : bouton `Eye/EyeOff` à gauche du titre pour réduire une carte à une seule ligne (titre + point priorité + date + indicateurs). État persisté en localStorage (`todox_compact_cards`).

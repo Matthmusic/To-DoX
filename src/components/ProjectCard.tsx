@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
-import { TaskCard } from "./TaskCard";
+import { TaskCard, getCardMode, type CardMode } from "./TaskCard";
 import { getProjectColor } from "../utils";
 import useStore from "../store/useStore";
 import type { Task } from "../types";
@@ -24,6 +24,7 @@ interface ProjectCardProps {
     onDropOnTask?: (e: React.DragEvent, taskId: string) => void;
     onDragLeaveTask?: () => void;
     dropIndicator?: DropIndicator | null;
+    nestTarget?: string | null;
 }
 
 export function ProjectCard({
@@ -44,11 +45,43 @@ export function ProjectCard({
     onDropOnTask,
     onDragLeaveTask,
     dropIndicator,
+    nestTarget,
 }: ProjectCardProps) {
     const { projectColors } = useStore();
     const projectColor = getProjectColor(project, projectColors);
 
     const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+
+    // Hiérarchie parent-enfant dans ce groupe
+    const taskIds = new Set(tasks.map(t => t.id));
+    const childTaskIds = new Set(
+        tasks.filter(t => t.parentTaskId && taskIds.has(t.parentTaskId)).map(t => t.id)
+    );
+    const rootTasks = tasks.filter(t => !childTaskIds.has(t.id));
+    const childrenOf = useCallback(
+        (parentId: string) => tasks.filter(t => t.parentTaskId === parentId),
+        [tasks]
+    );
+
+    // Tâches parentes pliées (leurs enfants sont cachés) — initialisé depuis localStorage
+    const [foldedParents, setFoldedParents] = useState<Set<string>>(() => {
+        const folded = new Set<string>();
+        tasks.forEach(t => {
+            if (childrenOf(t.id).length > 0 && getCardMode(t.id) === 'compact') {
+                folded.add(t.id);
+            }
+        });
+        return folded;
+    });
+
+    const handleCardModeChange = useCallback((taskId: string, mode: CardMode) => {
+        setFoldedParents(prev => {
+            const next = new Set(prev);
+            if (mode === 'compact') next.add(taskId);
+            else next.delete(taskId);
+            return next;
+        });
+    }, []);
 
     // Fermer le menu au clic ailleurs
     useEffect(() => {
@@ -57,6 +90,39 @@ export function ProjectCard({
         document.addEventListener("mousedown", close);
         return () => document.removeEventListener("mousedown", close);
     }, [ctxMenu]);
+
+    // Rendu récursif d'une tâche + ses enfants (max 2 niveaux : depth 0, 1)
+    const renderTaskNode = (task: Task, depth: number, forcedMode?: CardMode): React.ReactNode => {
+        const children = childrenOf(task.id);
+        const isFolded = foldedParents.has(task.id);
+        const card = (
+            <TaskCard
+                task={task}
+                onDragStart={onDragStartTask}
+                onClick={onClickTask}
+                onContextMenu={onContextMenuTask}
+                onSetProjectDirectory={() => onSetProjectDirectory(project)}
+                onCardModeChange={handleCardModeChange}
+                onDragOverTask={onDragOverTask}
+                onDropOnTask={onDropOnTask}
+                onDragLeaveTask={onDragLeaveTask}
+                dropIndicator={dropIndicator}
+                nestTarget={nestTarget}
+                forcedMode={forcedMode}
+            />
+        );
+        if (children.length === 0 || depth >= 2) {
+            return <React.Fragment key={task.id}>{card}</React.Fragment>;
+        }
+        return (
+            <React.Fragment key={task.id}>
+                {card}
+                <div className="ml-4 border-l-2 border-white/10 pl-3">
+                    {children.map(child => renderTaskNode(child, depth + 1, isFolded ? 'compact' : undefined))}
+                </div>
+            </React.Fragment>
+        );
+    };
 
     return (
         <div
@@ -118,20 +184,7 @@ export function ProjectCard({
                             ease: "easeInOut"
                         }}
                     >
-                        {tasks.map(task => (
-                            <TaskCard
-                                key={task.id}
-                                task={task}
-                                onDragStart={onDragStartTask}
-                                onClick={onClickTask}
-                                onContextMenu={onContextMenuTask}
-                                onSetProjectDirectory={() => onSetProjectDirectory(project)}
-                                onDragOverTask={onDragOverTask}
-                                onDropOnTask={onDropOnTask}
-                                onDragLeaveTask={onDragLeaveTask}
-                                dropIndicator={dropIndicator}
-                            />
-                        ))}
+                        {rootTasks.map(task => renderTaskNode(task, 0))}
                     </motion.div>
                 )}
             </AnimatePresence>

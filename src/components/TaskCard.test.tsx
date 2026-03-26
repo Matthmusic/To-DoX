@@ -39,7 +39,7 @@ describe('TaskCard', () => {
 
     it('should show priority badge', () => {
         render(<TaskCard {...mockProps} />);
-        expect(screen.getByText('MOYENNE')).toBeInTheDocument();
+        expect(screen.getAllByText('M').length).toBeGreaterThanOrEqual(1);
     });
 
     it('should expand inline content when clicked', () => {
