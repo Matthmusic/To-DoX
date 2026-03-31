@@ -185,6 +185,14 @@ export function TaskCard({
         }
     };
 
+    const handleCopyFolderPath = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (projectDir) {
+            navigator.clipboard.writeText(projectDir);
+        }
+    };
+
     const handleToggleFavorite = (e: React.MouseEvent) => {
         e.stopPropagation();
         updateTask(task.id, { favorite: !task.favorite });
@@ -331,8 +339,9 @@ export function TaskCard({
                     {task.project && (
                         <button
                             onClick={(e) => { e.stopPropagation(); handleOpenFolder(e); }}
+                            onContextMenu={projectDir ? handleCopyFolderPath : undefined}
                             className={`rounded p-0.5 transition ${projectDir ? "text-indigo-400" : "text-slate-600 hover:text-slate-300"}`}
-                            title={projectDir ? `Ouvrir : ${projectDir}` : "Configurer le dossier projet"}
+                            title={projectDir ? `Ouvrir : ${projectDir} (clic droit : copier)` : "Configurer le dossier projet"}
                         >
                             <FolderOpen className="h-3.5 w-3.5" />
                         </button>
@@ -504,6 +513,7 @@ export function TaskCard({
                             onContextMenu={onContextMenu}
                             onToggleFavorite={handleToggleFavorite}
                             onOpenFolder={handleOpenFolder}
+                            onCopyFolderPath={handleCopyFolderPath}
                             onExpandSubtasks={() => setIsSubtasksExpanded(true)}
                             userButtonRef={userButtonRef}
                         />

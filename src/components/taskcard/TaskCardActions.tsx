@@ -20,6 +20,7 @@ interface TaskCardActionsProps {
     onContextMenu: (e: React.MouseEvent, task: Task) => void;
     onToggleFavorite: (e: React.MouseEvent) => void;
     onOpenFolder: (e: React.MouseEvent) => void;
+    onCopyFolderPath: (e: React.MouseEvent) => void;
     onExpandSubtasks: () => void;
     userButtonRef: React.RefObject<HTMLButtonElement | null>;
 }
@@ -35,6 +36,7 @@ export function TaskCardActions({
     onContextMenu,
     onToggleFavorite,
     onOpenFolder,
+    onCopyFolderPath,
     onExpandSubtasks,
     userButtonRef,
 }: TaskCardActionsProps) {
@@ -98,8 +100,9 @@ export function TaskCardActions({
             {task.project && (
                 <button
                     onClick={(e) => { e.stopPropagation(); onOpenFolder(e); }}
+                    onContextMenu={projectDir ? onCopyFolderPath : undefined}
                     className={`rounded-lg p-1.5 transition ${projectDir ? "text-indigo-400 hover:bg-indigo-400/20" : "text-slate-600 hover:text-slate-300"}`}
-                    title={projectDir ? `Ouvrir : ${projectDir}` : "Configurer le dossier"}
+                    title={projectDir ? `Ouvrir : ${projectDir} (clic droit : copier)` : "Configurer le dossier"}
                 >
                     <FolderOpen className="h-4 w-4" />
                 </button>

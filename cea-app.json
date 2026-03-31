@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.1.25",
+    "version": "2.1.26",
     "description": {
       "short": "Kanban intelligent avec interface mobile-first, workflow de revision et notifications.",
       "long": "To-DoX est une application Kanban moderne pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recurrence, des templates, un dashboard KPIs, une vue Timeline/Gantt, un workflow de revision complet, une vue Terminees, des notifications in-app, une interface responsive mobile-first (burger menu, onglets Kanban), ainsi que l'export et l'import des donnees. Les donnees sont stockees localement et peuvent etre synchronisees via OneDrive."
@@ -72,9 +72,16 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.25.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.26.exe"
   },
   "changelog": {
+    "2.1.26": {
+      "date": "2026-03-31",
+      "changes": [
+        "Fix: suppression de proper-lockfile — Uncaught Exception incontrôlable sur lecteurs réseau SMB (Z:\\), l'écriture atomique seule suffit",
+        "Feat: clic droit sur l'icône dossier d'une TaskCard copie le chemin dans le presse-papier"
+      ]
+    },
     "2.1.25": {
       "date": "2026-03-31",
       "changes": [

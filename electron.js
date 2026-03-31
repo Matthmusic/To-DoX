@@ -402,7 +402,6 @@ ipcMain.handle('print-html', async (_event, htmlContent) => {
 
 // Gestion du stockage de fichiers
 const os = require('os');
-const lockfile = require('proper-lockfile');
 
 // Obtenir le chemin de stockage par défaut (Z:\F - UTILITAIRES\TODOX)
 function getDefaultOneDrivePath() {
@@ -477,28 +476,14 @@ ipcMain.handle('read-data', async (event, filePath) => {
   }
 });
 
-// Handler pour sauvegarder les données avec verrouillage
+// Handler pour sauvegarder les données
+// Pas de proper-lockfile : sur SMB (lecteurs réseau Z:\), le locking fichier est non fiable
+// et génère des "Uncaught Exception" incontrôlables. L'écriture atomique (tmp + rename) suffit.
 ipcMain.handle('save-data', async (event, filePath, data) => {
   console.log('💾 [ELECTRON MAIN] save-data DÉBUT, filePath:', filePath);
-  let release = null;
   try {
     const dirPath = path.dirname(filePath);
     await ensureDirectory(dirPath);
-
-    // VERROUILLAGE: Acquérir le verrou sur le fichier
-    // Attendre max 5 secondes si un autre utilisateur est en train de sauver
-    try {
-      release = await lockfile.lock(filePath, {
-        retries: {
-          retries: 10,
-          minTimeout: 100,
-          maxTimeout: 500
-        },
-        stale: 10000 // Considérer le verrou comme périmé après 10 secondes
-      });
-    } catch (lockError) {
-      console.warn('Impossible d\'acquérir le verrou, sauvegarde sans verrouillage:', lockError.message);
-    }
 
     // ATOMIC WRITE: Écrire dans un fichier temporaire puis renommer
     const tempFilePath = filePath + '.tmp';
@@ -540,15 +525,6 @@ ipcMain.handle('save-data', async (event, filePath, data) => {
   } catch (error) {
     console.error('❌ [ELECTRON MAIN] save-data ERREUR:', error);
     return { success: false, error: error.message };
-  } finally {
-    // LIBÉRER LE VERROU
-    if (release) {
-      try {
-        await release();
-      } catch (unlockError) {
-        console.warn('Erreur lors de la libération du verrou:', unlockError.message);
-      }
-    }
   }
 });
 
