@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: todox
+      POSTGRES_USER: todox
+      POSTGRES_PASSWORD: todox_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U todox"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      target: dev
+    volumes:
+      - ./backend/src:/app/src          # hot-reload du code source
+      - ./backend/prisma:/app/prisma    # hot-reload du schéma Prisma
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://todox:todox_dev@db:5432/todox
+      JWT_SECRET: dev_secret_change_in_prod
+      NODE_ENV: development
+      PORT: 3001
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_dev_data:

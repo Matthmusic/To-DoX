@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String   // bcrypt hash
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdTasks      Task[]          @relation("CreatedBy")
+  comments          Comment[]
+  timeEntries       TimeEntry[]
+  sentNotifications AppNotification[] @relation("FromUser")
+  receivedNotifications AppNotification[] @relation("ToUser")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  project     String   // UPPERCASE convention
+  due         String?  // YYYY-MM-DD
+  priority    Priority @default(MED)
+  status      Status   @default(TODO)
+  notes       String   @default("")
+  archived    Boolean  @default(false)
+  archivedAt  DateTime?
+  favorite    Boolean  @default(false)
+  deletedAt   DateTime?
+  order       Int      @default(0)
+
+  // Zustand store fields (complex, stored as JSON)
+  subtasks    Json     @default("[]")  // Subtask[]
+  ganttDays   Json     @default("[]")  // GanttDay[]
+  recurrence  Json?                   // Recurrence | null
+  assignedTo  String[] @default([])   // User IDs
+  reviewers   String[] @default([])   // User IDs
+
+  // Review workflow
+  reviewValidatedBy  String?
+  reviewValidatedAt  DateTime?
+  reviewRejectedBy   String?
+  reviewRejectedAt   DateTime?
+  rejectionComment   String?
+  movedToReviewBy    String?
+  movedToReviewAt    DateTime?
+
+  // Parent task (hierarchy)
+  parentTaskId String?
+  parentTask   Task?   @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
+  childTasks   Task[]  @relation("TaskHierarchy")
+
+  convertedFromSubtask Json?  // { parentTaskId, parentTaskTitle }
+
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  completedAt DateTime?
+
+  // Relations
+  createdBy   User     @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById String
+  comments    Comment[]
+  notifications AppNotification[]
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  text      String
+  deletedAt DateTime? // soft-delete pour sync multi-user
+  createdAt DateTime  @default(now())
+
+  task      Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  user      User   @relation(fields: [userId], references: [id])
+  userId    String
+}
+
+model TimeEntry {
+  id        String   @id @default(cuid())
+  project   String   // UPPERCASE
+  date      String   // YYYY-MM-DD
+  hours     Float
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+}
+
+model AppNotification {
+  id        String      @id @default(cuid())
+  type      String      // AppNotifType
+  taskTitle String
+  message   String
+  createdAt DateTime    @default(now())
+  readAt    DateTime?
+  deletedBy String[]    @default([])
+
+  task      Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId    String
+  fromUser  User   @relation("FromUser", fields: [fromUserId], references: [id])
+  fromUserId String
+  toUser    User   @relation("ToUser", fields: [toUserId], references: [id])
+  toUserId  String
+}
+
+// App-wide settings stored as key/value JSON blobs
+model AppSettings {
+  key       String   @id  // e.g. "projectHistory", "projectColors", "notificationSettings"
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model TaskTemplate {
+  id             String   @id @default(cuid())
+  name           String
+  subtaskTitles  String[]
+  createdAt      DateTime @default(now())
+}
+
+model SavedReport {
+  id           String   @id @default(cuid())
+  generatedAt  DateTime
+  generatedById String
+  periodType   String
+  periodLabel  String
+  taskCount    Int
+  reportText   String
+  createdAt    DateTime @default(now())
+}
+
+enum Priority {
+  LOW  @map("low")
+  MED  @map("med")
+  HIGH @map("high")
+}
+
+enum Status {
+  TODO   @map("todo")
+  DOING  @map("doing")
+  REVIEW @map("review")
+  DONE   @map("done")
+}
