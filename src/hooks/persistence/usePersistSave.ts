@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { IS_API_MODE } from '../../api/client';
 import { STORAGE_KEY } from '../../constants';
 import type { TimeEntry } from '../../types';
 import { devError, devLog } from '../../utils';
@@ -14,14 +15,14 @@ export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
 
     // ─── Sauvegarde localStorage (full payload pour fallback web) ─────────────
     useEffect(() => {
-        if (isLoadingData) return;
+        if (IS_API_MODE || isLoadingData) return;
         const fullPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, comments, templates, savedReports, appNotifications, timeEntries, outlookConfig };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(fullPayload));
     }, [tasks, directories, projectHistory, projectColors, notificationSettings, comments, templates, savedReports, appNotifications, timeEntries, outlookConfig, isLoadingData]);
 
     // ─── Sauvegarde Electron data.json (sans commentaires, debounce 100ms) ────
     useEffect(() => {
-        if (isLoadingData) return;
+        if (IS_API_MODE || isLoadingData) return;
         const timer = setTimeout(async () => {
             if (window.electronAPI?.isElectron && storagePath) {
                 try {
@@ -59,7 +60,7 @@ export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
 
     // ─── Sauvegarde Electron comments.json (fichier dédié, debounce 100ms) ───
     useEffect(() => {
-        if (isLoadingData) return;
+        if (IS_API_MODE || isLoadingData) return;
         const timer = setTimeout(async () => {
             if (window.electronAPI?.isElectron && storagePath) {
                 try {
@@ -81,12 +82,13 @@ export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
 
     // ─── Thème local (par poste, hors fichier partagé) ───────────────────────
     useEffect(() => {
-        if (isLoadingData) return;
+        if (IS_API_MODE || isLoadingData) return;
         localStorage.setItem('theme_settings', JSON.stringify(themeSettings));
     }, [themeSettings, isLoadingData]);
 
     // ─── Utilisateur courant ──────────────────────────────────────────────────
     useEffect(() => {
+        if (IS_API_MODE) return;
         if (currentUser) {
             localStorage.setItem('current_user_id', currentUser);
         } else {

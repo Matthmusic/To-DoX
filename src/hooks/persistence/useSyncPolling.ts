@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { IS_API_MODE } from '../../api/client';
 import type { AppNotification, Comment, SavedReport, Task, TimeEntry } from '../../types';
 import useStore from '../../store/useStore';
 import { devLog } from '../../utils';
@@ -11,7 +12,7 @@ export function useSyncPolling(refs: PersistenceRefs, store: StoreSnapshot) {
     const { storagePath, isLoadingData, currentUser } = store;
 
     useEffect(() => {
-        if (!window.electronAPI?.isElectron || !storagePath || isLoadingData) return;
+        if (IS_API_MODE || !window.electronAPI?.isElectron || !storagePath || isLoadingData) return;
 
         const interval = setInterval(async () => {
             try {

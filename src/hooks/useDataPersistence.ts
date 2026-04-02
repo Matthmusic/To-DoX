@@ -4,29 +4,39 @@ import useStore from '../store/useStore';
 import { useLoadData } from './persistence/useLoadData';
 import { useSyncPolling } from './persistence/useSyncPolling';
 import { usePersistSave } from './persistence/usePersistSave';
+import { useApiLoad } from './persistence/useApiLoad';
+import { useApiSave } from './persistence/useApiSave';
 
 /**
- * Hook orchestrateur pour la persistance des données (localStorage + Electron).
+ * Hook orchestrateur pour la persistance des données.
  *
- * Délègue à trois sous-hooks spécialisés :
- *  - useLoadData    — chargement initial + migrations
- *  - useSyncPolling — auto-reload quand data.json change sur disque (poll 2s)
- *  - usePersistSave — sauvegarde debounced vers localStorage + Electron
+ * Mode API  (VITE_API_URL défini) :
+ *   - useApiLoad  : chargement depuis le backend REST
+ *   - useApiSave  : synchronisation optimiste des mutations vers l'API
+ *
+ * Mode local (pas de VITE_API_URL) :
+ *   - useLoadData    : chargement localStorage + Electron data.json
+ *   - useSyncPolling : auto-reload quand data.json change (poll 2 s)
+ *   - usePersistSave : sauvegarde debounced localStorage + Electron
+ *
+ * Chaque hook vérifie son mode en interne — aucun hook conditionnel ici,
+ * ce qui garantit un ordre stable entre les renders (compatibilité HMR).
  *
  * IMPORTANT: useStore() est appelé ICI en premier, AVANT les useRef.
- * Cela garantit un ordre de hooks stable entre les renders (et compatibilité HMR).
- * Les sous-hooks reçoivent l'état du store en paramètre et n'appellent pas useStore().
  */
 export function useDataPersistence() {
-    // Store subscription FIRST — doit précéder les useRef pour un ordre stable
-    const store = useStore();
+  const store = useStore();
 
-    const lastFileHash = useRef<string | null>(null);
-    const lastCommentsHash = useRef<string | null>(null);
-    const lastKnownFileTimeEntries = useRef<TimeEntry[]>([]);
-    const refs = { lastFileHash, lastCommentsHash, lastKnownFileTimeEntries };
+  const lastFileHash = useRef<string | null>(null);
+  const lastCommentsHash = useRef<string | null>(null);
+  const lastKnownFileTimeEntries = useRef<TimeEntry[]>([]);
+  const refs = { lastFileHash, lastCommentsHash, lastKnownFileTimeEntries };
 
-    useLoadData(refs);
-    useSyncPolling(refs, store);
-    usePersistSave(refs, store);
+  // Les deux groupes sont toujours appelés ; chacun sort immédiatement si ce
+  // n'est pas son mode (IS_API_MODE côté API, !IS_API_MODE côté local).
+  useApiLoad();
+  useApiSave(store);
+  useLoadData(refs);
+  useSyncPolling(refs, store);
+  usePersistSave(refs, store);
 }

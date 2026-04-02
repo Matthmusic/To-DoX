@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { IS_API_MODE } from '../../api/client';
 import { STORAGE_KEY, FIXED_USERS } from '../../constants';
 import type { AppNotification, OutlookConfig, StoredData, Task, SavedReport, TimeEntry } from '../../types';
 import useStore from '../../store/useStore';
@@ -9,9 +10,10 @@ import { migrateTemplate, type PersistenceRefs } from './persistence.utils';
 
 type StoredDataRaw = Omit<StoredData, 'tasks'> & { tasks?: unknown[] };
 
-/** Chargement initial des données : localStorage → migration → Electron data.json */
+/** Chargement initial des données : localStorage → migration → Electron data.json (mode local uniquement) */
 export function useLoadData(refs: PersistenceRefs) {
     useEffect(() => {
+        if (IS_API_MODE) return; // mode API : délégué à useApiLoad
         async function initStorage() {
             const {
                 notificationSettings,
