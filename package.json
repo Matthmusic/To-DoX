@@ -16,6 +16,7 @@
     "build-storybook": "storybook build",
     "dev": "vite",
     "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "dev:api": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron . --no-sandbox\"",
     "build": "tsc -b && vite build",
     "build:electron": "npm run build && electron-builder",
     "electron:build:win": "npm run build && electron-builder --win --publish always",
