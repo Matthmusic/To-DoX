@@ -1,9 +1,29 @@
 /**
  * Client HTTP centralisé pour l'API To-DoX.
- * Utilisé uniquement quand VITE_API_URL est défini (mode API).
+ *
+ * Priorité de l'URL :
+ *  1. localStorage 'api_server_url'  (configuré par l'utilisateur dans Stockage)
+ *  2. import.meta.env.VITE_API_URL   (défini à la compilation pour le dev)
+ *  3. undefined → mode local
  */
 
-export const API_URL = import.meta.env.VITE_API_URL as string | undefined;
+export const STORAGE_API_KEY = 'api_server_url';
+
+export function getApiUrl(): string | undefined {
+  return localStorage.getItem(STORAGE_API_KEY) || (import.meta.env.VITE_API_URL as string | undefined) || undefined;
+}
+
+export function setApiUrl(url: string): void {
+  const clean = url.replace(/\/$/, ''); // retirer le slash final
+  localStorage.setItem(STORAGE_API_KEY, clean);
+}
+
+export function clearApiUrl(): void {
+  localStorage.removeItem(STORAGE_API_KEY);
+}
+
+// Lus une fois au démarrage — changeront après un reload
+export const API_URL = getApiUrl();
 export const IS_API_MODE = !!API_URL;
 
 export function getToken(): string | null {
@@ -31,8 +51,9 @@ export async function apiFetch<T = unknown>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
+  const url = getApiUrl();
   const token = getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${url}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
