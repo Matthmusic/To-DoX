@@ -1,0 +1,35 @@
+name: Release Dev (pre-release)
+
+# Déclenché sur les tags v*-dev* (ex: v2.2.0-dev.1, v2.2.0-dev.2)
+# Publie en pre-release GitHub — invisible à l'auto-updater des clients en prod
+on:
+  push:
+    tags:
+      - 'v*-dev*'
+
+permissions:
+  contents: write
+
+jobs:
+  release-dev:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and publish (pre-release)
+        run: npm run electron:build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
