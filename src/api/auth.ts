@@ -19,6 +19,11 @@ export async function apiGetMe(): Promise<Pick<User, 'id' | 'name' | 'email'>> {
   return apiFetch('/api/users/me');
 }
 
+// Endpoint public — utilisé sur l'écran de login (pas de token requis)
+export async function apiGetPublicUsers(): Promise<Pick<User, 'id' | 'name' | 'email'>[]> {
+  return apiFetch('/api/auth/users');
+}
+
 export async function apiGetUsers(): Promise<Pick<User, 'id' | 'name' | 'email'>[]> {
   return apiFetch('/api/users');
 }

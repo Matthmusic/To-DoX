@@ -5,7 +5,7 @@ import useStore from "../store/useStore";
 import { useTheme } from "../hooks/useTheme";
 import { GlassModal } from "./ui/GlassModal";
 import { IS_API_MODE } from "../api/client";
-import { apiLogin, apiGetUsers } from "../api/auth";
+import { apiLogin, apiGetPublicUsers } from "../api/auth";
 import type { User } from "../types";
 
 function getUserInitials(name: string): string {
@@ -31,7 +31,7 @@ function ApiLoginFlow({ primary, secondary }: { primary: string; secondary: stri
 
   // Charger la liste des users depuis l'API au montage
   useEffect(() => {
-    apiGetUsers()
+    apiGetPublicUsers()
       .then(users => {
         const sorted = [...users].sort((a, b) => {
           if (a.id === lastUsedId) return -1;

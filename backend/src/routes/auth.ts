@@ -26,6 +26,15 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email } });
 });
 
+// GET /api/auth/users — liste publique pour l'écran de login (sans password)
+router.get('/users', async (_req: Request, res: Response): Promise<void> => {
+  const users = await prisma.user.findMany({
+    select: { id: true, name: true, email: true },
+    orderBy: { name: 'asc' },
+  });
+  res.json(users);
+});
+
 // POST /api/auth/login
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
