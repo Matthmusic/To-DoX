@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { ApiError, clearToken, getToken } from '../../api/client';
 import { apiGetMe, apiGetUsers } from '../../api/auth';
-import { apiGetSetting, apiGetTasks, apiGetTimeEntries } from '../../api/tasks';
+import { apiGetSetting, apiGetTasks, apiGetTimeEntries, apiGetTemplates, apiGetSavedReports } from '../../api/tasks';
+import { apiGetAllComments } from '../../api/comments';
+import { apiGetNotifications } from '../../api/notifications';
 import useStore from '../../store/useStore';
 import type { Directories, NotificationSettings, OutlookConfig, ThemeSettings } from '../../types';
 
@@ -17,7 +19,8 @@ export function useApiLoad() {
     async function init() {
       const {
         setIsLoadingData, setCurrentUser, setUsers,
-        setTasks, setTimeEntries, setDirectories, setProjectHistory,
+        setTasks, setTimeEntries, setComments, setTemplates, setSavedReports,
+        setAppNotifications, setDirectories, setProjectHistory,
         setProjectColors, setNotificationSettings, setThemeSettings,
         setOutlookConfig,
       } = useStore.getState();
@@ -38,19 +41,29 @@ export function useApiLoad() {
         setCurrentUser(me.id);
 
         // Charger toutes les données en parallèle
-        const [tasks, timeEntries, projectHistory, projectColors, directories, notifSettings, outlookConfig] =
-          await Promise.all([
-            apiGetTasks(),
-            apiGetTimeEntries(),
-            apiGetSetting<string[]>('projectHistory'),
-            apiGetSetting<Record<string, number>>('projectColors'),
-            apiGetSetting<Directories>('directories'),
-            apiGetSetting<NotificationSettings>('notificationSettings'),
-            apiGetSetting<OutlookConfig>('outlookConfig'),
-          ]);
+        const [
+          tasks, timeEntries, comments, templates, savedReports, notifications,
+          projectHistory, projectColors, directories, notifSettings, outlookConfig,
+        ] = await Promise.all([
+          apiGetTasks(),
+          apiGetTimeEntries(),
+          apiGetAllComments(),
+          apiGetTemplates(),
+          apiGetSavedReports(),
+          apiGetNotifications(),
+          apiGetSetting<string[]>('projectHistory'),
+          apiGetSetting<Record<string, number>>('projectColors'),
+          apiGetSetting<Directories>('directories'),
+          apiGetSetting<NotificationSettings>('notificationSettings'),
+          apiGetSetting<OutlookConfig>('outlookConfig'),
+        ]);
 
         if (tasks)           setTasks(tasks);
         if (timeEntries)     setTimeEntries(timeEntries);
+        if (comments)        setComments(comments);
+        if (templates)       setTemplates(templates);
+        if (savedReports)    setSavedReports(savedReports);
+        if (notifications)   setAppNotifications(notifications);
         if (projectHistory)  setProjectHistory(projectHistory);
         if (projectColors)   setProjectColors(projectColors);
         if (directories)     setDirectories(directories);
@@ -83,7 +96,6 @@ export function useApiLoad() {
 
   /**
    * Rechargement après une connexion réussie.
-   * Appelé manuellement depuis LoginModal via le store.
    */
   useEffect(() => {
     let prevUser: string | null = useStore.getState().currentUser;
@@ -91,39 +103,51 @@ export function useApiLoad() {
       const currentUser = state.currentUser;
       if (currentUser && !prevUser && !dataLoaded.current) {
         prevUser = currentUser;
-          const {
-            setIsLoadingData, setUsers,
-            setTasks, setTimeEntries, setDirectories, setProjectHistory,
-            setProjectColors, setNotificationSettings, setOutlookConfig,
-          } = useStore.getState();
+        const {
+          setIsLoadingData, setUsers,
+          setTasks, setTimeEntries, setComments, setTemplates, setSavedReports,
+          setAppNotifications, setDirectories, setProjectHistory,
+          setProjectColors, setNotificationSettings, setOutlookConfig,
+        } = useStore.getState();
 
-          setIsLoadingData(true);
+        setIsLoadingData(true);
 
-          Promise.all([
-            apiGetUsers(),
-            apiGetTasks(),
-            apiGetTimeEntries(),
-            apiGetSetting<string[]>('projectHistory'),
-            apiGetSetting<Record<string, number>>('projectColors'),
-            apiGetSetting<Directories>('directories'),
-            apiGetSetting<NotificationSettings>('notificationSettings'),
-            apiGetSetting<OutlookConfig>('outlookConfig'),
-          ]).then(([users, tasks, timeEntries, projectHistory, projectColors, directories, notifSettings, outlookConfig]) => {
-            setUsers(users.map(u => ({ ...u })));
-            if (tasks)          setTasks(tasks);
-            if (timeEntries)    setTimeEntries(timeEntries);
-            if (projectHistory) setProjectHistory(projectHistory);
-            if (projectColors)  setProjectColors(projectColors);
-            if (directories)    setDirectories(directories);
-            if (notifSettings)  setNotificationSettings(notifSettings);
-            if (outlookConfig)  setOutlookConfig(outlookConfig);
-            dataLoaded.current = true;
-          }).catch(err => {
-            // eslint-disable-next-line no-console
-            console.error('[API] Erreur rechargement post-login:', err);
-          }).finally(() => {
-            setIsLoadingData(false);
-          });
+        Promise.all([
+          apiGetUsers(),
+          apiGetTasks(),
+          apiGetTimeEntries(),
+          apiGetAllComments(),
+          apiGetTemplates(),
+          apiGetSavedReports(),
+          apiGetNotifications(),
+          apiGetSetting<string[]>('projectHistory'),
+          apiGetSetting<Record<string, number>>('projectColors'),
+          apiGetSetting<Directories>('directories'),
+          apiGetSetting<NotificationSettings>('notificationSettings'),
+          apiGetSetting<OutlookConfig>('outlookConfig'),
+        ]).then(([
+          users, tasks, timeEntries, comments, templates, savedReports, notifications,
+          projectHistory, projectColors, directories, notifSettings, outlookConfig,
+        ]) => {
+          setUsers(users.map(u => ({ ...u })));
+          if (tasks)          setTasks(tasks);
+          if (timeEntries)    setTimeEntries(timeEntries);
+          if (comments)       setComments(comments);
+          if (templates)      setTemplates(templates);
+          if (savedReports)   setSavedReports(savedReports);
+          if (notifications)  setAppNotifications(notifications);
+          if (projectHistory) setProjectHistory(projectHistory);
+          if (projectColors)  setProjectColors(projectColors);
+          if (directories)    setDirectories(directories);
+          if (notifSettings)  setNotificationSettings(notifSettings);
+          if (outlookConfig)  setOutlookConfig(outlookConfig);
+          dataLoaded.current = true;
+        }).catch(err => {
+          // eslint-disable-next-line no-console
+          console.error('[API] Erreur rechargement post-login:', err);
+        }).finally(() => {
+          setIsLoadingData(false);
+        });
       } else {
         prevUser = currentUser;
       }

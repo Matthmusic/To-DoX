@@ -20,28 +20,53 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   res.json(entries);
 });
 
-// POST /api/time-entries
+// POST /api/time-entries — client fournit un id (upsert idempotent)
 router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
-  const { project, date, hours, note } = req.body;
+  const { id: clientId, project, date, hours, note, userId: bodyUserId, createdAt, updatedAt } = req.body;
   if (!project || !date || hours === undefined) {
     res.status(400).json({ error: 'project, date et hours requis' });
     return;
   }
 
-  const entry = await prisma.timeEntry.create({
-    data: { project: (project as string).toUpperCase(), date, hours, note, userId: req.userId! },
-    include: { user: { select: { id: true, name: true } } },
-  });
+  const data = {
+    project: (project as string).toUpperCase(),
+    date,
+    hours,
+    note: note ?? null,
+    userId: bodyUserId || req.userId!,
+    ...(createdAt ? { createdAt: new Date(createdAt) } : {}),
+    ...(updatedAt ? { updatedAt: new Date(updatedAt) } : {}),
+  };
+
+  let entry;
+  if (clientId) {
+    entry = await prisma.timeEntry.upsert({
+      where: { id: clientId },
+      update: {},
+      create: { id: clientId, ...data },
+      include: { user: { select: { id: true, name: true } } },
+    });
+  } else {
+    entry = await prisma.timeEntry.create({
+      data: { ...data },
+      include: { user: { select: { id: true, name: true } } },
+    });
+  }
   res.status(201).json(entry);
 });
 
 // PUT /api/time-entries/:id
 router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
-  const { hours, note } = req.body;
+  const { hours, note, project, date } = req.body;
   try {
     const entry = await prisma.timeEntry.update({
       where: { id: req.params.id as string },
-      data: { ...(hours !== undefined ? { hours } : {}), ...(note !== undefined ? { note } : {}) },
+      data: {
+        ...(hours !== undefined ? { hours } : {}),
+        ...(note !== undefined ? { note } : {}),
+        ...(project ? { project: (project as string).toUpperCase() } : {}),
+        ...(date ? { date } : {}),
+      },
     });
     res.json(entry);
   } catch {

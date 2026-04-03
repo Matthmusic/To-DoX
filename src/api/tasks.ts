@@ -51,6 +51,57 @@ export async function apiDeleteTimeEntry(id: string): Promise<void> {
   await apiFetch(`/api/time-entries/${id}`, { method: 'DELETE' });
 }
 
+// ── Templates ─────────────────────────────────────────────────────────────────
+
+export async function apiGetTemplates(): Promise<import('../types').TaskTemplate[]> {
+  return apiFetch<import('../types').TaskTemplate[]>('/api/templates');
+}
+
+export async function apiCreateTemplate(tpl: import('../types').TaskTemplate): Promise<void> {
+  await apiFetch('/api/templates', {
+    method: 'POST',
+    body: JSON.stringify({ id: tpl.id, name: tpl.name, subtaskTitles: tpl.subtaskTitles }),
+  });
+}
+
+export async function apiDeleteTemplate(id: string): Promise<void> {
+  await apiFetch(`/api/templates/${id}`, { method: 'DELETE' });
+}
+
+// ── Saved Reports ─────────────────────────────────────────────────────────────
+
+export async function apiGetSavedReports(): Promise<import('../types').SavedReport[]> {
+  const rows = await apiFetch<any[]>('/api/saved-reports');
+  return rows.map(r => ({
+    id:          r.id,
+    generatedAt: r.generatedAt ? new Date(r.generatedAt).getTime() : Date.now(),
+    generatedBy: r.generatedById,
+    periodType:  r.periodType,
+    periodLabel: r.periodLabel,
+    taskCount:   r.taskCount,
+    reportText:  r.reportText,
+  }));
+}
+
+export async function apiCreateSavedReport(report: import('../types').SavedReport): Promise<void> {
+  await apiFetch('/api/saved-reports', {
+    method: 'POST',
+    body: JSON.stringify({
+      id:          report.id,
+      generatedAt: new Date(report.generatedAt).toISOString(),
+      generatedBy: report.generatedBy,
+      periodType:  report.periodType,
+      periodLabel: report.periodLabel,
+      taskCount:   report.taskCount,
+      reportText:  report.reportText,
+    }),
+  });
+}
+
+export async function apiDeleteSavedReport(id: string): Promise<void> {
+  await apiFetch(`/api/saved-reports/${id}`, { method: 'DELETE' });
+}
+
 // ── Settings ──────────────────────────────────────────────────────────────────
 
 export async function apiGetSetting<T>(key: string): Promise<T | null> {

@@ -15,15 +15,31 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   res.json(comments);
 });
 
-// POST /api/tasks/:taskId/comments
+// POST /api/tasks/:taskId/comments — client fournit un id (upsert idempotent)
 router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
-  const { text } = req.body;
+  const { text, id: clientId, createdAt } = req.body;
   if (!text) { res.status(400).json({ error: 'text requis' }); return; }
 
-  const comment = await prisma.comment.create({
-    data: { text, taskId: req.params.taskId as string, userId: req.userId! },
-    include: { user: { select: { id: true, name: true, email: true } } },
-  });
+  let comment;
+  if (clientId) {
+    comment = await prisma.comment.upsert({
+      where: { id: clientId },
+      update: {},
+      create: {
+        id: clientId,
+        text,
+        taskId: req.params.taskId as string,
+        userId: req.userId!,
+        ...(createdAt ? { createdAt: new Date(createdAt) } : {}),
+      },
+      include: { user: { select: { id: true, name: true, email: true } } },
+    });
+  } else {
+    comment = await prisma.comment.create({
+      data: { text, taskId: req.params.taskId as string, userId: req.userId! },
+      include: { user: { select: { id: true, name: true, email: true } } },
+    });
+  }
   res.status(201).json(comment);
 });
 

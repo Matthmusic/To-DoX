@@ -5,9 +5,13 @@ import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth';
 import taskRoutes from './routes/tasks';
 import commentRoutes from './routes/comments';
+import commentsAllRoutes from './routes/commentsAll';
 import userRoutes from './routes/users';
 import settingsRoutes from './routes/settings';
 import timeEntryRoutes from './routes/timeEntries';
+import templateRoutes from './routes/templates';
+import savedReportRoutes from './routes/savedReports';
+import notificationRoutes from './routes/notifications';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -20,9 +24,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/tasks/:taskId/comments', commentRoutes);
+app.use('/api/comments', commentsAllRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/time-entries', timeEntryRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/saved-reports', savedReportRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));
