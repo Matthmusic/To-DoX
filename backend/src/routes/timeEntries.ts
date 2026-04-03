@@ -33,7 +33,7 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     date,
     hours,
     note: note ?? null,
-    userId: bodyUserId || req.userId!,
+    userId: req.userId!,
     ...(createdAt ? { createdAt: new Date(createdAt) } : {}),
     ...(updatedAt ? { updatedAt: new Date(updatedAt) } : {}),
   };

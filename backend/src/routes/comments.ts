@@ -43,13 +43,13 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   res.status(201).json(comment);
 });
 
-// DELETE /api/tasks/:taskId/comments/:id (soft delete)
+// DELETE /api/tasks/:taskId/comments/:id (soft delete — réservé à l'auteur)
 router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    await prisma.comment.update({
-      where: { id: req.params.id as string },
-      data: { deletedAt: new Date() },
-    });
+    const comment = await prisma.comment.findUnique({ where: { id: req.params.id as string } });
+    if (!comment) { res.status(404).json({ error: 'Commentaire introuvable' }); return; }
+    if (comment.userId !== req.userId!) { res.status(403).json({ error: 'Interdit' }); return; }
+    await prisma.comment.update({ where: { id: comment.id }, data: { deletedAt: new Date() } });
     res.status(204).send();
   } catch {
     res.status(404).json({ error: 'Commentaire introuvable' });
