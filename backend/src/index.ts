@@ -12,6 +12,7 @@ import timeEntryRoutes from './routes/timeEntries';
 import templateRoutes from './routes/templates';
 import savedReportRoutes from './routes/savedReports';
 import notificationRoutes from './routes/notifications';
+import eventsRoutes from './routes/events';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -31,6 +32,7 @@ app.use('/api/time-entries', timeEntryRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/saved-reports', savedReportRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/events', eventsRoutes);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok', version: '1.0.0' }));

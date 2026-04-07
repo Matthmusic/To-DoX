@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import prisma from '../db/prisma';
 import { requireAuth, AuthRequest } from '../middleware/auth';
+import { sseManager } from '../sse/sseManager';
 
 const router = Router();
 router.use(requireAuth);
@@ -41,6 +42,16 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     },
   });
   res.status(201).json(notification);
+
+  // Pousser la notification en temps réel au destinataire via SSE
+  sseManager.broadcast('notification:new', {
+    notification: {
+      ...notification,
+      createdAt: new Date(notification.createdAt).getTime(),
+      readAt: notification.readAt ? new Date(notification.readAt).getTime() : undefined,
+    },
+    toUserId: notification.toUserId,
+  });
 });
 
 // PATCH /api/notifications/:id/read

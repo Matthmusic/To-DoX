@@ -1,4 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { IS_API_MODE } from "../../api/client";
+import { apiGetArchivedTasks } from "../../api/tasks";
 import useStore from "../../store/useStore";
 import type { Task } from "../../types";
 import { classNames } from "../../utils";
@@ -10,7 +12,24 @@ interface TaskArchivePanelProps {
 }
 
 export function TaskArchivePanel({ onClose }: TaskArchivePanelProps) {
-    const { tasks, unarchiveTask, removeTask } = useStore();
+    const { tasks, setTasks, unarchiveTask, removeTask } = useStore();
+    const [isLoading, setIsLoading] = useState(IS_API_MODE);
+
+    // En mode API : charger les tâches archivées à la demande (pas au démarrage)
+    useEffect(() => {
+        if (!IS_API_MODE) return;
+        setIsLoading(true);
+        apiGetArchivedTasks()
+            .then(archived => {
+                setTasks([
+                    ...useStore.getState().tasks.filter(t => !t.archived),
+                    ...archived,
+                ]);
+            })
+            .catch(() => { /* silencieux, le store garde ce qu'il a */ })
+            .finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const archivedTasks = useMemo(() => {
         return tasks.filter((t: Task) => t.archived && !t.deletedAt).sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
@@ -22,7 +41,10 @@ export function TaskArchivePanel({ onClose }: TaskArchivePanelProps) {
                 Tâches archivées. Vous pouvez les désarchiver pour les remettre actives ou les supprimer définitivement.
             </p>
             <div className="mt-4 max-h-[70vh] space-y-3 overflow-auto pr-1">
-                {archivedTasks.length === 0 && (
+                {isLoading && (
+                    <div className="text-sm text-slate-400">Chargement des archives…</div>
+                )}
+                {!isLoading && archivedTasks.length === 0 && (
                     <div className="text-sm text-slate-400">
                         Aucune tâche archivée.
                     </div>

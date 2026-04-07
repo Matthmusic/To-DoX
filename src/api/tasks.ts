@@ -3,8 +3,15 @@ import type { Task, TimeEntry } from '../types';
 
 // ── Tâches ────────────────────────────────────────────────────────────────────
 
+/** Charge les tâches actives (non archivées, non supprimées). Appel au démarrage. */
 export async function apiGetTasks(): Promise<Task[]> {
-  const rows = await apiFetch<any[]>('/api/tasks');
+  const rows = await apiFetch<any[]>('/api/tasks?archived=false');
+  return rows.map(normalizeTask);
+}
+
+/** Charge les tâches archivées à la demande (ouverture du panneau archives). */
+export async function apiGetArchivedTasks(): Promise<Task[]> {
+  const rows = await apiFetch<any[]>('/api/tasks?archived=true');
   return rows.map(normalizeTask);
 }
 
@@ -20,6 +27,30 @@ export async function apiUpdateTask(id: string, patch: Partial<Task>): Promise<T
   const row = await apiFetch<any>(`/api/tasks/${id}`, {
     method: 'PUT',
     body: JSON.stringify(taskToApi(patch as Task)),
+  });
+  return normalizeTask(row);
+}
+
+/** Définit les réviseurs d'une tâche — le backend crée les notifications. */
+export async function apiSetReviewers(taskId: string, reviewers: string[]): Promise<Task> {
+  const row = await apiFetch<any>(`/api/tasks/${taskId}/reviewers`, {
+    method: 'PUT',
+    body: JSON.stringify({ reviewers }),
+  });
+  return normalizeTask(row);
+}
+
+/** Valide une tâche en review — le backend notifie les assignés et gère la récurrence. */
+export async function apiValidateTask(taskId: string): Promise<Task> {
+  const row = await apiFetch<any>(`/api/tasks/${taskId}/validate`, { method: 'POST' });
+  return normalizeTask(row);
+}
+
+/** Demande des corrections — le backend crée le commentaire et notifie les assignés. */
+export async function apiRequestCorrections(taskId: string, comment: string): Promise<Task> {
+  const row = await apiFetch<any>(`/api/tasks/${taskId}/corrections`, {
+    method: 'POST',
+    body: JSON.stringify({ comment }),
   });
   return normalizeTask(row);
 }
@@ -118,7 +149,7 @@ export async function apiPutSetting(key: string, value: unknown): Promise<void> 
 // ── Normalization helpers ─────────────────────────────────────────────────────
 
 /** API uses ISO dates + enum uppercase → frontend expects timestamps + lowercase */
-function normalizeTask(row: any): Task {
+export function normalizeTask(row: any): Task {
   return {
     ...row,
     priority: (row.priority as string)?.toLowerCase() as Task['priority'],

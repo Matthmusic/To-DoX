@@ -6,6 +6,7 @@ import { useSyncPolling } from './persistence/useSyncPolling';
 import { usePersistSave } from './persistence/usePersistSave';
 import { useApiLoad } from './persistence/useApiLoad';
 import { useApiSave } from './persistence/useApiSave';
+import { useRealtimeEvents } from './useRealtimeEvents';
 
 /**
  * Hook orchestrateur pour la persistance des données.
@@ -36,6 +37,7 @@ export function useDataPersistence() {
   // n'est pas son mode (IS_API_MODE côté API, !IS_API_MODE côté local).
   useApiLoad();
   useApiSave(store);
+  useRealtimeEvents();
   useLoadData(refs);
   useSyncPolling(refs, store);
   usePersistSave(refs, store);

@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { todayISO, uid, devWarn } from '../utils';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
+import { IS_API_MODE } from '../api/client';
+import { apiSetReviewers, apiValidateTask, apiRequestCorrections } from '../api/tasks';
 import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, TaskTemplate, SavedReport, AppNotification, TimeEntry, OutlookConfig, OutlookEvent } from '../types';
 
 /**
@@ -154,6 +156,10 @@ export interface StoreState {
     // UI transient — mise en surbrillance d'une tâche (depuis notif)
     highlightedTaskId: string | null;
     setHighlightedTaskId: (id: string | null) => void;
+
+    // Présence — utilisateurs actuellement connectés (SSE, transient)
+    onlineUsers: Set<string>;
+    setOnlineUsers: (users: Set<string>) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -183,6 +189,7 @@ const useStore = create<StoreState>((set, get) => ({
     },
     outlookEvents: [],
     highlightedTaskId: null,
+    onlineUsers: new Set<string>(),
 
     notificationSettings: {
         enabled: true,
@@ -295,7 +302,8 @@ const useStore = create<StoreState>((set, get) => ({
         }
 
         // Workflow review : si la tâche passe en "review" avec des réviseurs déjà définis → notifier
-        if (patch.status === 'review') {
+        // En mode API : géré par le backend (PUT /api/tasks/:id détecte le changement de statut)
+        if (!IS_API_MODE && patch.status === 'review') {
             const existingTask = get().tasks.find(t => t.id === id);
             if (existingTask && existingTask.reviewers?.length) {
                 const { currentUser, users } = get();
@@ -320,7 +328,8 @@ const useStore = create<StoreState>((set, get) => ({
         }));
 
         // Récurrence : si la tâche passe en "done", créer la prochaine occurrence si applicable
-        if (patch.status === "done") {
+        // En mode API : géré par le backend (PUT /api/tasks/:id + POST /api/tasks/:id/validate)
+        if (!IS_API_MODE && patch.status === "done") {
             const completedTask = get().tasks.find(t => t.id === id);
             if (completedTask) {
                 const nextTask = buildRecurringTask(completedTask, now);
@@ -535,7 +544,10 @@ const useStore = create<StoreState>((set, get) => ({
             }
         }));
 
-        // Détecter les @mentions et notifier les utilisateurs concernés
+        // En mode API : notifications créées par le backend après le POST du commentaire
+        if (IS_API_MODE) return;
+
+        // Détecter les @mentions et notifier les utilisateurs concernés (mode local uniquement)
         const task = tasks.find(t => t.id === taskId);
         const fromUser = users.find(u => u.id === currentUser);
         const taskTitle = task?.title || 'une tâche';
@@ -769,14 +781,12 @@ const useStore = create<StoreState>((set, get) => ({
         const task = tasks.find(t => t.id === taskId);
         if (!task || !currentUser) return;
 
-        const fromUser = users.find(u => u.id === currentUser);
-        const fromUserName = fromUser?.name || currentUser;
         const now = Date.now();
 
+        // Mise à jour optimiste dans le store (tous modes)
         set(state => ({
             tasks: state.tasks.map(t => {
                 if (t.id !== taskId) return t;
-                // Auto-assigner les réviseurs non encore affectés
                 const newAssignees = reviewers.filter(r => !t.assignedTo.includes(r) && r !== 'unassigned');
                 const baseAssigned = t.assignedTo.filter(id => id !== 'unassigned');
                 const updatedAssignedTo = newAssignees.length > 0
@@ -786,6 +796,18 @@ const useStore = create<StoreState>((set, get) => ({
             })
         }));
 
+        if (IS_API_MODE) {
+            // Le backend persiste + crée les notifications + broadcast SSE task:updated
+            // On ne met PAS à jour updatedAt pour éviter que useApiSave double-envoie un PUT
+            apiSetReviewers(taskId, reviewers).catch(err =>
+                console.warn('[API] Erreur setReviewers:', err)
+            );
+            return;
+        }
+
+        // Mode local : notifications créées directement dans le store
+        const fromUser = users.find(u => u.id === currentUser);
+        const fromUserName = fromUser?.name || currentUser;
         reviewers.forEach(reviewerId => {
             get().addAppNotification({
                 type: 'review_requested',
@@ -803,18 +825,22 @@ const useStore = create<StoreState>((set, get) => ({
         const task = tasks.find(t => t.id === taskId);
         if (!task || !currentUser) return;
 
-        const fromUser = users.find(u => u.id === currentUser);
-        const fromUserName = fromUser?.name || currentUser;
         const now = Date.now();
 
-        // Utilise updateTask pour déclencher la logique de récurrence automatiquement
-        get().updateTask(taskId, {
-            status: 'done',
-            reviewValidatedBy: currentUser,
-            reviewValidatedAt: now,
-        });
+        if (IS_API_MODE) {
+            // Mise à jour optimiste du store
+            get().updateTask(taskId, { status: 'done', reviewValidatedBy: currentUser, reviewValidatedAt: now });
+            // Le backend gère : notifications, récurrence, persistance
+            apiValidateTask(taskId).catch(err =>
+                console.warn('[API] Erreur validateTask:', err)
+            );
+            return;
+        }
 
-        // Notifier tous les assignés
+        // Mode local : logique complète (récurrence + notifications)
+        const fromUser = users.find(u => u.id === currentUser);
+        const fromUserName = fromUser?.name || currentUser;
+        get().updateTask(taskId, { status: 'done', reviewValidatedBy: currentUser, reviewValidatedAt: now });
         task.assignedTo.forEach(assigneeId => {
             get().addAppNotification({
                 type: 'review_validated',
@@ -832,21 +858,24 @@ const useStore = create<StoreState>((set, get) => ({
         const task = tasks.find(t => t.id === taskId);
         if (!task || !currentUser) return;
 
-        const fromUser = users.find(u => u.id === currentUser);
-        const fromUserName = fromUser?.name || currentUser;
         const now = Date.now();
 
-        get().updateTask(taskId, {
-            status: 'doing',
-            reviewRejectedBy: currentUser,
-            reviewRejectedAt: now,
-            rejectionComment: comment,
-        });
+        if (IS_API_MODE) {
+            // Mise à jour optimiste du statut uniquement — PAS du commentaire
+            // Le backend crée le commentaire (POST /corrections) et le broadcast via SSE
+            // Appeler addComment() ici créerait un doublon dans la DB
+            get().updateTask(taskId, { status: 'doing', reviewRejectedBy: currentUser, reviewRejectedAt: now, rejectionComment: comment });
+            apiRequestCorrections(taskId, comment).catch(err =>
+                console.warn('[API] Erreur requestCorrections:', err)
+            );
+            return;
+        }
 
-        // Ajouter comme commentaire visible dans le fil
+        // Mode local : logique complète
+        const fromUser = users.find(u => u.id === currentUser);
+        const fromUserName = fromUser?.name || currentUser;
+        get().updateTask(taskId, { status: 'doing', reviewRejectedBy: currentUser, reviewRejectedAt: now, rejectionComment: comment });
         get().addComment(taskId, `↩️ Corrections demandées : ${comment}`);
-
-        // Notifier tous les assignés
         task.assignedTo.forEach(assigneeId => {
             get().addAppNotification({
                 type: 'review_rejected',
@@ -918,6 +947,7 @@ const useStore = create<StoreState>((set, get) => ({
     },
     setOutlookEvents: (events) => set({ outlookEvents: events }),
     setHighlightedTaskId: (id) => set({ highlightedTaskId: id }),
+    setOnlineUsers: (onlineUsers) => set({ onlineUsers }),
 }));
 
 export default useStore;
