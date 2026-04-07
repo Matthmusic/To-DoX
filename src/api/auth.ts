@@ -24,6 +24,20 @@ export async function apiGetPublicUsers(): Promise<Pick<User, 'id' | 'name' | 'e
   return apiFetch('/api/auth/users');
 }
 
-export async function apiGetUsers(): Promise<Pick<User, 'id' | 'name' | 'email'>[]> {
+export async function apiGetUsers(): Promise<User[]> {
   return apiFetch('/api/users');
+}
+
+export async function apiResetUserPassword(userId: string, password: string): Promise<void> {
+  await apiFetch(`/api/users/${userId}/password`, {
+    method: 'PATCH',
+    body: JSON.stringify({ password }),
+  });
+}
+
+export async function apiSetUserAdmin(userId: string, isAdmin: boolean): Promise<User> {
+  return apiFetch(`/api/users/${userId}/admin`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isAdmin }),
+  });
 }
