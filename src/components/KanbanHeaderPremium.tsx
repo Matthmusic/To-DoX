@@ -248,7 +248,7 @@ export function KanbanHeaderPremium({
 
     return (
         <header
-            className="kanban-header relative z-10 flex flex-col gap-2 px-2 sm:px-4 md:px-6 py-2 sm:py-3 border-b-2 border-theme-primary"
+            className="kanban-header relative z-10 flex flex-col gap-2 px-2 sm:px-4 md:px-6 py-2 sm:py-3"
         >
             <style>{`
                 @keyframes glow-pulse {

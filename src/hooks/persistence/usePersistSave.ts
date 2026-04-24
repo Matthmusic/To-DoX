@@ -9,15 +9,15 @@ export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
     const {
         tasks, directories, projectHistory, projectColors, notificationSettings,
         themeSettings, comments, templates, savedReports, appNotifications,
-        timeEntries, outlookConfig, currentUser, storagePath, isLoadingData, setSaveError,
+        timeEntries, outlookConfigs, currentUser, storagePath, isLoadingData, setSaveError,
     } = store;
 
     // ─── Sauvegarde localStorage (full payload pour fallback web) ─────────────
     useEffect(() => {
         if (isLoadingData) return;
-        const fullPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, comments, templates, savedReports, appNotifications, timeEntries, outlookConfig };
+        const fullPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, comments, templates, savedReports, appNotifications, timeEntries, outlookConfigs };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(fullPayload));
-    }, [tasks, directories, projectHistory, projectColors, notificationSettings, comments, templates, savedReports, appNotifications, timeEntries, outlookConfig, isLoadingData]);
+    }, [tasks, directories, projectHistory, projectColors, notificationSettings, comments, templates, savedReports, appNotifications, timeEntries, outlookConfigs, isLoadingData]);
 
     // ─── Sauvegarde Electron data.json (sans commentaires, debounce 100ms) ────
     useEffect(() => {
@@ -39,7 +39,7 @@ export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
                         safeTimeEntries = Array.from(byId.values());
                     }
                     refs.lastKnownFileTimeEntries.current = safeTimeEntries;
-                    const dataPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, templates, savedReports, appNotifications, timeEntries: safeTimeEntries, outlookConfig };
+                    const dataPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, templates, savedReports, appNotifications, timeEntries: safeTimeEntries, outlookConfigs };
                     devLog('💾 [SAVE] data.json...');
                     const saveResult = await window.electronAPI.saveData(filePath, dataPayload);
                     if (saveResult && !saveResult.success) {
@@ -55,7 +55,7 @@ export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
             }
         }, 100);
         return () => clearTimeout(timer);
-    }, [tasks, directories, projectHistory, projectColors, notificationSettings, templates, savedReports, appNotifications, timeEntries, outlookConfig, storagePath, isLoadingData, setSaveError]);
+    }, [tasks, directories, projectHistory, projectColors, notificationSettings, templates, savedReports, appNotifications, timeEntries, outlookConfigs, storagePath, isLoadingData, setSaveError]);
 
     // ─── Sauvegarde Electron comments.json (fichier dédié, debounce 100ms) ───
     useEffect(() => {

@@ -71,6 +71,7 @@ export interface StoredData {
   appNotifications?: AppNotification[];
   timeEntries?: TimeEntry[];
   outlookConfig?: OutlookConfig;
+  outlookConfigs?: Record<string, OutlookConfig>;
 }
 
 /**

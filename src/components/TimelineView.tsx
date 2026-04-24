@@ -430,8 +430,8 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                     {mondayIndices.map(i => (
                         <div key={i} className="absolute top-0 bottom-0 pointer-events-none z-[1]"
                             style={{ left: SIDE_W + i * colW }}>
-                            <div className="absolute top-0 bottom-0 left-0 w-[1px] bg-white/15" />
-                            <div className="absolute top-0 bottom-0 left-[3px] w-[1px] bg-white/7" />
+                            <div className="absolute top-0 bottom-0 left-0 w-[1px] bg-white/25" />
+                            <div className="absolute top-0 bottom-0 left-[3px] w-[1px] bg-white/10" />
                         </div>
                     ))}
 
@@ -465,8 +465,8 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                     {/* Double barre séparateur de semaine (lundi) */}
                                     {isMonday && day.getDate() !== 1 && (
                                         <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
-                                            <div className="absolute inset-y-0 left-0 w-[1px] bg-white/20" />
-                                            <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/10" />
+                                            <div className="absolute inset-y-0 left-0 w-[1px] bg-white/35" />
+                                            <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/12" />
                                         </div>
                                     )}
                                     {/* Double trait début de mois */}
@@ -477,15 +477,19 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                         </div>
                                     )}
 
-                                    {/* Week number — Mondays only, 4weeks mode */}
+                                    {/* Week number — Mondays only, non-compact mode */}
                                     {isMonday && !compact && (
-                                        <span className="absolute top-[5px] left-0 right-0 text-center"
-                                            style={{
-                                                fontSize: '7px', fontWeight: 700,
-                                                letterSpacing: '0.08em', textTransform: 'uppercase',
-                                                color: isToday ? 'rgba(34,211,238,0.55)' : 'rgba(255,255,255,0.16)',
+                                        <span className="absolute top-[4px] left-0 right-0 flex items-center justify-center">
+                                            <span style={{
+                                                fontSize: '9px', fontWeight: 800,
+                                                letterSpacing: '0.06em', textTransform: 'uppercase',
+                                                color: isToday ? 'rgba(34,211,238,0.85)' : 'rgba(255,255,255,0.45)',
+                                                background: isToday ? 'rgba(34,211,238,0.10)' : 'rgba(255,255,255,0.06)',
+                                                borderRadius: '3px',
+                                                padding: '1px 4px',
                                             }}>
-                                            S{getWeekNumber(day)}
+                                                S{getWeekNumber(day)}
+                                            </span>
                                         </span>
                                     )}
 

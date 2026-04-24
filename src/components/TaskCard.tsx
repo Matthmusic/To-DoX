@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { DropIndicator } from "../hooks/useDragAndDrop";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -19,6 +19,7 @@ import { TaskReviewSection } from "./taskcard/TaskReviewSection";
 import { TaskNotesSection } from "./taskcard/TaskNotesSection";
 import { PriorityBadge } from "./taskcard/PriorityBadge";
 import { ChildTaskTree } from "./taskcard/ChildTaskTree";
+import { CalendarContent } from "./DatePickerModal";
 
 export type CardMode = 'full' | 'compact';
 const CARD_MODES_KEY = "todox_card_modes";
@@ -73,7 +74,7 @@ export function TaskCard({
     nestTarget,
     forcedMode,
 }: TaskCardProps) {
-    const { directories, users, tasks, updateTask, comments, currentUser, validateTask, requestCorrections, convertSubtaskBack, setTaskParent, highlightedTaskId } = useStore();
+    const { directories, users, tasks, updateTask, comments, currentUser, validateTask, requestCorrections, convertSubtaskBack, setTaskParent, highlightedTaskId, setHighlightedTaskId } = useStore();
     const [cardMode, setCardMode] = useState<CardMode>(() => getCardMode(task.id));
     const isCompact = (forcedMode ?? cardMode) === 'compact';
     const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
@@ -81,9 +82,26 @@ export function TaskCard({
     const [parentTaskMenu, setParentTaskMenu] = useState<{ x: number; y: number } | null>(null);
     const [cardFileDropTarget, setCardFileDropTarget] = useState(false);
     const [isTextFocused, setIsTextFocused] = useState(false);
+    const [dueDateTooltip, setDueDateTooltip] = useState<{ x: number; y: number } | null>(null);
     const preventNextDrag = useRef(false);
     const userButtonRef = useRef<HTMLButtonElement>(null);
     const cardRef = useRef<HTMLDivElement>(null);
+
+    const isHighlighted = highlightedTaskId === task.id;
+
+    // Scroll vers la carte, déplie en full et auto-clear après 10s quand elle est mise en surbrillance
+    useEffect(() => {
+        if (!isHighlighted) return;
+        // Déplie la carte si elle est en mode compact
+        if (isCompact && !forcedMode) {
+            setCardMode('full');
+            saveCardMode(task.id, 'full');
+            onCardModeChange?.(task.id, 'full');
+        }
+        setTimeout(() => cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+        const timer = setTimeout(() => setHighlightedTaskId(null), 10000);
+        return () => clearTimeout(timer);
+    }, [isHighlighted]);
 
     const isDropTarget = dropIndicator?.taskId === task.id;
     const showLineBefore = isDropTarget && dropIndicator?.position === 'before';
@@ -117,6 +135,13 @@ export function TaskCard({
         ? Math.floor((Date.now() - task.updatedAt) / (1000 * 60 * 60 * 24))
         : 0;
     const showStagnationAlert = (task.status === "doing" || task.status === "review") && daysInColumn > 3;
+
+    const calendarSelectedClass = (() => {
+        if (remainingDays === null) return "border-slate-400/60 bg-slate-400/20 text-slate-200 animate-pulse font-bold";
+        if (remainingDays < 3)  return "border-rose-300/60 bg-rose-300/20 text-rose-100 animate-pulse font-bold";
+        if (remainingDays <= 7) return "border-amber-300/60 bg-amber-300/20 text-amber-100 animate-pulse font-bold";
+        return "border-emerald-400/60 bg-emerald-400/20 text-emerald-100 animate-pulse font-bold";
+    })();
 
     const urgencyGlowClass = (() => {
         if (remainingDays === null) return "hover:shadow-[0_0_0_1px_rgba(148,163,184,0.2),0_0_24px_rgba(148,163,184,0.15)]";
@@ -235,8 +260,20 @@ export function TaskCard({
             }}
             onDragLeave={() => { setCardFileDropTarget(false); onDragLeaveTask?.(); }}
             onClick={() => setIsSubtasksExpanded(v => !v)}
+            onDoubleClick={(e) => {
+                if (!isCompact || forcedMode) return;
+                e.stopPropagation();
+                const next: CardMode = 'full';
+                setCardMode(next);
+                saveCardMode(task.id, next);
+                onCardModeChange?.(task.id, next);
+            }}
             onContextMenu={(e) => onContextMenu(e, task)}
-            className={`group relative mb-3 flex flex-col rounded-2xl border border-white/5 bg-[#161b2e] shadow-lg transition-all hover:border-white/20 ${urgencyGlowClass} ${isDueToday ? "pulse-glow" : isOverdue ? "ring-1 ring-rose-500/50" : ""} ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"} ${isDropTarget ? "ring-1 ring-blue-400/50" : ""} ${cardFileDropTarget ? "ring-2 ring-blue-400/70 border-blue-400/40 bg-blue-500/5" : ""} ${highlightedTaskId === task.id ? "ring-2 ring-cyan-400 ring-offset-1 ring-offset-[#161b2e] animate-pulse" : ""}`}
+            className={`group relative mb-3 flex flex-col rounded-2xl border border-white/5 bg-[#161b2e] shadow-lg transition-all hover:border-white/20 ${urgencyGlowClass} ${isDueToday ? "pulse-glow" : isOverdue ? "ring-1 ring-rose-500/50" : ""} ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"} ${isDropTarget ? "ring-1 ring-blue-400/50" : ""} ${cardFileDropTarget ? "ring-2 ring-blue-400/70 border-blue-400/40 bg-blue-500/5" : ""} ${isHighlighted ? "animate-pulse" : ""}`}
+            style={isHighlighted ? {
+                boxShadow: '0 0 0 2px var(--color-primary), 0 0 28px var(--color-primary), 0 0 60px color-mix(in srgb, var(--color-primary) 40%, transparent)',
+                borderColor: 'var(--color-primary)',
+            } : undefined}
             title={cardFileDropTarget ? "Déposer pour ajouter le chemin à la note" : undefined}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -274,6 +311,46 @@ export function TaskCard({
                     <span className={`text-[9px] font-bold tracking-widest uppercase ${urgencyBand.text}`}>
                         {urgencyBand.label}
                     </span>
+                    {task.due && (() => {
+                        const d = new Date(task.due!);
+                        const utc = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+                        const day = utc.getUTCDay() || 7;
+                        utc.setUTCDate(utc.getUTCDate() + 4 - day);
+                        const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+                        const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+                        return (
+                            <span
+                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums bg-black/30 border border-white/10 cursor-pointer hover:bg-black/50 transition ${urgencyBand.text}`}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (dueDateTooltip) { setDueDateTooltip(null); return; }
+                                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                    setDueDateTooltip({ x: rect.left, y: rect.bottom + 6 });
+                                }}
+                            >
+                                {`${task.due!.slice(8, 10)}/${task.due!.slice(5, 7)}/${task.due!.slice(2, 4)} - S${week}`}
+                            </span>
+                        );
+                    })()}
+                    {dueDateTooltip && task.due && createPortal(
+                        <>
+                            <div className="fixed inset-0 z-[99998]" onClick={(e) => { e.stopPropagation(); setDueDateTooltip(null); }} />
+                            <div
+                                style={{ top: dueDateTooltip.y, left: dueDateTooltip.x }}
+                                className="fixed z-[99999] w-[280px] rounded-2xl border border-white/20 bg-[#161b2e] p-3 text-slate-100 shadow-2xl"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <CalendarContent
+                                    value={task.due}
+                                    onSelect={(iso) => { updateTask(task.id, { due: iso }); setDueDateTooltip(null); }}
+                                    onClose={() => setDueDateTooltip(null)}
+                                    showCloseButton
+                                    selectedClassName={calendarSelectedClass}
+                                />
+                            </div>
+                        </>,
+                        document.body
+                    )}
                     {task.status === 'review' && task.movedToReviewAt && (() => {
                         const d = new Date(task.movedToReviewAt);
                         const dd = String(d.getDate()).padStart(2, '0');
@@ -463,7 +540,7 @@ export function TaskCard({
                                     return next;
                                 });
                             }}
-                            className="shrink-0 rounded p-0.5 text-slate-600 transition hover:text-slate-300"
+                            className="shrink-0 rounded p-0.5 text-slate-300 transition hover:text-white"
                             title={isCompact ? 'Afficher le détail' : 'Réduire la carte'}
                         >
                             {isCompact ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -477,24 +554,47 @@ export function TaskCard({
                 {/* Mode compact : chips à droite + MoreHorizontal */}
                 {isCompact && (
                     <div className="shrink-0 flex items-center gap-1.5">
+                        {task.due && task.status !== "done" && (() => {
+                            const d = new Date(task.due!);
+                            const utc = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+                            const day = utc.getUTCDay() || 7;
+                            utc.setUTCDate(utc.getUTCDate() + 4 - day);
+                            const yearStart = new Date(Date.UTC(utc.getUTCFullYear(), 0, 1));
+                            const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+                            return (
+                                <span
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums bg-black/30 border border-white/10 cursor-pointer hover:bg-black/50 transition ${urgencyBand.text}`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (dueDateTooltip) { setDueDateTooltip(null); return; }
+                                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                        setDueDateTooltip({ x: rect.left, y: rect.bottom + 6 });
+                                    }}
+                                >
+                                    {`${task.due!.slice(8, 10)}/${task.due!.slice(5, 7)}/${task.due!.slice(2, 4)} - S${week}`}
+                                </span>
+                            );
+                        })()}
+                        {task.status === "done" && (
+                            <span className="text-[10px] font-bold tabular-nums text-emerald-400">
+                                {completionDateLabel ?? "✓"}
+                            </span>
+                        )}
+                        {remainingDays !== null && task.status !== "done" && (
+                            <span className={`text-[10px] font-bold tabular-nums ${
+                                remainingDays < 0 ? "text-rose-400" :
+                                remainingDays < 3 ? "text-rose-400" :
+                                remainingDays <= 7 ? "text-amber-400" : "text-emerald-400"
+                            }`}>
+                                {remainingDays < 0 ? `J+${Math.abs(remainingDays)}` : `J-${remainingDays}`}
+                            </span>
+                        )}
                         <PriorityBadge priority={task.priority} />
                         {showStagnationAlert && <AlertTriangle className="h-3 w-3 text-orange-400" />}
                         {task.notes && <FileText className="h-3 w-3 text-amber-500/70" />}
                         {totalSubtasks > 0 && (
                             <span className="text-[10px] text-slate-500 tabular-nums">{completedSubtasks}/{totalSubtasks}</span>
                         )}
-                        <span className={`text-[10px] font-bold tabular-nums ${
-                            remainingDays === null ? "text-slate-500" :
-                            remainingDays < 0 ? "text-rose-400" :
-                            remainingDays < 3 ? "text-rose-400" :
-                            remainingDays <= 7 ? "text-amber-400" : "text-emerald-400"
-                        }`}>
-                            {task.status === "done"
-                                ? (completionDateLabel ?? "✓")
-                                : remainingDays !== null
-                                    ? (remainingDays < 0 ? `J+${Math.abs(remainingDays)}` : `J-${remainingDays}`)
-                                    : ""}
-                        </span>
                         {task.status === 'review' && task.movedToReviewAt && (() => {
                             const d = new Date(task.movedToReviewAt);
                             const dd = String(d.getDate()).padStart(2, '0');

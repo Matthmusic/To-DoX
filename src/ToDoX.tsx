@@ -30,6 +30,7 @@ import {
 import { TermineesView } from "./components/TermineesView";
 import { TimesheetView } from "./components/TimesheetView";
 import { alertModal } from "./utils/confirm";
+import { playSoundFile } from "./utils/sound";
 
 // Hooks personnalisés
 import { useFilters } from "./hooks/useFilters";
@@ -56,6 +57,7 @@ import { useOutlookSync } from "./hooks/useOutlookSync";
 
 // Error Boundary
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { RightSidebar } from "./components/RightSidebar";
 
 interface ContextMenuData {
     x: number | null;
@@ -132,7 +134,7 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
 export default function ToDoX() {
     // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, renameProject, currentUser, viewAsUser, appNotifications, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId, setHighlightedTaskId } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, renameProject, currentUser, viewAsUser, appNotifications, notificationSettings, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId, setHighlightedTaskId } = useStore();
 
     const mentionCount = currentUser
         ? appNotifications.filter(n => !n.readAt && !n.deletedBy?.includes(currentUser) && n.toUserId === currentUser && n.type === 'comment_mention').length
@@ -208,6 +210,9 @@ export default function ToDoX() {
         for (const notif of myUnread) {
             if (!prevUnreadNotifIdsRef.current.has(notif.id) && notificationsEnabled) {
                 window.electronAPI?.sendNotification('To-Do X', notif.message, `review-${notif.id}`);
+                if (notificationSettings.sound && notificationSettings.soundFile) {
+                    playSoundFile(notificationSettings.soundFile).catch(() => {});
+                }
             }
         }
         prevUnreadNotifIdsRef.current = myUnreadIds;
@@ -641,6 +646,10 @@ export default function ToDoX() {
                 />
             )}
             </ErrorBoundary>
+
+            <RightSidebar
+                onTaskClick={(task, x, y) => setContextMenu({ x, y, task })}
+            />
 
             {/* Hidden File Input for Import */}
             <input

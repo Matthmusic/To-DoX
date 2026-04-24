@@ -64,7 +64,7 @@ function renderText(text: string, userNames: string[], primary: string, currentU
 }
 
 export function TaskComments({ taskId }: TaskCommentsProps) {
-    const { comments, addComment, deleteComment, users, currentUser } = useStore();
+    const { comments, addComment, deleteComment, users, currentUser, highlightedCommentId, setHighlightedCommentId } = useStore();
     const { activeTheme } = useTheme();
     const primary = activeTheme.palette.primary;
 
@@ -79,6 +79,19 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const highlightedCommentRef = useRef<HTMLDivElement>(null);
+
+    // Scroll vers le commentaire ciblé et auto-clear après 8s
+    useEffect(() => {
+        if (!highlightedCommentId) return;
+        const inThisTask = taskComments.some(c => c.id === highlightedCommentId);
+        if (!inThisTask) return;
+        setTimeout(() => {
+            highlightedCommentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 150);
+        const timer = setTimeout(() => setHighlightedCommentId(null), 8000);
+        return () => clearTimeout(timer);
+    }, [highlightedCommentId]);
 
     // Auto-scroll vers le bas quand un commentaire est ajouté
     useEffect(() => {
@@ -184,8 +197,17 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                         const name = getUserName(comment.userId);
                         const isOwn = comment.userId === currentUser;
                         const mentionsMe = currentUserName && comment.text.includes(`@${currentUserName}`);
+                        const isCommentHighlighted = highlightedCommentId === comment.id;
                         return (
-                            <div key={comment.id} className="flex gap-2 group">
+                            <div
+                                key={comment.id}
+                                ref={isCommentHighlighted ? highlightedCommentRef : undefined}
+                                className={`flex gap-2 group rounded-lg transition-all ${isCommentHighlighted ? "animate-pulse" : ""}`}
+                                style={isCommentHighlighted ? {
+                                    boxShadow: `0 0 0 1px var(--color-primary), 0 0 16px color-mix(in srgb, var(--color-primary) 35%, transparent)`,
+                                    backgroundColor: 'color-mix(in srgb, var(--color-primary) 8%, transparent)',
+                                } : undefined}
+                            >
                                 {/* Avatar */}
                                 <div
                                     className="flex-shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[9px] font-black border"

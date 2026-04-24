@@ -25,10 +25,11 @@ interface CalendarProps {
     onSelect: (isoDate: string) => void;
     onClose: () => void;
     showCloseButton?: boolean;
+    selectedClassName?: string;
 }
 
 /** Contenu partagé du calendrier (sans wrapper/overlay) */
-function CalendarContent({ value, onSelect, onClose, showCloseButton = false }: CalendarProps) {
+export function CalendarContent({ value, onSelect, onClose, showCloseButton = false, selectedClassName }: CalendarProps) {
     const [viewDate, setViewDate] = useState(() => fromISODate(value));
 
     useEffect(() => {
@@ -98,7 +99,7 @@ function CalendarContent({ value, onSelect, onClose, showCloseButton = false }: 
                             type="button"
                             className={`h-8 rounded-xl border text-sm transition ${
                                 isSelected
-                                    ? "border-cyan-300/60 bg-cyan-300/20 text-cyan-100"
+                                    ? (selectedClassName ?? "border-cyan-300/60 bg-cyan-300/20 text-cyan-100")
                                     : "border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"
                             }`}
                             onClick={() => { onSelect(iso); onClose(); }}

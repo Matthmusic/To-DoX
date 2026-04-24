@@ -127,6 +127,7 @@ export interface StoreState {
     addAppNotification: (notif: Omit<AppNotification, 'id' | 'createdAt'>) => void;
     markNotificationRead: (notifId: string) => void;
     markAllNotificationsRead: (userId: string) => void;
+    markNotificationsByTypeRead: (types: import('../types').AppNotifType[], userId: string) => void;
     deleteNotificationForUser: (notifId: string, userId: string) => void;
 
     // Review workflow
@@ -146,14 +147,18 @@ export interface StoreState {
     deleteTimeEntry: (project: string, date: string, userId: string) => void;
 
     // Intégration Outlook / ICS
-    outlookConfig: OutlookConfig;
-    outlookEvents: OutlookEvent[];         // transient (non persisté)
+    outlookConfig: OutlookConfig;              // config du user courant (dérivée de outlookConfigs)
+    outlookConfigs: Record<string, OutlookConfig>; // persisté : une config par userId
+    outlookEvents: OutlookEvent[];             // transient (non persisté)
     setOutlookConfig: (patch: Partial<OutlookConfig>) => void;
+    setOutlookConfigs: (configs: Record<string, OutlookConfig>) => void;
     setOutlookEvents: (events: OutlookEvent[]) => void;
 
-    // UI transient — mise en surbrillance d'une tâche (depuis notif)
+    // UI transient — mise en surbrillance d'une tâche (depuis notif) + commentaire (depuis sidebar messages)
     highlightedTaskId: string | null;
     setHighlightedTaskId: (id: string | null) => void;
+    highlightedCommentId: string | null;
+    setHighlightedCommentId: (id: string | null) => void;
 }
 
 const useStore = create<StoreState>((set, get) => ({
@@ -181,8 +186,10 @@ const useStore = create<StoreState>((set, get) => ({
         exportEnabled: false,
         lastSync: null,
     },
+    outlookConfigs: {},
     outlookEvents: [],
     highlightedTaskId: null,
+    highlightedCommentId: null,
 
     notificationSettings: {
         enabled: true,
@@ -212,7 +219,11 @@ const useStore = create<StoreState>((set, get) => ({
         set((state) => ({ projectColors: { ...state.projectColors, [projectName]: colorIndex } }));
     },
     setUsers: (users) => set({ users }),
-    setCurrentUser: (userId) => set({ currentUser: userId }),
+    setCurrentUser: (userId) => set((state) => {
+        const DEFAULT_OUTLOOK: OutlookConfig = { enabled: false, icsUrl: '', exportEnabled: false, lastSync: null };
+        const outlookConfig = userId ? (state.outlookConfigs[userId] ?? DEFAULT_OUTLOOK) : DEFAULT_OUTLOOK;
+        return { currentUser: userId, outlookConfig };
+    }),
     setViewAsUser: (userId) => set({ viewAsUser: userId }),
     setStoragePath: (path) => set({ storagePath: path }),
     setIsLoadingData: (loading) => set({ isLoadingData: loading }),
@@ -753,6 +764,17 @@ const useStore = create<StoreState>((set, get) => ({
         }));
     },
 
+    markNotificationsByTypeRead: (types, userId) => {
+        const typeSet = new Set(types);
+        set(state => ({
+            appNotifications: state.appNotifications.map(n =>
+                n.toUserId === userId && !n.readAt && typeSet.has(n.type)
+                    ? { ...n, readAt: Date.now() }
+                    : n
+            )
+        }));
+    },
+
     deleteNotificationForUser: (notifId, userId) => {
         set(state => ({
             appNotifications: state.appNotifications.map(n =>
@@ -914,10 +936,19 @@ const useStore = create<StoreState>((set, get) => ({
 
     // ── Outlook / ICS ───────────────────────────────────────────────────────
     setOutlookConfig: (patch) => {
-        set(state => ({ outlookConfig: { ...state.outlookConfig, ...patch } }));
+        set(state => {
+            const merged = { ...state.outlookConfig, ...patch };
+            const key = state.currentUser ?? '__global__';
+            return {
+                outlookConfig: merged,
+                outlookConfigs: { ...state.outlookConfigs, [key]: merged },
+            };
+        });
     },
+    setOutlookConfigs: (configs) => set({ outlookConfigs: configs }),
     setOutlookEvents: (events) => set({ outlookEvents: events }),
     setHighlightedTaskId: (id) => set({ highlightedTaskId: id }),
+    setHighlightedCommentId: (id) => set({ highlightedCommentId: id }),
 }));
 
 export default useStore;

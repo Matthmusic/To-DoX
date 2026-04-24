@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { STORAGE_KEY, FIXED_USERS } from '../../constants';
 import type { AppNotification, OutlookConfig, StoredData, Task, SavedReport, TimeEntry } from '../../types';
+
+const DEFAULT_OUTLOOK_CONFIG: OutlookConfig = { enabled: false, icsUrl: '', exportEnabled: false, lastSync: null };
 import useStore from '../../store/useStore';
 import { devLog, devWarn } from '../../utils';
 import { migrateTask } from '../../utils/taskMigration';
@@ -27,6 +29,7 @@ export function useLoadData(refs: PersistenceRefs) {
                 setAppNotifications,
                 setTimeEntries,
                 setOutlookConfig,
+                setOutlookConfigs,
                 setUsers,
                 setCurrentUser,
                 setStoragePath,
@@ -65,7 +68,16 @@ export function useLoadData(refs: PersistenceRefs) {
                     if (parsed.savedReports) setSavedReports(parsed.savedReports as SavedReport[]);
                     if (parsed.appNotifications) setAppNotifications(parsed.appNotifications as AppNotification[]);
                     if (parsed.timeEntries) setTimeEntries(parsed.timeEntries as TimeEntry[]);
-                    if (parsed.outlookConfig) setOutlookConfig(parsed.outlookConfig as OutlookConfig);
+                    // Chargement outlook par user (avec migration depuis l'ancien champ global)
+                    {
+                        const configs = (parsed.outlookConfigs ?? {}) as Record<string, OutlookConfig>;
+                        // Migration one-time : si outlookConfig global existait, l'attribuer au user courant
+                        if (parsed.outlookConfig && importingUser && !configs[importingUser]) {
+                            configs[importingUser] = parsed.outlookConfig as OutlookConfig;
+                        }
+                        setOutlookConfigs(configs);
+                        if (importingUser) setOutlookConfig(configs[importingUser] ?? DEFAULT_OUTLOOK_CONFIG);
+                    }
                 } catch (error) {
                     // eslint-disable-next-line no-console
                     console.error('❌ [LOCALSTORAGE] Erreur parsing JSON:', error);
@@ -141,7 +153,16 @@ export function useLoadData(refs: PersistenceRefs) {
                             setTimeEntries(result.data.timeEntries as TimeEntry[]);
                             refs.lastKnownFileTimeEntries.current = result.data.timeEntries as TimeEntry[];
                         }
-                        if (result.data.outlookConfig) setOutlookConfig(result.data.outlookConfig as OutlookConfig);
+                        // Chargement outlook par user (data.json est la source de vérité)
+                        {
+                            const configs = (result.data.outlookConfigs ?? {}) as Record<string, OutlookConfig>;
+                            // Migration one-time : si outlookConfig global existait, l'attribuer au user courant
+                            if (result.data.outlookConfig && importingUser && !configs[importingUser]) {
+                                configs[importingUser] = result.data.outlookConfig as OutlookConfig;
+                            }
+                            setOutlookConfigs(configs);
+                            if (importingUser) setOutlookConfig(configs[importingUser] ?? DEFAULT_OUTLOOK_CONFIG);
+                        }
                         // Note: themeSettings ignoré (clé dédiée 'theme_settings')
 
                         // Hash initial de data.json

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-To-DoX is an Electron-based desktop Kanban task management application with intelligent visual indicators for priorities and deadlines. The app features automatic updates via GitHub releases and OneDrive synchronization for data persistence.
+To-DoX is an Electron-based desktop Kanban task management application with intelligent visual indicators for priorities and deadlines. The app features automatic updates via GitHub releases and OneDrive synchronization for data persistence with real-time multi-user sync.
 
 **Tech Stack:**
 - React 19 with TypeScript (strict mode)
@@ -52,42 +52,71 @@ The application uses a **centralized Zustand store** located in [src/store/useSt
 - `directories: Directories` - Project name → folder path mappings
 - `projectHistory: string[]` - Recently used project names (for autocomplete)
 - `projectColors: Record<string, number>` - Project → color index mapping
-- `users: User[]` - User list for task assignment
+- `users: User[]` - User list (always FIXED_USERS, not stored in data.json)
+- `currentUser: string | null` - ID of currently logged-in user (saved in `current_user_id` localStorage key)
+- `viewAsUser: string | null` - "View as" filter (transient, not persisted)
 - `collapsedProjects: Record<string, boolean>` - UI state for collapsed project cards (keyed as `${status}_${project}`)
 - `storagePath: string | null` - OneDrive storage path
 - `isLoadingData: boolean` - Loading state flag
+- `saveError: string | null` - Last save error message (shown in UI)
+- `notificationSettings: NotificationSettings` - Desktop notification configuration
+- `themeSettings: ThemeSettings` - Theme system (mode + palette + custom themes)
+- `comments: Record<string, Comment[]>` - Task comments, keyed by taskId
+- `templates: TaskTemplate[]` - Reusable subtask templates
+- `savedReports: SavedReport[]` - Saved weekly/monthly reports (CRs)
+- `appNotifications: AppNotification[]` - In-app notifications (review workflow + mentions)
+- `timeEntries: TimeEntry[]` - Timesheet entries
+- `outlookConfig: OutlookConfig` - Outlook/ICS config for current user (derived from `outlookConfigs`)
+- `outlookConfigs: Record<string, OutlookConfig>` - Per-user Outlook configs (persisted)
+- `outlookEvents: OutlookEvent[]` - Imported Outlook events (transient, not persisted)
+- `highlightedTaskId: string | null` - Task to highlight after notification click (transient)
+- `pendingReviewDialogTaskId: string | null` - Reviewer assignment dialog state (transient)
 
 **Store Actions Pattern:**
-- Simple setters: `setTasks()`, `setDirectories()`, `setProjectColors()`, `setProjectColor()`, `setUsers()`, etc.
-- Task operations: `addTask()`, `updateTask()`, `removeTask()`, `moveTask()`, `archiveTask()`, `unarchiveTask()`
-- Subtask operations: `addSubtask()`, `toggleSubtask()`, `deleteSubtask()`, `updateSubtaskTitle()`, `reorderSubtasks()`
-- Project operations: `addToProjectHistory()`, `toggleProjectCollapse()`, `archiveProject()`, `unarchiveProject()`, `deleteArchivedProject()`
+- Simple setters: `setTasks()`, `setDirectories()`, `setProjectColors()`, `setProjectColor()`, `setUsers()`, `setCurrentUser()`, `setViewAsUser()`, etc.
+- Task operations: `addTask()`, `updateTask()`, `removeTask()`, `moveTask()`, `archiveTask()`, `unarchiveTask()`, `reorderTask()`
+- Task hierarchy: `setTaskParent()`, `convertSubtaskBack()`
+- Subtask operations: `addSubtask()`, `toggleSubtask()`, `deleteSubtask()`, `updateSubtaskTitle()`, `assignSubtask()`, `unassignSubtask()`, `setSubtaskDates()`, `reorderSubtasks()`
+- Comment operations: `addComment()`, `deleteComment()`
+- Project operations: `addToProjectHistory()`, `toggleProjectCollapse()`, `archiveProject()`, `unarchiveProject()`, `deleteArchivedProject()`, `renameProject()`, `moveProject()`
+- Template operations: `addTemplate()`, `deleteTemplate()`, `applyTemplateToTask()`
+- Report operations: `saveReport()`, `deleteReport()`
 - Review workflow: `setReviewers()`, `validateTask()`, `requestCorrections()`, `reopenTask()`
-- Notifications: `addAppNotification()`, `markNotificationRead()`, `markAllNotificationsRead()`
+- Notifications: `addAppNotification()`, `markNotificationRead()`, `markAllNotificationsRead()`, `deleteNotificationForUser()`
+- Timesheet: `upsertTimeEntry()`, `deleteTimeEntry()`
+- Outlook: `setOutlookConfig()`, `setOutlookConfigs()`, `setOutlookEvents()`
+- Theme: `setThemeSettings()`, `updateThemeSettings()`
 
-**CRITICAL RULE:** Always use store actions instead of direct state manipulation. Never call `setTasks()` manually to modify tasks - use specific actions like `updateTask()` which handle side effects (e.g., updating `completedAt` when status changes to "done", updating `updatedAt` timestamps).
+**CRITICAL RULE:** Always use store actions instead of direct state manipulation. Never call `setTasks()` manually to modify tasks — use specific actions like `updateTask()` which handle side effects (e.g., updating `completedAt` when status changes to "done", updating `updatedAt` timestamps, spawning recurring task clone).
 
 ### Data Persistence Layer
 
 The app has **dual persistence**: localStorage (browser) + Electron file system (desktop).
 
-**Persistence Flow:**
+**Persistence is split across 3 specialized hooks** orchestrated by [useDataPersistence.ts](src/hooks/useDataPersistence.ts):
 
-The [useDataPersistence](src/hooks/useDataPersistence.ts) hook manages all persistence:
+```
+useDataPersistence (orchestrator)
+  ├── useLoadData     — initial load from localStorage → Electron data.json (merge by updatedAt)
+  ├── useSyncPolling  — poll data.json + comments.json every 2s, merge on hash change
+  └── usePersistSave  — debounced save (100ms) to localStorage + Electron
+```
 
-1. **Initial Load** (on mount):
-   - Try localStorage first (web compatibility)
-   - If Electron, read from `storagePath/data.json`
-   - Migrate old data if needed (add `subtasks`, `archived`, `completedAt`, etc.)
-   - Restore `collapsedProjects` state from localStorage
+**Separate persistence files in Electron:**
+- `storagePath/data.json` — tasks, configs, templates, reports, timeEntries, outlookConfigs (shared via OneDrive)
+- `storagePath/comments.json` — comments only (separate file for performance, soft-delete for sync)
+- `localStorage['theme_settings']` — theme per-machine (NOT in data.json, intentionally local)
+- `localStorage['current_user_id']` — logged-in user ID (local per-machine)
+- `localStorage[STORAGE_KEY]` — full payload mirror for web fallback
 
-2. **Auto-Save** (on state change):
-   - Debounced save on every state change (1 second delay)
-   - Save to localStorage immediately
-   - If Electron, save to `storagePath/data.json` with automatic backups
-   - Backups keep 5 most recent timestamped files in `backups/` subdirectory
+**Sync strategy (multi-user via shared OneDrive):**
+- On load: `mergeTasksByUpdatedAt(localTasks, fileTasks)` — most-recent `updatedAt` wins
+- Poll every 2s: hash comparison via `getFileHash()` — only re-read if file changed
+- Comments: soft-delete merge — local deletion wins over file's non-deleted version
+- TimeEntries: union by `id`, most-recent `updatedAt` wins
+- Theme is never synced (per-machine preference)
 
-**Default Storage Path:** `~/OneDrive - CEA/DATA/To-Do-X/data.json` (user-configurable via Settings)
+**Default Storage Path:** `~/OneDrive - CEA/DATA/To-Do-X/` (user-configurable via Settings)
 
 ### Component Architecture
 
@@ -120,11 +149,12 @@ STATUSES.map(status) →
 - `UpdateNotification` - Auto-update notification UI
 - `TermineesView` - Completed tasks view with Rouvrir/Archiver actions (toggled from header)
 - `DashboardView` - Dashboard analytics view
-- `TimesheetView` - Timesheet view
+- `TimesheetView` - Timesheet view (pointage d'heures par projet/jour)
+- `TimelineView` - Gantt timeline view (list on mobile, Gantt chart on desktop)
 - `NotificationDropdown` - App notification dropdown (rendered via portal)
 
 **Modal/Panel Components:**
-- `WeeklyReportModal` - Weekly completion report with PDF export
+- `WeeklyReportModal` - Weekly/monthly completion report with PDF export (saved as `SavedReport`)
 - `ProjectArchivePanel` - Archived projects management
 - `TaskArchivePanel` - Archived tasks management
 - `ProjectDirs` - Configure project folder paths
@@ -142,11 +172,17 @@ STATUSES.map(status) →
 - React components access via `window.electronAPI`
 
 **Available APIs:**
-- **File system:** `readData()`, `saveData()`, `getStoragePath()`, `chooseStorageFolder()`
+- **File system:** `readData()`, `saveData()`, `getStoragePath()`, `chooseStorageFolder()`, `getFileHash()`
 - **Folder operations:** `openFolder()`, `selectProjectFolder()`
 - **Window controls:** `windowMinimize()`, `windowMaximize()`, `windowClose()`, `windowIsMaximized()`
 - **Updates:** `checkForUpdates()`, `downloadUpdate()`, `installUpdate()`, `getAppVersion()`
 - **Print:** `printHtml()` - Creates hidden window for native print dialog
+- **Theme:** `setNativeTheme()`, `getSystemTheme()`, `onSystemThemeChanged()`
+- **Notifications:** `sendNotification()`, `requestNotificationPermission()`, `getSoundUrl()`
+- **Startup:** `getLoginItem()`, `setLoginItem()`
+- **Outlook/ICS:** `outlook.fetchUrl()`, `outlook.writeIcs()`, `outlook.getIcsPath()`, `outlook.startHttpServer()`, `outlook.stopHttpServer()`, `outlook.getServerUrl()`, `outlook.saveDroppedMail()`
+- **Cast (Chromecast):** `castDiscover()`, `castLaunch()`, `castGetReceiverUrl()`
+- **Error logging:** `logError()` - writes to local log file
 
 **Auto-Update Flow:**
 1. Check on app start (3s delay)
@@ -158,15 +194,20 @@ STATUSES.map(status) →
 
 ### Custom Hooks
 
+**[useDataPersistence.ts](src/hooks/useDataPersistence.ts)** - Persistence orchestrator
+- Calls `useStore()` FIRST (before `useRef`) to maintain stable hook order
+- Delegates to three sub-hooks in `src/hooks/persistence/`
+
+**[src/hooks/persistence/](src/hooks/persistence/)** - Persistence sub-hooks
+- `useLoadData` - Initial load: localStorage → migration → Electron data.json merge
+- `useSyncPolling` - Auto-reload: polls data.json + comments.json every 2s via hash comparison
+- `usePersistSave` - Auto-save: localStorage immediately, Electron debounced 100ms
+- `persistence.utils.ts` - Shared: `mergeComments()`, `migrateTemplate()`, `PersistenceRefs` type
+
 **[useFilters.ts](src/hooks/useFilters.ts)** - Filtering and grouping logic
 - Manages filter state (project, status, priority, user, search)
 - Computes `filteredTasks` based on all active filters
 - Computes `grouped` object (tasks grouped by status → project)
-
-**[useDataPersistence.ts](src/hooks/useDataPersistence.ts)** - Data loading and saving
-- Initial load from localStorage and Electron file system
-- Auto-save with debouncing
-- Data migration for old formats
 
 **[useDragAndDrop.ts](src/hooks/useDragAndDrop.ts)** - Drag & drop logic
 - Handles task drag & drop between columns
@@ -181,15 +222,26 @@ STATUSES.map(status) →
 ### TypeScript Strict Mode
 
 **Key Type Definitions ([src/types.ts](src/types.ts)):**
-- `Task` - Main task interface with subtasks, timestamps, archive state
+- `Task` - Main task interface; includes `subtasks`, `ganttDays`, `order`, `recurrence`, `parentTaskId`, `reviewers`, review timestamps
 - `TaskData` - DTO for creating new tasks (partial fields)
-- `Subtask` - Subtask with completion state
+- `Subtask` - Subtask with completion, assignment, and date range (for Gantt)
+- `GanttDay` - Planned work day with assigned users
+- `Recurrence` - Recurring task config (`daily | weekly | monthly`, optional `endsAt`)
 - `User` - User with id, name, email
 - `StoredData` - Top-level persistence shape
 - `ElectronAPI` - Complete Electron bridge type definition
 - `Directories` - Type alias for `Record<string, string>`
 - `ProjectStats` - Project statistics for progress display
 - `ArchivedProject` - Archived project metadata
+- `Comment` - Task comment with soft-delete (`deletedAt: number | null`)
+- `TaskTemplate` - Reusable subtask list template
+- `SavedReport` - Saved weekly/monthly report with period metadata
+- `AppNotification` / `AppNotifType` - In-app notification for review workflow and @mentions
+- `TimeEntry` - Timesheet entry (project, date, hours, userId, updatedAt for sync)
+- `OutlookConfig` / `OutlookEvent` - Outlook/ICS integration config and imported events
+- `ThemeMode` / `ThemePalette` / `Theme` / `ThemeSettings` - Full theme system types
+- `CastDevice` - Chromecast device info
+- `ErrorLog` - Error report structure for `logError()`
 
 **Strict Rules:**
 - No `any` types (use proper generics)
@@ -228,14 +280,9 @@ Uses a global confirm modal system with promises:
 ```typescript
 import { confirmModal, alertModal } from './utils/confirm';
 
-// Confirmation dialog
-const confirmed = await confirmModal("Delete this task?");
-if (confirmed) {
-  // proceed
-}
-
-// Alert dialog
-await alertModal("Task deleted!");
+const confirmed = await confirmModal("Supprimer cette tâche ?");
+if (confirmed) { /* proceed */ }
+await alertModal("Tâche supprimée !");
 ```
 
 ## Testing Strategy
@@ -304,12 +351,24 @@ Located in `package.json` under `build` key:
 8. **Tag prefix required** - GitHub release workflow only triggers on tags starting with `v`
 9. **Hidden elements still intercept clicks** - `overflow-visible` + `max-h-0 opacity-0` hides content visually but keeps it clickable. Always add `pointer-events-none` when hiding via `opacity-0`.
 10. **CSS class `bg-theme-bg-secondary` does not exist** - Valid theme classes: `bg-theme-primary`, `bg-theme-secondary`, `bg-theme-tertiary`
+11. **Theme is NOT synced via data.json** - `themeSettings` is saved in `localStorage['theme_settings']` only (per-machine). Never include it in the Electron save payload.
+12. **Hook order in useDataPersistence** - `useStore()` must be called BEFORE `useRef` calls to maintain stable hook order (HMR compatibility).
+13. **Comments are in comments.json, not data.json** - In Electron mode, comments live in a separate file. The `data.json` save payload explicitly excludes `comments`.
+14. **outlookConfig vs outlookConfigs** - `outlookConfig` is the current user's config (derived, not persisted directly). `outlookConfigs` is the full per-user map that gets saved.
 
 ### Review Workflow
 
 `status: 'review'` tasks are shown in the Kanban. Tasks with `status: 'done'` are **not** shown in the Kanban — they appear in `TermineesView` instead (controlled by `kanban: boolean` on `StatusDef` in `constants.ts`).
 
 Review store actions auto-generate `AppNotification` entries and update task timestamps. `validateTask()` sets status → `'done'`, `requestCorrections()` sets status → `'doing'`, `reopenTask()` sets status → `'todo'`.
+
+### Task Recurrence
+
+When `updateTask()` transitions a task with `recurrence` to `status: 'done'`, it automatically creates a new `Task` clone with the next occurrence date, `status: 'todo'`, and all subtasks reset to `completed: false`.
+
+### Task Hierarchy
+
+Tasks can have a `parentTaskId` linking them to a parent task. `convertSubtaskBack()` converts a task back into a subtask on its parent. `setTaskParent()` sets or clears the parent link.
 
 ### Custom Event: `todox:openTask`
 
@@ -336,5 +395,6 @@ Review store actions auto-generate `AppNotification` entries and update task tim
 - **CEA-specific:** Default OneDrive path includes "OneDrive - CEA" which is organization-specific
 - **French language:** UI is in French, keep all user-facing text in French
 - **Icons:** Icon files are in [src/assets/](src/assets/) - PNG for macOS/Linux, ICO for Windows
-- **Dark mode:** Forced dark theme via `nativeTheme.themeSource = 'dark'` in electron.js
+- **Theme system:** Theme mode is dynamic (light/dark/auto). `setNativeTheme()` is called on theme change. Dark mode is no longer forced — `nativeTheme.themeSource` follows user's `ThemeSettings.mode`.
 - **Custom title bar:** Uses frameless window with custom controls in TitleBar component
+- **FIXED_USERS** in `src/constants.ts` is a hardcoded list — not stored in `data.json` and not editable via the UI. `users` in the store is always initialized from this constant.
