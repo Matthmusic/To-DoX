@@ -4,6 +4,7 @@ const fsSync = require('fs');
 const fs = fsSync.promises;
 const https = require('https');
 const http = require('http');
+const { execFileSync } = require('child_process');
 const { pathToFileURL } = require('url');
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -272,12 +273,64 @@ ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });
 
+const STARTUP_REG_KEY = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
+const STARTUP_REG_NAME = 'To-DoX';
+
+function getWindowsStartupRegistryValue() {
+  if (process.platform !== 'win32') return null;
+
+  try {
+    const output = execFileSync('reg.exe', ['query', STARTUP_REG_KEY, '/v', STARTUP_REG_NAME], {
+      encoding: 'utf8',
+      windowsHide: true
+    });
+    const line = output.split(/\r?\n/).find((entry) => entry.includes(STARTUP_REG_NAME) && entry.includes('REG_'));
+    return line?.match(/REG_\w+\s+(.+)$/)?.[1]?.trim() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function setWindowsStartupRegistryValue(openAtLogin) {
+  if (process.platform !== 'win32') return;
+
+  if (openAtLogin) {
+    execFileSync('reg.exe', [
+      'add',
+      STARTUP_REG_KEY,
+      '/v',
+      STARTUP_REG_NAME,
+      '/t',
+      'REG_SZ',
+      '/d',
+      `"${process.execPath}"`,
+      '/f'
+    ], { windowsHide: true });
+    return;
+  }
+
+  try {
+    execFileSync('reg.exe', ['delete', STARTUP_REG_KEY, '/v', STARTUP_REG_NAME, '/f'], {
+      windowsHide: true
+    });
+  } catch {
+    // La valeur peut déjà être absente.
+  }
+}
+
 ipcMain.handle('get-login-item', () => {
-  return app.getLoginItemSettings({ path: process.execPath });
+  const loginItemSettings = app.getLoginItemSettings({ path: process.execPath });
+  const registryValue = getWindowsStartupRegistryValue();
+
+  return {
+    ...loginItemSettings,
+    openAtLogin: loginItemSettings.openAtLogin || Boolean(registryValue)
+  };
 });
 
 ipcMain.handle('set-login-item', (_event, openAtLogin) => {
   app.setLoginItemSettings({ openAtLogin, path: process.execPath });
+  setWindowsStartupRegistryValue(openAtLogin);
   return true;
 });
 

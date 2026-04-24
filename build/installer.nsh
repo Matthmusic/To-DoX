@@ -10,7 +10,6 @@
 !macro customHeader
   !ifndef BUILD_UNINSTALLER
     !define MUI_FINISHPAGE_SHOWREADME ""
-    !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
     !define MUI_FINISHPAGE_SHOWREADME_TEXT "Lancer To-DoX au démarrage de Windows"
     !define MUI_FINISHPAGE_SHOWREADME_FUNCTION todox_AddToStartup
   !endif

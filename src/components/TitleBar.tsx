@@ -76,7 +76,7 @@ useEffect(() => {
       } as React.CSSProperties}
     >
       {/* Logo + UserProfile + onglets VIP */}
-      <div className="flex items-center gap-3 px-3" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <div className="flex min-w-0 shrink items-center gap-3 px-3" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         <img
           src={logoSvg}
           alt="To-DoX"
@@ -91,7 +91,7 @@ useEffect(() => {
 
         {/* 50px de séparation puis onglets côte à côte */}
         {visibleTabs.length > 0 && (
-          <div className="flex items-center gap-1" style={{ marginLeft: '50px' }}>
+          <div className="flex min-w-0 items-center gap-1 overflow-hidden" style={{ marginLeft: '50px' }}>
             {visibleTabs.map(user => {
               const isMyTab = currentUser === user.id;
               const isViewing = viewAsUser === user.id;
@@ -155,16 +155,19 @@ useEffect(() => {
       </div>
 
       {/* Centre : citation du jour */}
-      <div className="flex-1 flex items-center justify-center min-w-0 px-4 relative">
+      <div className="flex-[2] flex items-center justify-center min-w-0 px-4 relative overflow-hidden">
         <button
           onClick={() => setShowFullQuote(v => !v)}
-          className="max-w-full flex items-center gap-1.5 group"
+          className="max-w-full flex items-center gap-1.5 group overflow-hidden"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           title={dailyQuote.citation}
         >
           <span
-            className="text-[10px] italic truncate transition-colors"
-            style={{ color: 'rgba(255,255,255,0.35)', maxWidth: '42ch' }}
+            className="text-[11px] italic whitespace-nowrap transition-colors"
+            style={{
+              color: 'rgba(255,255,255,0.88)',
+              textShadow: '0 1px 8px rgba(0,0,0,0.45)',
+            }}
           >
             « {dailyQuote.citation} »
           </span>
