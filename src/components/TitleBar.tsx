@@ -1,21 +1,30 @@
-import { useRef, useState, useEffect } from 'react';
-import { Minus, Square, X, Bell, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Minus, Square, X, Eye, EyeOff } from 'lucide-react';
 import logoSvg from '../assets/To Do X.svg';
 import { UserProfile } from './UserProfile';
-import { NotificationDropdown } from './NotificationDropdown';
 import { useTheme } from '../hooks/useTheme';
 import useStore from '../store/useStore';
 import { VIP_USERS, FIXED_USERS } from '../constants';
 import { getInitials } from '../utils';
+import citationsData from '../assets/citations_bureau_etudes_elec_btp_400.json';
+
+/** Retourne la citation du jour (stable sur toute la journée, change à minuit) */
+function getDailyQuote(): { citation: string; categorie: string } {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
+    const idx = dayOfYear % citationsData.citations.length;
+    return citationsData.citations[idx];
+}
 
 interface TitleBarProps {
     onTaskClick?: (taskId: string) => void;
 }
 
-export function TitleBar({ onTaskClick }: TitleBarProps) {
+export function TitleBar({ onTaskClick: _onTaskClick }: TitleBarProps) {
   const [isMaximized, setIsMaximized] = useState(false);
-  const [showNotifDropdown, setShowNotifDropdown] = useState(false);
-  const bellRef = useRef<HTMLButtonElement>(null);
+  const [showFullQuote, setShowFullQuote] = useState(false);
+  const dailyQuote = getDailyQuote();
   const { activeTheme } = useTheme();
   const { currentUser, viewAsUser, appNotifications, setCurrentUser, setViewAsUser } = useStore();
   const isCurrentUserVip = currentUser ? VIP_USERS.includes(currentUser) : false;
@@ -30,9 +39,7 @@ export function TitleBar({ onTaskClick }: TitleBarProps) {
     });
   })();
 
-  const unreadCount = appNotifications.filter(n => n.toUserId === currentUser && !n.readAt && !(n.deletedBy ?? []).includes(currentUser ?? '')).length;
-
-  useEffect(() => {
+useEffect(() => {
     // Vérifier l'état initial
     if (window.electronAPI?.isElectron) {
       window.electronAPI.windowIsMaximized().then(setIsMaximized);
@@ -147,37 +154,52 @@ export function TitleBar({ onTaskClick }: TitleBarProps) {
         )}
       </div>
 
-      {/* Centre : Bell notifications */}
-      <div className="flex-1 flex items-center justify-center">
+      {/* Centre : citation du jour */}
+      <div className="flex-1 flex items-center justify-center min-w-0 px-4 relative">
         <button
-          ref={bellRef}
-          onClick={() => setShowNotifDropdown(v => !v)}
-          className="relative h-8 w-8 flex items-center justify-center transition-colors"
-          style={{ color: 'rgba(255,255,255,0.75)', WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${activeTheme.palette.primary}20`}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-          aria-label="Notifications"
+          onClick={() => setShowFullQuote(v => !v)}
+          className="max-w-full flex items-center gap-1.5 group"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          title={dailyQuote.citation}
         >
-          <Bell className="h-3.5 w-3.5" />
-          {unreadCount > 0 && (
-            <span className="absolute top-1 right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-rose-500 text-[8px] font-bold text-white leading-none">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
+          <span
+            className="text-[10px] italic truncate transition-colors"
+            style={{ color: 'rgba(255,255,255,0.35)', maxWidth: '42ch' }}
+          >
+            « {dailyQuote.citation} »
+          </span>
         </button>
-        {showNotifDropdown && (
-          <NotificationDropdown
-            onClose={() => setShowNotifDropdown(false)}
-            onTaskClick={(taskId) => {
-              setShowNotifDropdown(false);
-              if (onTaskClick) {
-                onTaskClick(taskId);
-              } else {
-                window.dispatchEvent(new CustomEvent('todox:openTask', { detail: { taskId } }));
-              }
-            }}
-            anchorRef={bellRef as React.RefObject<HTMLElement>}
-          />
+
+        {/* Tooltip pleine citation au clic */}
+        {showFullQuote && (
+          <>
+            <div
+              className="fixed inset-0 z-[9999]"
+              onClick={() => setShowFullQuote(false)}
+            />
+            <div
+              className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-[10000] rounded-2xl border px-4 py-3 shadow-2xl text-center"
+              style={{
+                width: 'min(480px, 90vw)',
+                background: `linear-gradient(135deg, ${activeTheme.palette.bgPrimary}ee, ${activeTheme.palette.bgSecondary}ee)`,
+                borderColor: `${activeTheme.palette.primary}30`,
+                backdropFilter: 'blur(24px)',
+              }}
+            >
+              <p
+                className="text-[12px] italic leading-relaxed"
+                style={{ color: 'rgba(255,255,255,0.75)' }}
+              >
+                « {dailyQuote.citation} »
+              </p>
+              <span
+                className="mt-2 block text-[9px] uppercase tracking-widest font-semibold"
+                style={{ color: `${activeTheme.palette.primary}80` }}
+              >
+                {dailyQuote.categorie.replace(/_/g, ' ')}
+              </span>
+            </div>
+          </>
         )}
       </div>
 

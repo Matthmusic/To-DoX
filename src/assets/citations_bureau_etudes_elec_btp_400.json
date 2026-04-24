@@ -1,0 +1,4812 @@
+{
+  "meta": {
+    "nom": "Citations motivationnelles - Bureau d'études électricité & BTP",
+    "version": "1.0",
+    "langue": "fr",
+    "nombre": 400,
+    "usage": "Affichage d'une citation quotidienne sur site web",
+    "format_date_suggere": "utiliser le jour de l'année modulo le nombre de citations"
+  },
+  "citations": [
+    {
+      "id": 1,
+      "citation": "Un bon projet commence par une analyse claire et se termine par une exécution maîtrisée.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 2,
+      "citation": "La précision d’une étude se mesure à la sérénité du chantier.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 3,
+      "citation": "Dessiner, c’est déjà construire avec méthode.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 4,
+      "citation": "Chaque plan bien pensé évite une question de trop sur le terrain.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 5,
+      "citation": "Un bureau d’études transforme les contraintes en solutions concrètes.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 6,
+      "citation": "La qualité d’un projet se prépare avant le premier coup de pelle.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 7,
+      "citation": "Un détail bien anticipé vaut souvent une journée gagnée sur chantier.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 8,
+      "citation": "L’ingénierie, c’est l’art de rendre simple ce qui doit rester fiable.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 9,
+      "citation": "La meilleure solution est souvent celle que tout le monde peut comprendre.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 10,
+      "citation": "Étudier juste, c’est construire durablement.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 11,
+      "citation": "Un bon synoptique raconte déjà l’histoire du bâtiment.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 12,
+      "citation": "La réussite d’un projet tient autant à la méthode qu’à la technique.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 13,
+      "citation": "La rigueur sur plan devient de la sécurité sur site.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 14,
+      "citation": "Le temps passé à clarifier évite le temps perdu à corriger.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 15,
+      "citation": "Un projet bien conçu avance sans bruit inutile.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 16,
+      "citation": "Le rôle du bureau d’études est de rendre le chantier lisible avant qu’il n’existe.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 17,
+      "citation": "La cohérence d’un dossier se voit dans les détails.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 18,
+      "citation": "Concevoir, c’est prévoir les usages, les contraintes et les évolutions.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 19,
+      "citation": "Une étude solide donne confiance à tous les intervenants.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 20,
+      "citation": "Le bon plan est celui qui guide autant qu’il informe.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 21,
+      "citation": "Chaque ligne tracée doit avoir une raison technique.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 22,
+      "citation": "Un projet réussi se reconnaît à la fluidité de son exécution.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 23,
+      "citation": "Les meilleures études sont celles qui évitent les surprises.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 24,
+      "citation": "Un schéma clair vaut parfois mieux qu’un long discours.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 25,
+      "citation": "La technique doit servir le projet, jamais le compliquer.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 26,
+      "citation": "Un bon dossier est un outil de chantier, pas seulement une pièce administrative.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 27,
+      "citation": "L’anticipation est la meilleure réserve de temps d’un projet.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 28,
+      "citation": "La coordination fait gagner ce que l’urgence fait perdre.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 29,
+      "citation": "Un bureau d’études performant conçoit avec précision et accompagne avec pragmatisme.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 30,
+      "citation": "Plus une solution est claire en étude, plus elle est efficace en réalisation.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 31,
+      "citation": "La qualité d’un ouvrage commence dans la qualité de sa conception.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 32,
+      "citation": "Une note bien construite peut sécuriser toute une décision.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 33,
+      "citation": "Chaque contrainte est une occasion de mieux concevoir.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 34,
+      "citation": "L’exigence technique n’empêche pas la simplicité.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 35,
+      "citation": "Un bon projet ne laisse pas les interfaces au hasard.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 36,
+      "citation": "La valeur d’une étude se révèle quand le chantier démarre.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 37,
+      "citation": "Prévoir, vérifier, coordonner : trois gestes pour construire juste.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 38,
+      "citation": "Le dessin technique est une promesse de faisabilité.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 39,
+      "citation": "La meilleure ingénierie est celle qui reste fiable dans le temps.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 40,
+      "citation": "Un plan soigné respecte autant le chantier que l’ouvrage final.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 41,
+      "citation": "La conception est le premier acte de maintenance du bâtiment.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 42,
+      "citation": "Chaque projet mérite une lecture claire et une réponse adaptée.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 43,
+      "citation": "La rigueur n’est pas une option, c’est une économie future.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 44,
+      "citation": "La méthode transforme les idées en ouvrages fiables.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 45,
+      "citation": "Un dossier bien organisé est déjà un chantier mieux préparé.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 46,
+      "citation": "Concevoir, c’est penser l’ouvrage avant qu’il ne devienne une urgence.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 47,
+      "citation": "L’expertise se voit dans ce qui fonctionne sans être remarqué.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 48,
+      "citation": "Un bon projet avance quand chaque acteur comprend sa place.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 49,
+      "citation": "La précision est une forme de respect pour ceux qui réalisent.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 50,
+      "citation": "L’étude donne au chantier la direction dont il a besoin.",
+      "categorie": "bureau_etudes",
+      "auteur": "Citation originale",
+      "tags": [
+        "bureau-etudes",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 51,
+      "citation": "L’électricité bien conçue ne se voit pas, mais elle soutient tout le bâtiment.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 52,
+      "citation": "La continuité de service se prépare dès la première ligne du schéma.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 53,
+      "citation": "Un départ bien repéré aujourd’hui évite une panne longue demain.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 54,
+      "citation": "La sélectivité n’est pas un détail, c’est une garantie d’exploitation.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 55,
+      "citation": "Un tableau clair, c’est un bâtiment plus simple à maintenir.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 56,
+      "citation": "La puissance se calcule, la fiabilité se conçoit.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 57,
+      "citation": "Un bon réseau électrique est celui qui reste lisible après des années d’exploitation.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 58,
+      "citation": "La sécurité électrique commence par une conception sans ambiguïté.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 59,
+      "citation": "La qualité d’un TGBT se joue autant dans l’architecture que dans le repérage.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 60,
+      "citation": "Chaque câble doit avoir un chemin, une fonction et une logique.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 61,
+      "citation": "L’énergie doit circuler avec maîtrise, pas avec improvisation.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 62,
+      "citation": "Un synoptique bien pensé simplifie les décisions en phase chantier.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 63,
+      "citation": "La bonne protection est celle qui agit juste, au bon endroit, au bon moment.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 64,
+      "citation": "Le CFO donne la puissance, le CFA donne l’intelligence au bâtiment.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 65,
+      "citation": "La performance électrique repose sur l’équilibre entre calcul, sécurité et exploitation.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 66,
+      "citation": "Un réseau CFA fiable commence par des cheminements propres et séparés.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 67,
+      "citation": "La GTB ne corrige pas une mauvaise conception, elle la révèle.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 68,
+      "citation": "L’exploitation future mérite autant d’attention que l’installation initiale.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 69,
+      "citation": "Un schéma unifilaire doit être compris aussi vite qu’il est consulté.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 70,
+      "citation": "La réserve bien prévue est la flexibilité de demain.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 71,
+      "citation": "Une installation lisible est une installation maintenable.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 72,
+      "citation": "La basse tension demande de la haute précision.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 73,
+      "citation": "Le bon dimensionnement évite les surchauffes, les déclenchements et les regrets.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 74,
+      "citation": "Une architecture électrique doit rester logique même sous contrainte.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 75,
+      "citation": "L’électricité impose une règle simple : ce qui est flou finit par coûter cher.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 76,
+      "citation": "La puissance disponible n’a de valeur que si elle est correctement distribuée.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 77,
+      "citation": "Un bon repérage vaut une intervention plus sûre.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 78,
+      "citation": "La fibre, le cuivre et l’énergie méritent chacun leur place.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 79,
+      "citation": "Un réseau bien segmenté protège l’exploitation autant que les données.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 80,
+      "citation": "La fiabilité électrique est une somme de détails maîtrisés.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 81,
+      "citation": "Le courant fort porte le bâtiment, le courant faible le rend communicant.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 82,
+      "citation": "Une armoire bien conçue doit pouvoir être comprise porte ouverte comme dossier ouvert.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 83,
+      "citation": "La maintenance commence avec le premier repère posé.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 84,
+      "citation": "Les notes de calcul donnent au projet sa colonne vertébrale technique.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 85,
+      "citation": "Le bon calibre est celui qui protège sans pénaliser l’usage.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 86,
+      "citation": "Un câble bien choisi est un risque en moins pour l’exploitation.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 87,
+      "citation": "Un départ critique mérite une attention critique.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 88,
+      "citation": "La sûreté d’un bâtiment dépend souvent d’un réseau discret mais essentiel.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 89,
+      "citation": "La supervision ne remplace pas la conception, elle l’accompagne.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 90,
+      "citation": "Le bon cheminement évite les conflits avant qu’ils n’apparaissent.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 91,
+      "citation": "Une installation électrique durable reste claire, accessible et évolutive.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 92,
+      "citation": "L’énergie doit être disponible, protégée et comprise.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 93,
+      "citation": "Le CFA réussi est celui qui sait rester invisible tout en étant indispensable.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 94,
+      "citation": "Une distribution électrique efficace doit anticiper les usages réels.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 95,
+      "citation": "Un tableau bien organisé facilite les consignations et sécurise les interventions.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 96,
+      "citation": "La qualité d’un réseau commence au bornier et se confirme à l’usage.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 97,
+      "citation": "Un bon projet électrique protège les personnes, les biens et l’exploitation.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 98,
+      "citation": "L’éclairage, l’énergie et les réseaux doivent former une même logique de bâtiment.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 99,
+      "citation": "Un local technique propre est souvent le reflet d’une étude sérieuse.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 100,
+      "citation": "La puissance se distribue, la sécurité se construit.",
+      "categorie": "electricite_cfo_cfa",
+      "auteur": "Citation originale",
+      "tags": [
+        "electricite-cfo-cfa",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 101,
+      "citation": "Un chantier bien préparé est déjà à moitié sécurisé.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 102,
+      "citation": "La coordination transforme la complexité du BTP en avancement maîtrisé.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 103,
+      "citation": "La meilleure réunion de chantier est celle qui fait avancer les décisions.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 104,
+      "citation": "Sur chantier, la clarté gagne toujours contre l’improvisation.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 105,
+      "citation": "Un planning réaliste vaut mieux qu’une urgence permanente.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 106,
+      "citation": "Chaque interface oubliée devient une difficulté de terrain.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 107,
+      "citation": "Construire, c’est faire dialoguer la technique, le temps et les hommes.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 108,
+      "citation": "Le chantier récompense toujours les dossiers bien préparés.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 109,
+      "citation": "La sécurité commence avant l’arrivée des compagnons sur site.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 110,
+      "citation": "Un bon phasage protège l’exploitation comme le chantier.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 111,
+      "citation": "La réussite d’un chantier dépend de la précision des transmissions.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 112,
+      "citation": "Un compte rendu utile est celui qui transforme les échanges en actions.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 113,
+      "citation": "Le terrain rappelle toujours l’importance de l’anticipation.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 114,
+      "citation": "Une contrainte de chantier bien comprise devient une solution robuste.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 115,
+      "citation": "Chaque levée de réserve commence par une exigence de qualité.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 116,
+      "citation": "Le BTP avance mieux quand chaque décision est claire.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 117,
+      "citation": "La préparation limite les aléas, la coordination limite les retards.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 118,
+      "citation": "Un chantier propre est souvent un chantier mieux maîtrisé.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 119,
+      "citation": "La qualité finale se construit à chaque étape intermédiaire.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 120,
+      "citation": "La meilleure improvisation est celle qu’une bonne préparation rend inutile.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 121,
+      "citation": "Le suivi de chantier est l’art de garder le projet aligné avec la réalité.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 122,
+      "citation": "La technique doit rester compatible avec les délais et les accès.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 123,
+      "citation": "Un phasage clair évite les coupures inutiles.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 124,
+      "citation": "Chaque nuit de travaux doit se préparer comme une opération critique.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 125,
+      "citation": "La continuité d’exploitation est un objectif de conception autant que de chantier.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 126,
+      "citation": "Un chantier complexe exige des décisions simples, rapides et tracées.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 127,
+      "citation": "La coordination est la première énergie d’un projet collectif.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 128,
+      "citation": "L’ouvrage final dépend de la qualité des interfaces invisibles.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 129,
+      "citation": "Un planning bien tenu est une preuve de respect pour tous les acteurs.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 130,
+      "citation": "Le bon chantier est celui où les surprises ont été anticipées.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 131,
+      "citation": "Une visite de site attentive vaut parfois plusieurs pages d’hypothèses.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 132,
+      "citation": "La réalité du terrain enrichit toujours la conception.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 133,
+      "citation": "Un projet se réussit quand l’étude et le chantier avancent dans le même sens.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 134,
+      "citation": "La sécurité n’est pas une formalité, c’est une méthode quotidienne.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 135,
+      "citation": "Le chantier révèle la robustesse des choix techniques.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 136,
+      "citation": "Chaque réservation oubliée devient une contrainte de plus.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 137,
+      "citation": "La meilleure solution technique doit aussi pouvoir se poser correctement.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 138,
+      "citation": "Le BTP demande une précision qui accepte la réalité du terrain.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 139,
+      "citation": "Une bonne coordination évite que chaque lot travaille dans son coin.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 140,
+      "citation": "Le chantier avance quand les responsabilités sont lisibles.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 141,
+      "citation": "Un ouvrage durable se construit avec des décisions traçables.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 142,
+      "citation": "La qualité ne se contrôle pas seulement à la fin, elle se suit à chaque étape.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 143,
+      "citation": "Un bon phasage est une sécurité pour le client comme pour les équipes.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 144,
+      "citation": "Les contraintes d’accès doivent être pensées avant la livraison du matériel.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 145,
+      "citation": "Chaque intervention critique mérite son scénario de repli.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 146,
+      "citation": "La réussite du chantier tient souvent à la qualité des échanges entre lots.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 147,
+      "citation": "La précision documentaire protège le planning.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 148,
+      "citation": "Un chantier bien organisé inspire confiance dès la première visite.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 149,
+      "citation": "La méthode permet au terrain de rester maître de son rythme.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 150,
+      "citation": "Construire juste, c’est décider au bon moment avec les bonnes informations.",
+      "categorie": "btp_chantier",
+      "auteur": "Citation originale",
+      "tags": [
+        "btp-chantier",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 151,
+      "citation": "La performance énergétique commence par des choix techniques cohérents.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 152,
+      "citation": "Innover, ce n’est pas compliquer : c’est mieux répondre au besoin.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 153,
+      "citation": "Un bâtiment intelligent doit d’abord être un bâtiment fiable.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 154,
+      "citation": "La sobriété technique est souvent la meilleure forme d’innovation.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 155,
+      "citation": "L’efficacité énergétique se conçoit avant de se mesurer.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 156,
+      "citation": "Un projet durable est un projet qui reste exploitable.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 157,
+      "citation": "La technologie n’a de valeur que si elle sert l’usage.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 158,
+      "citation": "Le bâtiment de demain se prépare avec des choix responsables aujourd’hui.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 159,
+      "citation": "Une installation évolutive prolonge la vie du bâtiment.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 160,
+      "citation": "La durabilité commence par la maintenabilité.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 161,
+      "citation": "Un système performant doit rester compréhensible par ceux qui l’exploitent.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 162,
+      "citation": "La bonne innovation améliore le confort sans créer de complexité inutile.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 163,
+      "citation": "La supervision donne du sens aux données quand l’architecture est claire.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 164,
+      "citation": "L’énergie la mieux maîtrisée est celle qui n’est pas gaspillée.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 165,
+      "citation": "Les solutions durables sont celles qui résistent aux usages réels.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 166,
+      "citation": "Le numérique doit rendre le bâtiment plus lisible, pas plus opaque.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 167,
+      "citation": "Une GTB efficace commence par des points bien définis.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 168,
+      "citation": "L’automatisme réussi est celui qui simplifie l’exploitation.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 169,
+      "citation": "Le confort, la sécurité et l’énergie doivent avancer ensemble.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 170,
+      "citation": "La performance se gagne dans les détails de conception.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 171,
+      "citation": "La transition énergétique passe aussi par des dossiers techniques solides.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 172,
+      "citation": "Un bâtiment connecté doit rester exploitable en mode dégradé.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 173,
+      "citation": "La résilience se prépare avant la panne.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 174,
+      "citation": "Les données utiles sont celles qui permettent d’agir.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 175,
+      "citation": "L’innovation responsable respecte la maintenance future.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 176,
+      "citation": "Un projet moderne doit rester simple à comprendre dans dix ans.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 177,
+      "citation": "Le bon capteur au bon endroit vaut mieux qu’une donnée de plus.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 178,
+      "citation": "La qualité environnementale dépend aussi de la qualité technique.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 179,
+      "citation": "Un choix sobre aujourd’hui peut éviter une rénovation lourde demain.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 180,
+      "citation": "La performance durable se conçoit avec le terrain, pas seulement avec les chiffres.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 181,
+      "citation": "Un système intelligent doit savoir rester discret.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 182,
+      "citation": "L’efficacité vient de l’équilibre entre technologie et bon sens.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 183,
+      "citation": "Une architecture évolutive est une réponse concrète à l’avenir.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 184,
+      "citation": "La vraie modernité est celle qui améliore l’usage quotidien.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 185,
+      "citation": "La maintenance prédictive commence par une installation correctement documentée.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 186,
+      "citation": "Le bâtiment performant est celui qui consomme juste et fonctionne longtemps.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 187,
+      "citation": "Une énergie mieux pilotée est une énergie mieux respectée.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 188,
+      "citation": "L’innovation doit apporter de la clarté, pas de l’incertitude.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 189,
+      "citation": "Le durable n’est pas seulement écologique, il est aussi fiable et maintenable.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 190,
+      "citation": "La bonne donnée doit être disponible, exacte et utile.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 191,
+      "citation": "Une solution responsable tient compte du cycle de vie de l’installation.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 192,
+      "citation": "La technique durable évite les dépendances inutiles.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 193,
+      "citation": "Un bâtiment sobre est un bâtiment pensé avec précision.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 194,
+      "citation": "La performance ne doit jamais se faire au détriment de la sécurité.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 195,
+      "citation": "Un choix technique durable se vérifie dans l’exploitation.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 196,
+      "citation": "La meilleure technologie est celle que l’utilisateur adopte naturellement.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 197,
+      "citation": "Un système bien conçu réduit les consommations sans réduire le confort.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 198,
+      "citation": "L’avenir du bâtiment se joue dans la qualité des interfaces.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 199,
+      "citation": "Une installation pilotée doit rester pilotable par l’humain.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 200,
+      "citation": "La durabilité est une promesse qui se tient par la rigueur.",
+      "categorie": "innovation_durabilite",
+      "auteur": "Citation originale",
+      "tags": [
+        "innovation-durabilite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 201,
+      "citation": "La sécurité n’est jamais un supplément, c’est le socle du projet.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 202,
+      "citation": "La qualité se prépare dans les détails et se confirme dans l’usage.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 203,
+      "citation": "Une vérification sérieuse vaut mieux qu’une correction tardive.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 204,
+      "citation": "La conformité n’est pas une contrainte, c’est une protection.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 205,
+      "citation": "Un dossier clair réduit les risques pour tous.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 206,
+      "citation": "La sécurité électrique repose sur des choix cohérents et vérifiables.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 207,
+      "citation": "La qualité d’exécution commence par la qualité des prescriptions.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 208,
+      "citation": "Un repère absent peut devenir un risque présent.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 209,
+      "citation": "La prévention est toujours moins coûteuse que la réparation.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 210,
+      "citation": "Chaque contrôle est une occasion de fiabiliser l’ouvrage.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 211,
+      "citation": "Un bon projet protège avant tout les personnes.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 212,
+      "citation": "La conformité donne un cadre, la rigueur donne la fiabilité.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 213,
+      "citation": "Un équipement accessible est un équipement plus sûr à maintenir.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 214,
+      "citation": "La qualité ne dépend pas d’un seul acteur, elle dépend de toute la chaîne.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 215,
+      "citation": "La sécurité se voit dans ce qui a été anticipé.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 216,
+      "citation": "Un projet bien documenté sécurise la réception comme l’exploitation.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 217,
+      "citation": "La précision technique limite les interprétations dangereuses.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 218,
+      "citation": "Une installation propre est plus facile à contrôler et à maintenir.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 219,
+      "citation": "La qualité n’est pas un contrôle final, c’est une attitude continue.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 220,
+      "citation": "Un bon diagnostic éclaire les décisions avant les travaux.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 221,
+      "citation": "La sécurité se conçoit avec les usages réels du bâtiment.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 222,
+      "citation": "Une réserve technique doit rester une réserve maîtrisée.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 223,
+      "citation": "La fiabilité se construit par la répétition des bonnes pratiques.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 224,
+      "citation": "Un risque identifié est déjà un risque mieux maîtrisé.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 225,
+      "citation": "La qualité documentaire accompagne la qualité de l’ouvrage.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 226,
+      "citation": "Le respect des normes protège le projet et ses utilisateurs.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 227,
+      "citation": "Un cheminement clair limite les erreurs d’intervention.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 228,
+      "citation": "La rigueur protège le planning autant que les personnes.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 229,
+      "citation": "La sécurité impose de penser au jour de la maintenance.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 230,
+      "citation": "Un tableau repéré, c’est une intervention mieux préparée.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 231,
+      "citation": "Chaque essai valide une partie de la confiance accordée au système.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 232,
+      "citation": "La réception d’un ouvrage commence bien avant la livraison.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 233,
+      "citation": "La qualité se lit dans la cohérence entre plans, schémas et terrain.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 234,
+      "citation": "Un contrôle bien mené évite une anomalie mal vécue.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 235,
+      "citation": "La sécurité est une responsabilité partagée, jamais déléguée au hasard.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 236,
+      "citation": "Une prescription claire limite les variantes mal maîtrisées.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 237,
+      "citation": "Le bon niveau de détail évite les mauvaises interprétations.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 238,
+      "citation": "La fiabilité ne s’improvise pas en fin de chantier.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 239,
+      "citation": "La maintenance future mérite une sécurité pensée dès l’origine.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 240,
+      "citation": "Un projet sécurisé est un projet où chacun sait quoi faire.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 241,
+      "citation": "La qualité d’un ouvrage se voit dans sa capacité à durer.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 242,
+      "citation": "Une installation contrôlable est une installation plus fiable.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 243,
+      "citation": "La conformité sans compréhension reste fragile.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 244,
+      "citation": "La sécurité progresse quand les détails sont traités avec sérieux.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 245,
+      "citation": "Un défaut de clarté peut devenir un défaut de sécurité.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 246,
+      "citation": "La qualité passe par des choix techniques justifiés.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 247,
+      "citation": "Chaque repérage est un geste de sécurité pour demain.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 248,
+      "citation": "La prévention commence dans la conception.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 249,
+      "citation": "Un bon DOE prolonge la sécurité du chantier jusqu’à l’exploitation.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 250,
+      "citation": "La sécurité durable se construit dans les choix invisibles.",
+      "categorie": "qualite_securite",
+      "auteur": "Citation originale",
+      "tags": [
+        "qualite-securite",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 251,
+      "citation": "Un projet avance mieux quand les compétences se connectent.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 252,
+      "citation": "La réussite technique est souvent une réussite collective.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 253,
+      "citation": "La coordination donne de la force aux bonnes idées.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 254,
+      "citation": "Un bon échange peut éviter une mauvaise reprise.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 255,
+      "citation": "Le dialogue entre lots est un outil de performance.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 256,
+      "citation": "Chaque acteur du projet détient une partie de la solution.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 257,
+      "citation": "La technique progresse quand les informations circulent clairement.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 258,
+      "citation": "Un projet bien coordonné devient plus simple pour tout le monde.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 259,
+      "citation": "La confiance se construit avec des décisions claires et tenues.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 260,
+      "citation": "Une équipe efficace partage les contraintes avant de subir les problèmes.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 261,
+      "citation": "La réussite d’un projet dépend autant des interfaces humaines que techniques.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 262,
+      "citation": "Un bon bureau d’études sait écouter le terrain.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 263,
+      "citation": "Les meilleures solutions naissent souvent d’un échange précis.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 264,
+      "citation": "La communication évite que la technique devienne un obstacle.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 265,
+      "citation": "Un projet collectif demande des informations fiables et partagées.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 266,
+      "citation": "La clarté des responsabilités accélère la résolution des sujets.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 267,
+      "citation": "Le respect du travail de chacun améliore la qualité finale.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 268,
+      "citation": "Une réunion utile transforme les problèmes en décisions.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 269,
+      "citation": "La coopération donne de la cohérence aux projets complexes.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 270,
+      "citation": "Chaque retour terrain est une occasion d’améliorer la conception.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 271,
+      "citation": "Un chantier performant commence par une équipe alignée.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 272,
+      "citation": "La qualité collective naît de la précision individuelle.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 273,
+      "citation": "Les interfaces réussies sont celles qui ont été discutées à temps.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 274,
+      "citation": "Une information claire au bon moment vaut mieux qu’une correction tardive.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 275,
+      "citation": "La bonne coordination transforme la complexité en méthode.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 276,
+      "citation": "Un projet se construit avec des plans, mais aussi avec de la confiance.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 277,
+      "citation": "L’écoute technique est une compétence aussi importante que le calcul.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 278,
+      "citation": "Une équipe qui partage les informations réduit les aléas.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 279,
+      "citation": "Les décisions tracées renforcent la confiance entre intervenants.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 280,
+      "citation": "La réussite durable vient de la cohérence entre tous les acteurs.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 281,
+      "citation": "Un bon chef de projet fait circuler les bonnes informations.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 282,
+      "citation": "Le terrain et l’étude doivent rester en conversation permanente.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 283,
+      "citation": "La compétence collective se voit dans la fluidité du chantier.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 284,
+      "citation": "Une interface traitée tôt est une réserve évitée.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 285,
+      "citation": "La collaboration rend les choix techniques plus solides.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 286,
+      "citation": "Un projet gagne en qualité quand chacun comprend l’objectif final.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 287,
+      "citation": "La confiance n’exclut pas la vérification, elle la rend constructive.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 288,
+      "citation": "Le partage d’expérience améliore les projets suivants.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 289,
+      "citation": "Une équipe alignée avance plus vite et corrige mieux.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 290,
+      "citation": "La coordination est le lien invisible entre l’idée et l’ouvrage.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 291,
+      "citation": "Un bon échange technique peut sécuriser plusieurs semaines de chantier.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 292,
+      "citation": "Le projet réussit quand l’information utile arrive à la bonne personne.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 293,
+      "citation": "La meilleure expertise reste humble devant le terrain.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 294,
+      "citation": "Une équipe efficace transforme les contraintes en décisions.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 295,
+      "citation": "La clarté dans les échanges évite la confusion sur site.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 296,
+      "citation": "Le collectif donne de la robustesse aux choix techniques.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 297,
+      "citation": "Un chantier apaisé commence par une communication précise.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 298,
+      "citation": "La qualité relationnelle influence directement la qualité technique.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 299,
+      "citation": "Un projet bien piloté donne à chacun les moyens de réussir.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 300,
+      "citation": "La réussite se construit avec des compétences reliées entre elles.",
+      "categorie": "esprit_equipe",
+      "auteur": "Citation originale",
+      "tags": [
+        "esprit-equipe",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 301,
+      "citation": "Construire l’avenir commence par bien comprendre le besoin présent.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 302,
+      "citation": "Chaque projet est une occasion de faire mieux que le précédent.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 303,
+      "citation": "La précision d’aujourd’hui devient la confiance de demain.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 304,
+      "citation": "Les grands ouvrages naissent de détails maîtrisés.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 305,
+      "citation": "Le progrès se construit plan après plan.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 306,
+      "citation": "La technique est plus forte quand elle reste au service de l’humain.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 307,
+      "citation": "Un projet ambitieux demande une rigueur quotidienne.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 308,
+      "citation": "La constance dans la méthode crée la différence sur le résultat.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 309,
+      "citation": "Chaque problème technique cache une solution à structurer.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 310,
+      "citation": "La réussite se prépare quand personne ne la voit encore.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 311,
+      "citation": "Le sérieux d’aujourd’hui évite les urgences de demain.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 312,
+      "citation": "Un bâtiment durable commence par une décision bien posée.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 313,
+      "citation": "Les idées deviennent solides quand elles passent par la méthode.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 314,
+      "citation": "Faire simple demande souvent beaucoup de compétence.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 315,
+      "citation": "La maîtrise technique est une forme de calme dans la complexité.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 316,
+      "citation": "Avancer avec précision, c’est déjà gagner en efficacité.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 317,
+      "citation": "Chaque journée de projet permet d’améliorer l’ouvrage final.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 318,
+      "citation": "Le détail juste donne de la force à l’ensemble.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 319,
+      "citation": "La qualité d’un projet se construit dans les choix quotidiens.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 320,
+      "citation": "Un regard technique attentif change la trajectoire d’un projet.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 321,
+      "citation": "Le meilleur résultat vient d’un équilibre entre ambition et rigueur.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 322,
+      "citation": "Concevoir utile, c’est penser plus loin que la livraison.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 323,
+      "citation": "Les projets solides se construisent avec des bases solides.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 324,
+      "citation": "La patience dans l’étude évite la précipitation sur chantier.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 325,
+      "citation": "Chaque contrainte bien traitée renforce le projet.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 326,
+      "citation": "La compétence se voit dans la capacité à rendre fiable.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 327,
+      "citation": "L’exigence donne du sens au travail technique.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 328,
+      "citation": "Un projet réussi commence par une question bien posée.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 329,
+      "citation": "Le futur du bâtiment se dessine avec méthode.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 330,
+      "citation": "La technique bien employée améliore la vie quotidienne.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 331,
+      "citation": "Chaque plan est une étape vers un ouvrage réel.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 332,
+      "citation": "La motivation grandit quand le travail a du sens.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 333,
+      "citation": "Un bon projet n’est pas seulement construit, il est pensé.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 334,
+      "citation": "La rigueur permet à l’ambition de devenir concrète.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 335,
+      "citation": "Les solutions fiables naissent d’une attention régulière.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 336,
+      "citation": "Le progrès se mesure dans la qualité des détails.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 337,
+      "citation": "Un métier technique est un métier de responsabilité.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 338,
+      "citation": "La précision est une manière de construire la confiance.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 339,
+      "citation": "Chaque ouvrage commence par une intention claire.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 340,
+      "citation": "Faire bien du premier coup reste la meilleure économie.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 341,
+      "citation": "La vision donne la direction, la méthode donne le résultat.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 342,
+      "citation": "Un projet exigeant est une opportunité de progresser.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 343,
+      "citation": "La qualité technique est une signature silencieuse.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 344,
+      "citation": "Les bâtiments durent plus longtemps que les urgences qui les ont créés.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 345,
+      "citation": "L’objectif n’est pas seulement de livrer, mais de livrer juste.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 346,
+      "citation": "Chaque choix technique raconte une façon de travailler.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 347,
+      "citation": "La réussite vient de la répétition des gestes bien faits.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 348,
+      "citation": "Construire mieux demande de penser plus tôt.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 349,
+      "citation": "Le vrai professionnalisme se voit dans les détails que personne ne remarque.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 350,
+      "citation": "Un projet fiable est un projet qui inspire confiance dès sa conception.",
+      "categorie": "vision_motivation",
+      "auteur": "Citation originale",
+      "tags": [
+        "vision-motivation",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 351,
+      "citation": "Un objectif clair transforme les contraintes en trajectoire.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 352,
+      "citation": "La décision juste est celle qui s’appuie sur des informations fiables.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 353,
+      "citation": "Un projet se pilote mieux quand les risques sont nommés.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 354,
+      "citation": "La planification donne au projet une mémoire et une direction.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 355,
+      "citation": "Une action tracée est une action qui a plus de chances d’aboutir.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 356,
+      "citation": "Le bon arbitrage respecte à la fois la technique, le délai et l’usage.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 357,
+      "citation": "La maîtrise d’un projet commence par la maîtrise des informations.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 358,
+      "citation": "Un jalon clair vaut mieux qu’une intention floue.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 359,
+      "citation": "La gestion de projet relie les idées, les personnes et les délais.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 360,
+      "citation": "Un projet complexe demande des priorités simples.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 361,
+      "citation": "Chaque décision doit rapprocher le projet de sa mise en service.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 362,
+      "citation": "Le pilotage efficace évite que l’urgence devienne la méthode.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 363,
+      "citation": "Une synthèse claire fait gagner du temps à toute l’équipe.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 364,
+      "citation": "Le meilleur suivi est celui qui rend les prochaines étapes évidentes.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 365,
+      "citation": "Un risque non traité finit souvent par choisir le planning à notre place.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 366,
+      "citation": "La bonne organisation protège la qualité technique.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 367,
+      "citation": "Un projet se sécurise par des décisions datées, partagées et comprises.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 368,
+      "citation": "La clarté du périmètre évite les malentendus coûteux.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 369,
+      "citation": "Une réunion productive commence par un objectif précis.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 370,
+      "citation": "Le suivi régulier transforme les problèmes en sujets maîtrisés.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 371,
+      "citation": "Un bon planning doit rester réaliste pour rester utile.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 372,
+      "citation": "La conduite de projet exige autant de rigueur que de souplesse.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 373,
+      "citation": "Les priorités doivent être lisibles pour que l’action soit efficace.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 374,
+      "citation": "Un sujet technique bien cadré se résout plus vite.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 375,
+      "citation": "La réussite se joue souvent dans la qualité des arbitrages intermédiaires.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 376,
+      "citation": "Un projet maîtrisé sait distinguer l’urgent de l’important.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 377,
+      "citation": "Chaque livrable doit répondre à un besoin clair.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 378,
+      "citation": "La traçabilité protège les décisions dans la durée.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 379,
+      "citation": "Le pilotage donne de la cohérence aux efforts de chacun.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 380,
+      "citation": "Une bonne méthode réduit le bruit autour du projet.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 381,
+      "citation": "La maîtrise des interfaces est une compétence de pilotage essentielle.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 382,
+      "citation": "Un planning sans contraintes réelles n’est qu’un souhait.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 383,
+      "citation": "Le bon suivi met en lumière les blocages avant qu’ils ne deviennent critiques.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 384,
+      "citation": "La gestion de projet, c’est transformer l’incertitude en prochaines actions.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 385,
+      "citation": "La qualité du cadrage conditionne la qualité du résultat.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 386,
+      "citation": "Un projet gagne en efficacité quand les décisions sont assumées.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 387,
+      "citation": "Le pilotage doit rendre visible ce qui peut freiner l’avancement.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 388,
+      "citation": "Un compte rendu clair permet de ne pas refaire deux fois la même réunion.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 389,
+      "citation": "La bonne information au bon moment accélère les arbitrages.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 390,
+      "citation": "La réussite d’un projet tient à la régularité du suivi.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 391,
+      "citation": "Une action sans responsable devient vite une intention oubliée.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 392,
+      "citation": "La méthode évite de confondre vitesse et précipitation.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 393,
+      "citation": "Un projet bien cadré laisse moins de place aux surprises.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 394,
+      "citation": "Le pilotage efficace respecte la technique et les hommes.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 395,
+      "citation": "Une priorité claire simplifie les choix difficiles.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 396,
+      "citation": "Un projet avance quand les décisions arrêtées restent visibles.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 397,
+      "citation": "La préparation des jalons sécurise la réception finale.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 398,
+      "citation": "Le temps de coordination est un investissement, pas une perte.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 399,
+      "citation": "La gestion de projet transforme la complexité en séquences maîtrisables.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    },
+    {
+      "id": 400,
+      "citation": "Chaque étape validée renforce la confiance dans la suite.",
+      "categorie": "gestion_projet",
+      "auteur": "Citation originale",
+      "tags": [
+        "gestion-projet",
+        "motivation",
+        "btp",
+        "electricite"
+      ]
+    }
+  ]
+}

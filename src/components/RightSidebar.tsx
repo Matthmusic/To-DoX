@@ -12,7 +12,17 @@ import { getInitials } from "../utils";
 
 // ── Utilitaires ───────────────────────────────────────────────────────────────
 
-const TAB_WIDTH = 64; // px — largeur de la bande de tab toujours visible
+const TAB_WIDTH_MIN = 48;
+const TAB_WIDTH_MAX = 96;
+
+/** Calcule la largeur du tab = 2/3 du gap entre la droite de .kanban-row et le bord droit de l'écran */
+function computeTabWidth(): number {
+    const kanbanRow = document.querySelector('.kanban-row');
+    if (!kanbanRow) return 64;
+    const gap = window.innerWidth - kanbanRow.getBoundingClientRect().right;
+    const w = Math.round(gap * (2 / 3));
+    return Math.min(TAB_WIDTH_MAX, Math.max(TAB_WIDTH_MIN, w));
+}
 
 function timeAgo(ts: number): string {
     const diff = Date.now() - ts;
@@ -52,11 +62,34 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'notifs' | 'messages'>('notifs');
 
+    const [tabWidth, setTabWidth] = useState(() => computeTabWidth());
+
     // Largeur totale quand ouvert : contenu 33vw (280–560px) + tab strip
-    const [expandedWidth] = useState(() =>
-        Math.min(Math.max(280, window.innerWidth * 0.33), 560) + TAB_WIDTH
-    );
+    const expandedWidth = Math.min(Math.max(280, window.innerWidth * 0.33), 560) + tabWidth;
+
     const containerRef = useRef<HTMLDivElement>(null);
+
+    // Recalcul responsive : observe .kanban-row + resize fenêtre
+    useEffect(() => {
+        const update = () => setTabWidth(computeTabWidth());
+
+        // Observer le kanban-row (ses dimensions changent à chaque resize/ajout de colonne)
+        const kanbanRow = document.querySelector('.kanban-row');
+        let ro: ResizeObserver | null = null;
+        if (kanbanRow) {
+            ro = new ResizeObserver(update);
+            ro.observe(kanbanRow);
+        }
+        window.addEventListener('resize', update);
+        // Premier calcul légèrement différé pour laisser le layout se stabiliser
+        const t = setTimeout(update, 100);
+
+        return () => {
+            ro?.disconnect();
+            window.removeEventListener('resize', update);
+            clearTimeout(t);
+        };
+    }, []);
 
     // Fermeture au clic en dehors
     useEffect(() => {
@@ -228,7 +261,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
         <motion.div
             ref={containerRef}
             className="fixed right-0 top-1/2 -translate-y-1/2 z-[8000] flex flex-row-reverse overflow-hidden rounded-l-3xl shadow-2xl"
-            animate={{ width: isOpen ? expandedWidth : TAB_WIDTH }}
+            animate={{ width: isOpen ? expandedWidth : tabWidth }}
             transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
             style={{
                 height: '80vh',
@@ -249,7 +282,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
             {/* ── Bande de tab (toujours visible, à droite) ─────────────────── */}
             <div
                 className="shrink-0 flex flex-col relative"
-                style={{ width: TAB_WIDTH }}
+                style={{ width: tabWidth }}
             >
                 {/* Ligne d'accent verticale (côté gauche de la bande) */}
                 <div className="absolute left-0 top-8 bottom-8 w-px pointer-events-none"
