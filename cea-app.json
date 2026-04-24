@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.1.26",
+    "version": "2.2.0",
     "description": {
       "short": "Kanban intelligent avec interface mobile-first, workflow de revision et notifications.",
       "long": "To-DoX est une application Kanban moderne pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recurrence, des templates, un dashboard KPIs, une vue Timeline/Gantt, un workflow de revision complet, une vue Terminees, des notifications in-app, une interface responsive mobile-first (burger menu, onglets Kanban), ainsi que l'export et l'import des donnees. Les donnees sont stockees localement et peuvent etre synchronisees via OneDrive."
@@ -72,9 +72,24 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.1.26.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.2.0.exe"
   },
   "changelog": {
+    "2.2.0": {
+      "date": "2026-04-24",
+      "changes": [
+        "Centre d'activité : sidebar glassmorphique adaptative au thème (Notifications + Messages)",
+        "Deux zones de clic : moitié haute (Notifications révision), moitié basse (Messages commentaires)",
+        "Badges messages : thème color top-right (commentaires), rouge top-left (@mentions urgentes)",
+        "Shake animations : cloche toutes les 5s pour révisions, bulle toutes les 3s pour @mentions",
+        "Son de notification sur @mention en temps réel (multi-user via OneDrive ~2s)",
+        "Clic notif/message : scroll auto vers la TaskCard + pulse couleur thème 10s + dépli en mode full",
+        "Clic message : clignotement du commentaire ciblé dans la conversation (8s)",
+        "Fermeture de la sidebar au clic extérieur",
+        "Date d'échéance + numéro de semaine ISO en pill cliquable sur TaskCard (ouvre calendrier inline)",
+        "Double-clic sur carte compacte pour passer en mode full"
+      ]
+    },
     "2.1.26": {
       "date": "2026-03-31",
       "changes": [
