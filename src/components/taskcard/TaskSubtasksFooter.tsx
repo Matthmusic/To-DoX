@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { ClipboardList, ChevronDown, ChevronRight, CheckSquare } from "lucide-react";
 import type { Task } from "../../types";
 import useStore from "../../store/useStore";
@@ -24,13 +25,23 @@ export function TaskSubtasksFooter({
     const { toggleSubtask, users, currentUser } = useStore();
     const subtasks = task.subtasks || [];
 
+    // Vert (100%) et rose (<30%) sont des couleurs sémantiques fixes (succès / alerte),
+    // volontairement indépendantes du thème. L'état "en cours" (30-99%), lui, ne porte
+    // aucune signification propre : il suit les couleurs d'accent du thème actif.
     const progressColor =
         progressPercentage === 100 ? "bg-gradient-to-r from-emerald-500 to-teal-400" :
-        progressPercentage < 30    ? "bg-rose-500" :
-                                     "bg-gradient-to-r from-indigo-500 to-purple-500";
+        progressPercentage < 30    ? "bg-rose-500" : "";
+    const progressAccentStyle: CSSProperties =
+        progressPercentage === 100 || progressPercentage < 30
+            ? {}
+            : { background: 'linear-gradient(to right, var(--color-primary), var(--color-secondary))' };
     const progressTextColor =
         progressPercentage === 100 ? "text-emerald-400" :
-        progressPercentage < 30    ? "text-rose-400" : "text-indigo-400";
+        progressPercentage < 30    ? "text-rose-400" : "";
+    const progressTextStyle: CSSProperties =
+        progressPercentage === 100 || progressPercentage < 30
+            ? {}
+            : { color: 'var(--color-primary)' };
 
     // ── Vue étendue : header unifié (titre + compteur + progress inline + collapse) ──
     if (isSubtasksExpanded && totalSubtasks > 0) {
@@ -43,16 +54,16 @@ export function TaskSubtasksFooter({
                 <span className={`text-sm font-semibold ${progressPercentage === 100 ? "text-emerald-400" : "text-slate-300"}`}>
                     Sous-tâches
                 </span>
-                <span className={`text-xs tabular-nums ${progressTextColor}`}>
+                <span className={`text-xs tabular-nums ${progressTextColor}`} style={progressTextStyle}>
                     {completedSubtasks}/{totalSubtasks}
                 </span>
                 <div className="flex-1 h-1 overflow-hidden rounded-full bg-white/5">
                     <div
                         className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
-                        style={{ width: `${progressPercentage}%` }}
+                        style={{ width: `${progressPercentage}%`, ...progressAccentStyle }}
                     />
                 </div>
-                <span className={`text-[10px] font-bold tabular-nums ${progressTextColor}`}>
+                <span className={`text-[10px] font-bold tabular-nums ${progressTextColor}`} style={progressTextStyle}>
                     {progressPercentage}%
                 </span>
                 <ChevronDown className="h-3 w-3 text-slate-500 group-hover:text-slate-300 transition" />
@@ -77,10 +88,10 @@ export function TaskSubtasksFooter({
                         <div className="flex-1 h-1 overflow-hidden rounded-full bg-white/5">
                             <div
                                 className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
-                                style={{ width: `${progressPercentage}%` }}
+                                style={{ width: `${progressPercentage}%`, ...progressAccentStyle }}
                             />
                         </div>
-                        <span className={`text-[10px] font-bold tabular-nums ${progressTextColor}`}>
+                        <span className={`text-[10px] font-bold tabular-nums ${progressTextColor}`} style={progressTextStyle}>
                             {progressPercentage}%
                         </span>
                         <ChevronRight className="h-3 w-3 text-slate-500 group-hover:text-slate-300 transition shrink-0" />

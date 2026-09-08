@@ -275,6 +275,7 @@ export function TaskCard({
                 borderColor: 'var(--color-primary)',
             } : undefined}
             title={cardFileDropTarget ? "Déposer pour ajouter le chemin à la note" : undefined}
+            aria-label={cardFileDropTarget ? "Déposer pour ajouter le chemin à la note" : undefined}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -376,6 +377,7 @@ export function TaskCard({
                                 onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
                                 className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-500/30 bg-slate-500/10 text-slate-400 transition hover:bg-slate-500/20"
                                 title="Non assignée — cliquer pour assigner"
+                                aria-label="Non assignée — cliquer pour assigner"
                             >
                                 <User className="h-3 w-3" />
                             </button>
@@ -391,6 +393,7 @@ export function TaskCard({
                                             : "border-blue-300/40 bg-blue-300/15 text-blue-200"
                                     } ${badge.isReviewer ? "ring-1 ring-violet-400" : ""}`}
                                     title={`${badge.name}${badge.isCreator ? " (créateur)" : ""}${badge.isReviewer ? " (réviseur)" : ""}`}
+                                    aria-label={`${badge.name}${badge.isCreator ? " (créateur)" : ""}${badge.isReviewer ? " (réviseur)" : ""}`}
                                 >
                                     {getInitials(badge.name)}
                                 </button>
@@ -402,6 +405,7 @@ export function TaskCard({
                             onClick={(e) => { e.stopPropagation(); setIsSubtasksExpanded(true); }}
                             className={`flex items-center gap-0.5 rounded p-0.5 text-[9px] font-bold transition ${hasMention ? "text-amber-400 animate-pulse" : "text-slate-500 hover:text-white"}`}
                             title={hasMention ? `Vous êtes mentionné(e) — ${commentCount} commentaire(s)` : `${commentCount} commentaire(s)`}
+                            aria-label={hasMention ? `Vous êtes mentionné(e) — ${commentCount} commentaire(s)` : `${commentCount} commentaire(s)`}
                         >
                             <MessageCircle className="h-3 w-3" />{commentCount}
                         </button>
@@ -410,6 +414,7 @@ export function TaskCard({
                         onClick={(e) => { e.stopPropagation(); handleToggleFavorite(e); }}
                         className={`rounded p-0.5 transition ${task.favorite ? "text-amber-400" : "text-slate-600 hover:text-amber-400"}`}
                         title={task.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                        aria-label={task.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                     >
                         <Star className="h-3.5 w-3.5" fill={task.favorite ? "currentColor" : "none"} />
                     </button>
@@ -419,6 +424,7 @@ export function TaskCard({
                             onContextMenu={projectDir ? handleCopyFolderPath : undefined}
                             className={`rounded p-0.5 transition ${projectDir ? "text-indigo-400" : "text-slate-600 hover:text-slate-300"}`}
                             title={projectDir ? `Ouvrir : ${projectDir} (clic droit : copier)` : "Configurer le dossier projet"}
+                            aria-label={projectDir ? `Ouvrir : ${projectDir} (clic droit : copier)` : "Configurer le dossier projet"}
                         >
                             <FolderOpen className="h-3.5 w-3.5" />
                         </button>
@@ -446,6 +452,7 @@ export function TaskCard({
                     }}
                     className="flex items-center gap-1.5 self-start rounded-full border border-indigo-400/30 bg-indigo-400/10 px-2 py-0.5 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-400/20 transition cursor-context-menu"
                     title={`Issu de la sous-tâche de : ${task.convertedFromSubtask.parentTaskTitle}\nClic droit pour reconvertir en sous-tâche`}
+                    aria-label={`Issu de la sous-tâche de : ${task.convertedFromSubtask.parentTaskTitle}\nClic droit pour reconvertir en sous-tâche`}
                 >
                     <ArrowDownToLine className="h-3 w-3" />
                     Sous-tâche de : {task.convertedFromSubtask.parentTaskTitle}
@@ -496,6 +503,7 @@ export function TaskCard({
                         }}
                         className="flex items-center gap-1.5 self-start rounded-full border border-indigo-400/30 bg-indigo-400/10 px-2 py-0.5 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-400/20 transition cursor-context-menu"
                         title={`Tâche parente : ${parent.title}\nClic droit pour délier`}
+                        aria-label={`Tâche parente : ${parent.title}\nClic droit pour délier`}
                     >
                         <Link2Off className="h-3 w-3" />
                         Tâche de : {parent.title}
@@ -542,6 +550,7 @@ export function TaskCard({
                             }}
                             className="shrink-0 rounded p-0.5 text-slate-300 transition hover:text-white"
                             title={isCompact ? 'Afficher le détail' : 'Réduire la carte'}
+                            aria-label={isCompact ? 'Afficher le détail' : 'Réduire la carte'}
                         >
                             {isCompact ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </button>
@@ -623,15 +632,21 @@ export function TaskCard({
             </div>
 
             {/* Barre de progression sous-tâches — mode compact uniquement */}
+            {/* Vert (100%) et rose (<30%) sont sémantiques et fixes ; l'état "en cours" suit
+                les couleurs d'accent du thème actif plutôt qu'un dégradé codé en dur. */}
             {isCompact && totalSubtasks > 0 && (
                 <div className="h-0.5 w-full overflow-hidden rounded-full bg-white/5 mt-1">
                     <div
                         className={`h-full rounded-full transition-all duration-500 ${
                             progressPercentage === 100 ? "bg-gradient-to-r from-emerald-500 to-teal-400" :
-                            progressPercentage < 30    ? "bg-rose-500" :
-                                                         "bg-gradient-to-r from-indigo-500 to-purple-500"
+                            progressPercentage < 30    ? "bg-rose-500" : ""
                         }`}
-                        style={{ width: `${progressPercentage}%` }}
+                        style={{
+                            width: `${progressPercentage}%`,
+                            ...(progressPercentage !== 100 && progressPercentage >= 30
+                                ? { background: 'linear-gradient(to right, var(--color-primary), var(--color-secondary))' }
+                                : {}),
+                        }}
                     />
                 </div>
             )}

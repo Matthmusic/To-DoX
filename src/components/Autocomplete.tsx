@@ -143,6 +143,9 @@ export function Autocomplete<T, V = unknown>({
             <button
                 ref={triggerButtonRef}
                 type="button"
+                role="combobox"
+                aria-haspopup="listbox"
+                aria-expanded={isDropdownOpen}
                 className={classNames("flex items-center justify-between gap-2", className)}
                 onClick={toggleDropdown}
                 onKeyDown={handleKeyDown}
@@ -155,6 +158,7 @@ export function Autocomplete<T, V = unknown>({
                 createPortal(
                     <div
                         ref={dropdownRef}
+                        role="listbox"
                         className="fixed z-[99999] overflow-auto rounded-b-2xl border border-white/20 bg-white/5 backdrop-blur-xl shadow-2xl"
                         style={{
                             top: dropdownPosition.top,
@@ -166,6 +170,8 @@ export function Autocomplete<T, V = unknown>({
                         {options.map((option, optionIndex) => (
                             <div
                                 key={String(getValue!(option))}
+                                role="option"
+                                aria-selected={getValue!(option) === value}
                                 className={classNames(
                                     "cursor-pointer px-3 py-2 text-sm text-slate-100 transition",
                                     optionIndex === focusedOptionIndex ? "bg-[#1E3A8A]" : "hover:bg-[#1E3A8A]/60"

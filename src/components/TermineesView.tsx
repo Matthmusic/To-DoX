@@ -111,6 +111,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
                                                         onClick={(e) => { e.stopPropagation(); reopenTask(task.id); }}
                                                         className="flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-[10px] font-semibold text-amber-300 transition hover:bg-amber-400/20"
                                                         title="Rouvrir"
+                                                        aria-label="Rouvrir"
                                                     >
                                                         <RotateCcw className="h-3 w-3" />
                                                         Rouvrir
@@ -119,6 +120,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
                                                         onClick={(e) => { e.stopPropagation(); archiveTask(task.id); }}
                                                         className="flex items-center gap-1 rounded-lg border border-emerald-400/20 bg-emerald-400/5 px-2 py-1 text-[10px] font-semibold text-emerald-400/60 transition hover:bg-emerald-400/15"
                                                         title="Archiver"
+                                                        aria-label="Archiver"
                                                     >
                                                         <Archive className="h-3 w-3" />
                                                         Archiver
@@ -129,6 +131,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
                                                 onClick={(e) => { e.stopPropagation(); onTaskClick(task, e.clientX, e.clientY); }}
                                                 className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold text-slate-400 transition hover:bg-white/10 hover:text-slate-200"
                                                 title="Éditer"
+                                                aria-label="Éditer"
                                             >
                                                 Éditer
                                             </button>

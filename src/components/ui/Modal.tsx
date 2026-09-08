@@ -50,13 +50,14 @@ export function Modal({ isOpen, onClose, title, children, className, width = "ma
                     >
                         <div className="mb-6 flex items-center justify-between border-b border-white/5 pb-4">
                             {title && (
-                                <h3 className="text-xl font-semibold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+                                <h3 className="text-xl font-semibold text-slate-100">
                                     {title}
                                 </h3>
                             )}
                             <button
                                 onClick={onClose}
-                                className="rounded-full p-2 transition-all hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 text-slate-400 hover:text-white hover:scale-110 hover:rotate-90"
+                                aria-label="Fermer"
+                                className="rounded-full p-2 transition-all hover:bg-white/10 text-slate-400 hover:text-white hover:scale-110 hover:rotate-90"
                             >
                                 <X className="h-5 w-5" />
                             </button>

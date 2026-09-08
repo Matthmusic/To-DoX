@@ -57,7 +57,7 @@ export function GanttToolbar({
             {/* Sélecteur de vue — sliding pill */}
             <div className="relative flex p-[3px] rounded-xl bg-white/5 border border-white/[0.12]" style={{ width: MODES.length * BTN_W + 6 }}>
                 <div
-                    className="absolute top-[3px] bottom-[3px] left-[3px] rounded-lg pointer-events-none transition-transform duration-200 ease-[cubic-bezier(0.34,1.2,0.64,1)]"
+                    className="absolute top-[3px] bottom-[3px] left-[3px] rounded-lg pointer-events-none transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
                     style={{
                         width: BTN_W,
                         transform: `translateX(${activeIdx * BTN_W}px)`,
@@ -86,6 +86,7 @@ export function GanttToolbar({
                 <button
                     onClick={() => setOffset(o => o - bigStep)}
                     title={`− ${bigStep} périodes`}
+                    aria-label={`− ${bigStep} périodes`}
                     className="px-2 py-[7px] hover:bg-white/10 text-white/22 hover:text-white/65 transition-colors rounded-l-xl"
                 >
                     <ChevronsLeft className="h-3.5 w-3.5" />
@@ -125,14 +126,14 @@ export function GanttToolbar({
                             <div className="flex items-center justify-between mb-2.5 px-1">
                                 <button
                                     onClick={() => setPickerYear(y => y - 1)}
-                                    className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                                    className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
                                 >
                                     <ChevronLeft className="h-3.5 w-3.5" />
                                 </button>
                                 <span className="text-sm font-bold text-white/75">{pickerYear}</span>
                                 <button
                                     onClick={() => setPickerYear(y => y + 1)}
-                                    className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                                    className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
                                 >
                                     <ChevronRight className="h-3.5 w-3.5" />
                                 </button>
@@ -180,6 +181,7 @@ export function GanttToolbar({
                 <button
                     onClick={() => setOffset(o => o + bigStep)}
                     title={`+ ${bigStep} périodes`}
+                    aria-label={`+ ${bigStep} périodes`}
                     className="px-2 py-[7px] hover:bg-white/10 text-white/22 hover:text-white/65 transition-colors rounded-r-xl"
                 >
                     <ChevronsRight className="h-3.5 w-3.5" />

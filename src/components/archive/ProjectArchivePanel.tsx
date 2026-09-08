@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { Archive, ChevronDown, ChevronRight } from "lucide-react";
 import useStore from "../../store/useStore";
 import type { Task } from "../../types";
 import { GlassModal } from "../ui/GlassModal";
 import { confirmModal } from "../../utils/confirm";
+import { useTheme } from "../../hooks/useTheme";
 
 interface ProjectArchivePanelProps {
     onClose: () => void;
@@ -11,6 +12,8 @@ interface ProjectArchivePanelProps {
 
 export function ProjectArchivePanel({ onClose }: ProjectArchivePanelProps) {
     const { tasks, unarchiveProject, unarchiveTask, deleteArchivedProject } = useStore();
+    const { activeTheme } = useTheme();
+    const primaryColor = activeTheme.palette.primary;
     const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
 
     function toggleExpand(project: string) {
@@ -46,7 +49,7 @@ export function ProjectArchivePanel({ onClose }: ProjectArchivePanelProps) {
     }, [tasks]);
 
     return (
-        <GlassModal isOpen={true} onClose={onClose} title="Archives" size="xl">
+        <GlassModal isOpen={true} onClose={onClose} title={<><Archive className="w-6 h-6 mr-2" style={{ color: primaryColor }} />Archives</>} size="xl">
             <p className="mt-2 text-sm text-slate-400">
                 Projets archivés. Vous pouvez les désarchiver pour les remettre actifs ou les supprimer définitivement.
             </p>

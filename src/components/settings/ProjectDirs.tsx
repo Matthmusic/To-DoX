@@ -75,8 +75,8 @@ export function ProjectDirs({ onClose }: ProjectDirsProps) {
                 </button>
             </div>
             <p className="mt-3 text-[11px] text-slate-500">
-                Note : selon le navigateur, l'ouverture de liens <code>file://</code> peut être restreinte. Pour un usage 100% fiable,
-                ouvre cette app en local (ex: <strong>file:///</strong> via un bundler dev) ou empaquette-la avec Electron/Tauri.
+                Note : en mode web, l'ouverture de dossiers peut être restreinte par le navigateur. Utilisez l'application
+                desktop (Electron) pour une ouverture fiable des dossiers projets.
             </p>
         </GlassModal>
     );

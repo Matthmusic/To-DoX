@@ -1,3 +1,4 @@
+import { MotionConfig } from 'framer-motion'
 import ToDoX from './ToDoX'
 import { UpdateNotification } from './components/UpdateNotification'
 import { TitleBar } from './components/TitleBar'
@@ -20,31 +21,36 @@ function App() {
   const showLogin = !currentUser
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-transparent">
-      {/* Toujours afficher le modal si pas d'utilisateur - BLOQUER l'app */}
-      {showLogin && <LoginModal />}
-      <TitleBar />
-      {saveError && (
-        <div className="flex items-center justify-between bg-rose-900/60 border border-rose-500/40 px-4 py-2 text-sm text-rose-200">
-          <span>{saveError}</span>
-          <button onClick={() => setSaveError(null)} className="ml-4 text-rose-400 hover:text-rose-200 transition-colors">✕</button>
-        </div>
-      )}
-      <div className={`flex-1 flex flex-col overflow-hidden ${window.electronAPI?.isElectron ? 'pt-8' : ''}`}>
-        {/* Afficher l'app seulement si un utilisateur est connecté */}
-        {currentUser && !isLoadingData && <ToDoX />}
-        {/* Écran de chargement si les données chargent */}
-        {currentUser && isLoadingData && (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-slate-400 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-              <p>Chargement des données...</p>
-            </div>
+    // reducedMotion="user" : respecte prefers-reduced-motion côté OS pour TOUTES les
+    // animations Framer Motion de l'app (transforms désactivés, opacity conservée) —
+    // un seul point de vérité plutôt qu'un useReducedMotion() par composant.
+    <MotionConfig reducedMotion="user">
+      <div className="flex h-screen w-full flex-col overflow-hidden bg-transparent">
+        {/* Toujours afficher le modal si pas d'utilisateur - BLOQUER l'app */}
+        {showLogin && <LoginModal />}
+        <TitleBar />
+        {saveError && (
+          <div className="flex items-center justify-between bg-rose-900/60 border border-rose-500/40 px-4 py-2 text-sm text-rose-200">
+            <span>{saveError}</span>
+            <button onClick={() => setSaveError(null)} className="ml-4 text-rose-400 hover:text-rose-200 transition-colors">✕</button>
           </div>
         )}
+        <div className={`flex-1 flex flex-col overflow-hidden ${window.electronAPI?.isElectron ? 'pt-8' : ''}`}>
+          {/* Afficher l'app seulement si un utilisateur est connecté */}
+          {currentUser && !isLoadingData && <ToDoX />}
+          {/* Écran de chargement si les données chargent */}
+          {currentUser && isLoadingData && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-slate-400 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+                <p>Chargement des données...</p>
+              </div>
+            </div>
+          )}
+        </div>
+        <UpdateNotification />
       </div>
-      <UpdateNotification />
-    </div>
+    </MotionConfig>
   )
 }
 

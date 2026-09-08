@@ -180,6 +180,7 @@ export function UpdateNotification() {
                 onClick={() => window.electronAPI?.openExternalUrl('https://github.com/Matthmusic/To-DoX/releases')}
                 className="flex items-center gap-1 text-white/80 hover:text-white px-3 py-2 rounded-md text-xs transition-colors"
                 title="Voir toutes les versions sur GitHub"
+                aria-label="Voir toutes les versions sur GitHub"
               >
                 <ExternalLink className="w-3 h-3" />
                 <span>Toutes les versions</span>
@@ -231,6 +232,7 @@ export function UpdateNotification() {
       disabled={checking}
       className="fixed bottom-4 right-4 z-40 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       title="Vérifier les mises à jour"
+      aria-label="Vérifier les mises à jour"
     >
       <RefreshCw className={`w-4 h-4 ${checking ? 'animate-spin' : ''}`} />
       <span className="text-sm">

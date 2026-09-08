@@ -539,7 +539,7 @@ export function TimesheetView() {
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setWeekOffset(w => w - 1)}
-                        className="rounded-lg border border-white/10 bg-white/5 p-1.5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                        className="rounded-lg border border-white/10 bg-white/5 p-2 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
@@ -557,7 +557,7 @@ export function TimesheetView() {
 
                     <button
                         onClick={() => setWeekOffset(w => w + 1)}
-                        className="rounded-lg border border-white/10 bg-white/5 p-1.5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                        className="rounded-lg border border-white/10 bg-white/5 p-2 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
                     >
                         <ChevronRight className="h-4 w-4" />
                     </button>
@@ -614,6 +614,7 @@ export function TimesheetView() {
                                             <button
                                                 onClick={clearAllProjects}
                                                 title="Tout supprimer"
+                                                aria-label="Tout supprimer"
                                                 className="ml-auto flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold transition-all shrink-0"
                                                 style={{ color: "#f87171", backgroundColor: "rgba(248,113,113,0.12)", border: "1px solid rgba(248,113,113,0.25)" }}
                                                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(248,113,113,0.25)"; }}

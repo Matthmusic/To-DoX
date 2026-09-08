@@ -82,8 +82,9 @@ export function TemplatesPanel({ onClose }: TemplatesPanelProps) {
                                             </button>
                                             <button
                                                 onClick={() => deleteTemplate(tpl.id)}
-                                                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 transition"
+                                                className="p-2 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 transition"
                                                 title="Supprimer ce template"
+                                                aria-label="Supprimer ce template"
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </button>

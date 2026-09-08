@@ -57,8 +57,9 @@ export function UserProfile() {
       {/* Bouton déconnexion */}
       <button
         onClick={handleLogout}
-        className="p-1 rounded-lg transition-colors text-theme-muted hover:text-red-400 hover:bg-red-500/10"
+        className="p-1.5 rounded-lg transition-colors text-theme-muted hover:text-red-400 hover:bg-red-500/10"
         title="Se déconnecter"
+        aria-label="Se déconnecter"
       >
         <LogOut className="w-3.5 h-3.5" />
       </button>

@@ -45,6 +45,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
     const onArchive = archiveTask;
 
     const menuRef = useRef<HTMLDivElement>(null);
+    const dueDateButtonRef = useRef<HTMLButtonElement>(null);
     const [adjustedPosition, setAdjustedPosition] = useState({ top: position.y, left: position.x });
 
     // États locaux pour les champs texte (sauvegarde uniquement sur blur)
@@ -140,6 +141,11 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
         const menuWidth = menuRef.current.offsetWidth || 256;
         const menuHeight = menuRef.current.offsetHeight || 400;
         const padding = 16;
+        // Ne jamais remonter le panneau sous la barre d'en-tête fixe : un long panneau
+        // (beaucoup de champs) qui se retourne vers le haut se clampait sur `padding`
+        // seul et passait derrière/sous le header.
+        const headerBottom = document.querySelector('.kanban-header')?.getBoundingClientRect().bottom ?? 0;
+        const topPadding = Math.max(padding, headerBottom + 8);
 
         let left = position.x;
         if (left + menuWidth + padding > window.innerWidth) {
@@ -150,10 +156,11 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
         let top = position.y;
         if (top + menuHeight + padding > window.innerHeight) {
             top = position.y - menuHeight;
-            if (top < padding) {
-                top = padding;
+            if (top < topPadding) {
+                top = topPadding;
             }
         }
+        top = Math.max(topPadding, top);
 
         setAdjustedPosition({ top, left });
     }, [position.x, position.y]);
@@ -218,6 +225,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                 <label className="mt-2 text-xs text-slate-400">Échéance</label>
                 <div className="relative">
                     <button
+                        ref={dueDateButtonRef}
                         type="button"
                         onClick={() => setShowDateDropdown(v => !v)}
                         className="flex w-full items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-slate-100 transition hover:bg-white/10"
@@ -230,6 +238,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                         value={task.due || new Date().toISOString().split('T')[0]}
                         onSelect={(iso) => { onUpdate(task.id, { due: iso }); }}
                         onClose={() => setShowDateDropdown(false)}
+                        anchorRef={dueDateButtonRef}
                     />
                 </div>
 
@@ -307,6 +316,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                                 onClick={() => setTaskParent(task.id, null)}
                                 className="shrink-0 rounded p-0.5 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 transition"
                                 title="Délier du parent"
+                                aria-label="Délier du parent"
                             >
                                 <Link2Off className="h-3.5 w-3.5" />
                             </button>
@@ -417,6 +427,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                         onDragLeave={() => setNotesDropTarget(false)}
                         className={`min-h-[60px] cursor-text rounded-2xl border px-2 py-1 text-sm transition ${notesDropTarget ? 'border-blue-400/60 bg-blue-400/10' : 'border-white/15 bg-white/5'}`}
                         title="Cliquer pour éditer · Déposer un fichier pour insérer son chemin"
+                        aria-label="Cliquer pour éditer · Déposer un fichier pour insérer son chemin"
                     >
                         {localNotes ? (
                             <span className="whitespace-pre-wrap leading-relaxed">

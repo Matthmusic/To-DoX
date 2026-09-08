@@ -84,6 +84,13 @@ let autoUpdater = null;
 if (!isDev) {
   autoUpdater = require('electron-updater').autoUpdater;
   autoUpdater.autoDownload = false;
+  // CEA: experimental releases are installed manually through Appstore.
+  autoUpdater.allowPrerelease = false;
+  autoUpdater.allowDowngrade = false;
+  if (/^\d+\.\d+\.\d+-/.test(app.getVersion())) {
+    autoUpdater.checkForUpdates = async () => null;
+    autoUpdater.checkForUpdatesAndNotify = async () => null;
+  }
   autoUpdater.autoInstallOnAppQuit = true;
 }
 

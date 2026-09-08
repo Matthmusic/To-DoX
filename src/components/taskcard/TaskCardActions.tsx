@@ -44,6 +44,7 @@ export function TaskCardActions({
         return (
             <button
                 className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+                aria-label="Plus d'actions"
                 onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
             >
                 <MoreHorizontal className="h-4 w-4" />
@@ -60,6 +61,7 @@ export function TaskCardActions({
                     onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
                     className="relative inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-500/30 bg-slate-700/20 text-slate-400 transition-all hover:scale-110 hover:bg-slate-700/30 cursor-pointer"
                     title="Non assignée - Cliquer pour assigner"
+                    aria-label="Non assignée - Cliquer pour assigner"
                 >
                     <User className="h-3.5 w-3.5" />
                 </button>
@@ -80,6 +82,7 @@ export function TaskCardActions({
                                 : ""
                         }`}
                         title={`${badge.name}${badge.isCreator ? " (créateur)" : ""}${badge.isReviewer ? " (réviseur)" : ""} — Cliquer pour gérer`}
+                        aria-label={`${badge.name}${badge.isCreator ? " (créateur)" : ""}${badge.isReviewer ? " (réviseur)" : ""} — Cliquer pour gérer`}
                     >
                         {getInitials(badge.name)}
                     </button>
@@ -93,6 +96,7 @@ export function TaskCardActions({
                     : "text-slate-400 hover:bg-white/10 hover:text-amber-400"
                 }`}
                 title={task.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                aria-label={task.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
             >
                 <Star className="h-4 w-4" fill={task.favorite ? "currentColor" : "none"} />
             </button>
@@ -103,6 +107,7 @@ export function TaskCardActions({
                     onContextMenu={projectDir ? onCopyFolderPath : undefined}
                     className={`rounded-lg p-1.5 transition ${projectDir ? "text-indigo-400 hover:bg-indigo-400/20" : "text-slate-600 hover:text-slate-300"}`}
                     title={projectDir ? `Ouvrir : ${projectDir} (clic droit : copier)` : "Configurer le dossier"}
+                    aria-label={projectDir ? `Ouvrir : ${projectDir} (clic droit : copier)` : "Configurer le dossier"}
                 >
                     <FolderOpen className="h-4 w-4" />
                 </button>
@@ -113,6 +118,7 @@ export function TaskCardActions({
                     onClick={(e) => { e.stopPropagation(); onExpandSubtasks(); }}
                     className={`flex items-center gap-0.5 rounded-lg p-1.5 transition hover:bg-white/10 ${hasMention ? "animate-pulse text-amber-400 hover:text-amber-300" : "text-slate-400 hover:text-white"}`}
                     title={hasMention ? `Vous êtes mentionné(e) — ${commentCount} commentaire(s)` : `${commentCount} commentaire(s)`}
+                    aria-label={hasMention ? `Vous êtes mentionné(e) — ${commentCount} commentaire(s)` : `${commentCount} commentaire(s)`}
                 >
                     <MessageCircle className="h-3.5 w-3.5" />
                     <span className="text-[9px] font-bold">{commentCount}</span>
@@ -121,6 +127,7 @@ export function TaskCardActions({
             {/* ── Plus ── */}
             <button
                 className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+                aria-label="Plus d'actions"
                 onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
             >
                 <MoreHorizontal className="h-4 w-4" />

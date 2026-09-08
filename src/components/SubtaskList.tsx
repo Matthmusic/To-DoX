@@ -288,6 +288,7 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
                 onDragLeave={() => setIsFileDropTarget(false)}
                 className={`flex items-center gap-2 rounded-lg p-2 transition select-none ${isDragging ? "opacity-50" : ""} ${isFileDropTarget ? "border border-blue-400/60 bg-blue-400/10" : "bg-white/5"}`}
                 title="Déposer un fichier pour l'attacher"
+                aria-label="Déposer un fichier pour l'attacher"
             >
                 <GripVertical
                     className="h-4 w-4 cursor-grab text-slate-400 shrink-0"
@@ -338,6 +339,7 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
                         onDoubleClick={() => setIsEditing(true)}
                         className={`flex-1 text-sm ${subtask.completed ? "text-slate-400 line-through" : "text-slate-200"} cursor-default select-none`}
                         title="Double-cliquer pour éditer"
+                        aria-label="Double-cliquer pour éditer"
                     >
                         <LinkedTextContent
                             text={subtask.title}
@@ -362,6 +364,7 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
                                     }}
                                     className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:text-emerald-200 transition border border-emerald-500/30 text-xs"
                                     title={`Ouvrir : ${part.content}\nClic droit : copier`}
+                                    aria-label={`Ouvrir : ${part.content}\nClic droit : copier`}
                                 >
                                     <ExternalLink className="h-3 w-3" />
                                     {part.content.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 40)}{part.content.replace(/^https?:\/\//, '').length > 40 ? '…' : ''}
@@ -384,6 +387,7 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
                                     }}
                                     className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
                                     title={part.content}
+                                    aria-label={part.content}
                                 >
                                     <ExternalLink className="h-3 w-3" />
                                     {getPathDisplayName(part.content)}
@@ -425,8 +429,9 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
                 })}
                 <button
                     onClick={() => deleteSubtask(task.id, subtask.id)}
-                    className="rounded p-1 text-slate-400 transition hover:bg-red-500/20 hover:text-red-400"
+                    className="rounded p-1.5 text-slate-400 transition hover:bg-red-500/20 hover:text-red-400"
                     title="Supprimer"
+                    aria-label="Supprimer"
                 >
                     <Trash2 className="h-3 w-3" />
                 </button>
@@ -550,6 +555,7 @@ export function SubtaskList({ task, hideHeader }: SubtaskListProps) {
                             onClick={(e) => { e.stopPropagation(); setShowTemplateDropdown(v => !v); }}
                             className="flex items-center gap-1 text-xs text-slate-500 hover:text-violet-400 transition"
                             title="Appliquer un template"
+                            aria-label="Appliquer un template"
                         >
                             <LayoutTemplate className="h-3.5 w-3.5" />
                             Template
@@ -620,6 +626,7 @@ export function SubtaskList({ task, hideHeader }: SubtaskListProps) {
                     disabled={!newSubtaskTitle.trim()}
                     className="rounded-lg bg-blue-500 p-2 text-white transition hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                     title="Ajouter"
+                    aria-label="Ajouter"
                 >
                     <Plus className="h-4 w-4" />
                 </button>

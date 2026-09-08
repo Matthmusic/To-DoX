@@ -25,7 +25,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate CEA release channel
+        run: node scripts/release-channel.cjs
+
       - name: Build and publish Electron app
-        run: npm run electron:build:win
+        run: npm run electron:build:win -- --config.publish.channel=${{ env.CEA_RELEASE_CHANNEL == 'stable' && 'latest' || env.CEA_RELEASE_CHANNEL }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

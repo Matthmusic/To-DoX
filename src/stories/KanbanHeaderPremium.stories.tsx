@@ -30,6 +30,7 @@ const defaultArgs = {
   onViewChange: noop,
   filterSearch: '',
   onSearchChange: noop,
+  onOpenSearch: noop,
   showSearch: false,
 };
 

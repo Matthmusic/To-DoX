@@ -48,8 +48,16 @@ export function KanbanBoard({
     const { toggleProjectCollapse } = useStore();
     const [activeMobileTab, setActiveMobileTab] = useState(0);
 
-    const renderColumnContent = (statusId: string) => (
-        Object.keys(grouped[statusId] || {}).map((projectName) => {
+    const renderColumnContent = (statusId: string) => {
+        const projectNames = Object.keys(grouped[statusId] || {});
+        if (projectNames.length === 0) {
+            return (
+                <p className="text-xs text-slate-500 italic text-center py-8 select-none">
+                    Aucune tâche
+                </p>
+            );
+        }
+        return projectNames.map((projectName) => {
             const projectTasks = grouped[statusId][projectName] || [];
             const collapseKey = `${statusId}_${projectName}`;
             const isCollapsed = collapsedProjects[collapseKey] || false;
@@ -74,11 +82,11 @@ export function KanbanBoard({
                     nestTarget={nestTarget}
                 />
             );
-        })
-    );
+        });
+    };
 
     return (
-        <main className="flex-1 overflow-hidden flex flex-col md:block bg-transparent">
+        <main className="flex-1 overflow-hidden flex flex-col md:block bg-transparent pr-24">
 
             {/* ── MOBILE : onglets + vue colonne unique ── */}
             <div className="md:hidden flex flex-col h-full">
@@ -126,7 +134,7 @@ export function KanbanBoard({
                     {kanbanStatuses.map((status) => (
                         <div
                             key={status.id}
-                            className="flex h-full flex-1 basis-0 min-w-[260px] lg:min-w-[280px] flex-col rounded-3xl bg-theme-secondary border border-theme-primary shadow-[0_16px_50px_rgba(2,6,23,0.35)] backdrop-blur-xl"
+                            className="flex h-full flex-1 basis-0 min-w-[260px] lg:min-w-[280px] flex-col overflow-hidden rounded-3xl bg-theme-secondary border border-theme-primary shadow-[0_16px_50px_rgba(2,6,23,0.35)] backdrop-blur-xl"
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => onDrop(e, status.id)}
                         >

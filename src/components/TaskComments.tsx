@@ -226,6 +226,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                                                 onClick={() => deleteComment(taskId, comment.id)}
                                                 className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-white/25 hover:text-rose-400"
                                                 title="Supprimer"
+                                                aria-label="Supprimer"
                                             >
                                                 <Trash2 className="h-2.5 w-2.5" />
                                             </button>
@@ -301,6 +302,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                         onMouseEnter={e => { if (text.trim()) e.currentTarget.style.backgroundColor = `${primary}35`; }}
                         onMouseLeave={e => { e.currentTarget.style.backgroundColor = `${primary}20`; }}
                         title="Envoyer (Ctrl+Entrée)"
+                        aria-label="Envoyer (Ctrl+Entrée)"
                     >
                         <Send className="h-3.5 w-3.5" />
                     </button>

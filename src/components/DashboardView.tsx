@@ -213,7 +213,8 @@ export function DashboardView() {
                                         return (
                                             <button key={t.id} onClick={() => openTask(t.id)}
                                                 className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors text-left ${pc.bg} ${pc.border} border hover:opacity-90`}
-                                                title={proj}>
+                                                title={proj}
+                                                aria-label={proj}>
                                                 <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_COLOR[t.status] }} />
                                                 <span className={`text-xs truncate flex-1 ${pc.text}`}>{t.title}</span>
                                                 {t.due && (
@@ -270,7 +271,8 @@ export function DashboardView() {
                                     return (
                                         <button key={t.id} onClick={() => openTask(t.id)}
                                             className={`w-full text-left text-xs rounded px-2 py-1 truncate transition-opacity hover:brightness-110 ${pc.bg} ${pc.text} border ${pc.border}`}
-                                            title={`${t.title} — ${t.project}`}>
+                                            title={`${t.title} — ${t.project}`}
+                                            aria-label={`${t.title} — ${t.project}`}>
                                             {t.title}
                                         </button>
                                     );
@@ -427,7 +429,7 @@ export function DashboardView() {
     );
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden md:pr-24">
             <style>{`
                 @keyframes slideUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
                 .su { animation: slideUp 0.25s ease both; }
@@ -604,6 +606,7 @@ export function DashboardView() {
                             onClick={toggleEquipe}
                             className="flex-1 flex flex-col items-center justify-center gap-2 py-4 hover:bg-white/5 transition-colors group"
                             title="Afficher Équipe"
+                            aria-label="Afficher Équipe"
                         >
                             <Users className="h-3.5 w-3.5 text-white/40 group-hover:text-white/75" />
                             <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-white/75" />
@@ -612,7 +615,7 @@ export function DashboardView() {
                         <div className="flex flex-col overflow-y-auto w-full h-full">
                             <div className="px-3 pt-3 pb-2 flex items-center justify-between">
                                 <p className="text-xs font-semibold uppercase tracking-widest text-white/65">Équipe</p>
-                                <button onClick={toggleEquipe} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Réduire">
+                                <button onClick={toggleEquipe} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Réduire" aria-label="Réduire">
                                     <ChevronLeft className="h-3.5 w-3.5 text-white/45" />
                                 </button>
                             </div>
@@ -667,6 +670,7 @@ export function DashboardView() {
                             onClick={toggleTimeline}
                             className="flex-1 flex flex-col items-center justify-center gap-2 py-4 hover:bg-white/5 transition-colors group"
                             title="Afficher 14 jours"
+                            aria-label="Afficher 14 jours"
                         >
                             <CalendarDays className="h-3.5 w-3.5 text-white/40 group-hover:text-white/75" />
                             <ChevronLeft className="h-3 w-3 text-white/40 group-hover:text-white/75" />
@@ -675,7 +679,7 @@ export function DashboardView() {
                         <div className="flex flex-col overflow-y-auto w-full h-full">
                             <div className="px-3 pt-3 pb-2 flex items-center justify-between">
                                 <p className="text-xs font-semibold uppercase tracking-widest text-white/65">14 jours</p>
-                                <button onClick={toggleTimeline} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Réduire">
+                                <button onClick={toggleTimeline} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Réduire" aria-label="Réduire">
                                     <ChevronRight className="h-3.5 w-3.5 text-white/45" />
                                 </button>
                             </div>

@@ -131,8 +131,11 @@ export const QuickAddPremium = forwardRef<{ focus: () => void; prefillProject: (
 
     // Détection automatique de #projet et @user dans le titre
     useEffect(() => {
-        const projectMatch = taskTitle.match(/#(\w+)/);
-        const userMatch = taskTitle.match(/@(\w+)/);
+        // \p{L} (lettre Unicode) plutôt que \w : \w ne capture pas les accents,
+        // ce qui tronquait "#Résidence-Bellevue" en "R" (arrêt à "é"). Le tiret
+        // est inclus pour les noms composés ("Zone-Industrielle-Nord").
+        const projectMatch = taskTitle.match(/#([\p{L}\d_-]+)/u);
+        const userMatch = taskTitle.match(/@([\p{L}\d_-]+)/u);
 
         if (projectMatch && projectMatch[1]) {
             const detectedProject = projectMatch[1].toUpperCase();
@@ -169,7 +172,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void; prefillProject: (
         if (!taskTitle.trim()) return;
 
         // Nettoyer le titre des tags
-        const cleanTitle = taskTitle.replace(/#\w+/g, '').replace(/@\w+/g, '').trim();
+        const cleanTitle = taskTitle.replace(/#[\p{L}\d_-]+/gu, '').replace(/@[\p{L}\d_-]+/gu, '').trim();
 
         const normalizedProject = projectName.trim().toUpperCase();
         if (normalizedProject && selectedColorIndex !== null) {
@@ -323,6 +326,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void; prefillProject: (
                                         : undefined
                                 }
                                 title="Sélectionner un projet"
+                                aria-label="Sélectionner un projet"
                             >
                                 <Hash className="h-3.5 w-3.5" />
                                 <span className="hidden sm:inline">{projectName || "Projet"}</span>
@@ -409,6 +413,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void; prefillProject: (
                                         : undefined
                                 }
                                 title="Assigner à un utilisateur"
+                                aria-label="Assigner à un utilisateur"
                             >
                                 <AtSign className="h-3.5 w-3.5" />
                                 <span className="hidden sm:inline">{users.find(u => u.id === assignedUserId)?.name || "User"}</span>
@@ -444,6 +449,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void; prefillProject: (
                                 onClick={() => setShowDatePicker(v => !v)}
                                 className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-theme-secondary transition-all hover:bg-white/10 hover:text-white whitespace-nowrap"
                                 title="Définir une échéance"
+                                aria-label="Définir une échéance"
                             >
                                 <Calendar className="h-3.5 w-3.5" />
                                 <span className="hidden lg:inline">{formatDateFull(dueDate)}</span>
@@ -454,6 +460,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void; prefillProject: (
                                 onSelect={(iso) => setDueDate(iso)}
                                 onClose={() => setShowDatePicker(false)}
                                 align="right"
+                                anchorRef={datePickerButtonRef}
                             />
                         </div>
 

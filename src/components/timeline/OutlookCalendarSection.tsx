@@ -47,6 +47,7 @@ export function OutlookCalendarSection({
                                 onClick={e => { e.stopPropagation(); onRefreshOutlook(); }}
                                 className="flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 text-[10px] font-medium transition"
                                 title="Recharger le calendrier Outlook"
+                                aria-label="Recharger le calendrier Outlook"
                             >
                                 <RefreshCw className="h-3 w-3" />
                                 Actualiser

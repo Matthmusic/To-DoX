@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useId } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -18,17 +18,27 @@ export function DropdownMenu({ icon: Icon, label, children, className = "" }: Dr
     const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
     const buttonRef = useRef<HTMLButtonElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
+    const panelId = useId();
 
     // Positionnement du panel via portal
     useEffect(() => {
-        if (!isOpen || !buttonRef.current) return;
-        const rect = buttonRef.current.getBoundingClientRect();
-        setPanelStyle({
-            position: 'fixed',
-            top: rect.bottom + 8,
-            right: window.innerWidth - rect.right,
-            zIndex: 9999,
-        });
+        if (!isOpen) return;
+        const updatePosition = () => {
+            if (!buttonRef.current) return;
+            const rect = buttonRef.current.getBoundingClientRect();
+            setPanelStyle({
+                position: 'fixed',
+                top: rect.bottom + 8,
+                right: Math.max(8, window.innerWidth - rect.right),
+                maxWidth: 'calc(100vw - 16px)',
+                maxHeight: Math.max(120, window.innerHeight - rect.bottom - 24),
+                zIndex: 9999,
+            });
+        };
+        updatePosition();
+        panelRef.current?.querySelector('button')?.focus();
+        window.addEventListener('resize', updatePosition);
+        return () => window.removeEventListener('resize', updatePosition);
     }, [isOpen]);
 
     useEffect(() => {
@@ -51,8 +61,11 @@ export function DropdownMenu({ icon: Icon, label, children, className = "" }: Dr
         <div className="relative">
             <button
                 ref={buttonRef}
+                type="button"
+                aria-expanded={isOpen}
+                aria-controls={panelId}
                 onClick={() => setIsOpen(!isOpen)}
-                className={`rounded-2xl px-4 py-2 font-semibold transition inline-flex items-center gap-2 ${className}`}
+                className={`rounded-2xl px-3 py-2 font-semibold transition inline-flex items-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${className}`}
             >
                 <Icon className="h-4 w-4" />
                 {label}
@@ -61,8 +74,16 @@ export function DropdownMenu({ icon: Icon, label, children, className = "" }: Dr
             {isOpen && createPortal(
                 <div
                     ref={panelRef}
+                    id={panelId}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                            event.stopPropagation();
+                            setIsOpen(false);
+                            buttonRef.current?.focus();
+                        }
+                    }}
                     onClick={() => setIsOpen(false)}
-                    className="min-w-[200px] rounded-2xl border-2 border-theme-primary bg-theme-secondary/98 shadow-[0_20px_70px_rgba(0,0,0,0.6)] overflow-hidden"
+                    className="min-w-[200px] rounded-2xl border-2 border-theme-primary bg-theme-secondary/98 shadow-[0_20px_70px_rgba(0,0,0,0.6)] overflow-y-auto"
                     style={{
                         ...panelStyle,
                         backdropFilter: 'blur(40px) saturate(180%)',
@@ -101,7 +122,8 @@ export function DropdownItem({ icon: Icon, label, onClick, className = "" }: Dro
     return (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-theme-primary transition hover:bg-white/10 ${className}`}
+            type="button"
+            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-theme-primary transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white ${className}`}
         >
             {Icon && <Icon className="h-3.5 w-3.5 text-theme-secondary" />}
             <span className="text-sm">{label}</span>

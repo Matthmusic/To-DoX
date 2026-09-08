@@ -61,6 +61,7 @@ export function TaskReviewSection({
                             }}
                             className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/25 hover:text-emerald-200"
                             title="Valider cette tâche"
+                            aria-label="Valider cette tâche"
                         >
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             Valider
@@ -72,6 +73,7 @@ export function TaskReviewSection({
                             }}
                             className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-1.5 text-xs font-bold text-amber-300 transition hover:bg-amber-500/25 hover:text-amber-200"
                             title="Demander des corrections"
+                            aria-label="Demander des corrections"
                         >
                             <RotateCcw className="h-3.5 w-3.5" />
                             Corrections

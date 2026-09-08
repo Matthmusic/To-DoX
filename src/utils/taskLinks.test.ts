@@ -32,6 +32,7 @@ function makeDataTransfer(options?: {
 describe('taskLinks', () => {
   beforeEach(() => {
     window.electronAPI = {
+      isElectron: true,
       getPathForFile: vi.fn(() => ''),
       outlook: {
         saveDroppedMail: vi.fn(),
@@ -90,6 +91,8 @@ describe('taskLinks', () => {
 
   it('saves a virtual Outlook .msg file when no native path is available', async () => {
     const file = new File(['msg-body'], 'Spec review.msg', { type: 'application/vnd.ms-outlook' });
+    // jsdom does not implement Blob.arrayBuffer; Electron does.
+    Object.defineProperty(file, 'arrayBuffer', { value: async () => new TextEncoder().encode('msg-body').buffer });
     window.electronAPI!.outlook.saveDroppedMail = vi.fn(async () => ({
       success: true,
       path: 'C:\\Mail Store\\Spec review.msg',

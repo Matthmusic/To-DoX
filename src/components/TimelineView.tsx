@@ -402,7 +402,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
         </div>
 
         {/* ── DESKTOP GANTT (≥ md) ── */}
-        <div className="hidden md:flex flex-col h-full gap-3 p-4 overflow-hidden">
+        <div className="hidden md:flex flex-col h-full gap-3 p-4 md:pr-24 overflow-hidden">
 
             {/* ── Toolbar ─────────────────────────────────────────────── */}
             <GanttToolbar
@@ -560,6 +560,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                         }}
                                         className="flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 text-[10px] font-medium transition"
                                         title="Envoyer le fichier .ics vers Outlook"
+                                        aria-label="Envoyer le fichier .ics vers Outlook"
                                     >
                                         <ExternalLink className="h-3 w-3" />
                                         Envoyer vers Outlook
@@ -794,6 +795,9 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                             onMouseEnter={readOnly ? undefined : () => handleCellMouseEnter(task, iso)}
                                             onContextMenu={readOnly ? undefined : e => { e.preventDefault(); setActiveCell({ taskId: task.id, date: iso, rect: e.currentTarget.getBoundingClientRect() }); }}
                                             title={isPlanned
+                                                ? `Cliquer pour modifier${assignedUsers.length > 0 ? ` (${assignedUsers.map(u => u.name.split(' ')[0]).join(', ')})` : ''} · Glisser pour étendre`
+                                                : 'Cliquer pour planifier · Glisser pour une plage'}
+                                            aria-label={isPlanned
                                                 ? `Cliquer pour modifier${assignedUsers.length > 0 ? ` (${assignedUsers.map(u => u.name.split(' ')[0]).join(', ')})` : ''} · Glisser pour étendre`
                                                 : 'Cliquer pour planifier · Glisser pour une plage'}
                                         >

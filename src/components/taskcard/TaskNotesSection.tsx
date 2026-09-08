@@ -102,8 +102,9 @@ export function TaskNotesSection({ task, updateTask }: TaskNotesSectionProps) {
                 {!isEditingNotes && task.notes && (
                     <button
                         onClick={(e) => { e.stopPropagation(); setIsEditingNotes(true); }}
-                        className="p-1 rounded hover:bg-amber-400/20 text-amber-400 transition"
+                        className="p-1.5 rounded hover:bg-amber-400/20 text-amber-400 transition"
                         title="Éditer les notes"
+                        aria-label="Éditer les notes"
                     >
                         <Edit3 className="h-3 w-3" />
                     </button>
@@ -148,6 +149,7 @@ export function TaskNotesSection({ task, updateTask }: TaskNotesSectionProps) {
                     onDragLeave={() => setNotesDropTarget(false)}
                     className={`text-sm text-slate-300 whitespace-pre-wrap leading-relaxed cursor-pointer hover:text-white transition rounded-lg p-1 select-text ${notesDropTarget ? 'border border-blue-400/60 bg-blue-400/10' : ''}`}
                     title="Cliquer pour éditer · Déposer un fichier pour insérer son chemin"
+                    aria-label="Cliquer pour éditer · Déposer un fichier pour insérer son chemin"
                 >
                     <LinkedTextContent text={task.notes} />
                     {false && parseFilePaths(task.notes).map((part, idx) =>
@@ -169,6 +171,7 @@ export function TaskNotesSection({ task, updateTask }: TaskNotesSectionProps) {
                                 }}
                                 className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:text-emerald-200 transition border border-emerald-500/30 text-xs"
                                 title={`Ouvrir : ${part.content}\nClic droit : copier`}
+                                aria-label={`Ouvrir : ${part.content}\nClic droit : copier`}
                             >
                                 <ExternalLink className="h-3 w-3" />
                                 {part.content.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 50)}{part.content.replace(/^https?:\/\//, '').length > 50 ? '…' : ''}
@@ -191,6 +194,7 @@ export function TaskNotesSection({ task, updateTask }: TaskNotesSectionProps) {
                                 }}
                                 className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
                                 title={part.content}
+                                aria-label={part.content}
                             >
                                 <ExternalLink className="h-3 w-3" />
                                 {getPathDisplayName(part.content)}
@@ -212,6 +216,7 @@ export function TaskNotesSection({ task, updateTask }: TaskNotesSectionProps) {
                     onDragLeave={() => setNotesDropTarget(false)}
                     className={`min-h-[40px] flex items-center rounded-lg border border-dashed px-3 py-2 text-xs italic cursor-pointer transition ${notesDropTarget ? 'border-blue-400/60 bg-blue-400/10 text-blue-300' : 'border-white/10 text-slate-500 hover:text-amber-400 hover:border-amber-400/30'}`}
                     title="Cliquer pour écrire · Déposer un fichier ou dossier"
+                    aria-label="Cliquer pour écrire · Déposer un fichier ou dossier"
                 >
                     {notesDropTarget ? 'Déposer pour ajouter le chemin...' : 'Ajouter une note ou un fichier/dossier...'}
                 </div>

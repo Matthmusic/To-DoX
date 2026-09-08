@@ -77,6 +77,7 @@ export function LinkedTextContent({ text, textClassName = "text-slate-300" }: Li
             }}
             className={`inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded transition text-xs ${getBadgeClassName(part)} ${part.targetType === 'path' ? 'font-mono' : ''}`}
             title={getLinkTitle(part)}
+            aria-label={getLinkTitle(part)}
           >
             <ExternalLink className="h-3 w-3" />
             {getLinkedPartDisplayName(part)}

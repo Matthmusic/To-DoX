@@ -19,7 +19,7 @@ const CYBERPUNK_DARK: Theme = {
 
     textPrimary: '#e2e8f0',  // slate-200
     textSecondary: '#cbd5e1', // slate-300
-    textMuted: '#64748b',    // slate-500
+    textMuted: '#94a3b8',    // slate-400 — slate-500 tombait à 4.05:1 sur bgSecondary (< seuil AA 4.5:1)
 
     borderPrimary: 'rgba(255, 255, 255, 0.1)',
     borderAccent: 'rgba(6, 182, 212, 0.4)', // cyan-500/40

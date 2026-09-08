@@ -20,10 +20,12 @@ interface OutlookPanelProps {
 }
 
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+    const { activeTheme } = useTheme();
     return (
         <button
             onClick={onChange}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${checked ? 'bg-indigo-500' : 'bg-white/20'}`}
+            className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+            style={{ backgroundColor: checked ? activeTheme.palette.primary : 'rgba(255,255,255,0.2)' }}
             role="switch"
             aria-checked={checked}
         >
@@ -250,6 +252,7 @@ export function OutlookPanel({ onClose, onSyncNow, icsExportPath, icsServerUrl }
                                     onClick={handleCopyServerUrl}
                                     className="shrink-0 flex items-center gap-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-2 text-xs text-emerald-300 hover:bg-emerald-500/30 transition"
                                     title="Copier l'URL"
+                                    aria-label="Copier l'URL"
                                 >
                                     {copiedUrl ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                                     {copiedUrl ? 'Copié !' : 'Copier'}
@@ -278,6 +281,7 @@ export function OutlookPanel({ onClose, onSyncNow, icsExportPath, icsServerUrl }
                                     onClick={handleCopyPath}
                                     className="shrink-0 flex items-center gap-1.5 rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-xs text-slate-300 hover:bg-white/15 transition"
                                     title="Copier le chemin Windows"
+                                    aria-label="Copier le chemin Windows"
                                 >
                                     {copied ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                                     {copied ? 'Copié !' : 'Copier'}

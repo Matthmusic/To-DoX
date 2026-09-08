@@ -89,6 +89,7 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
                         onClick={() => markAllNotificationsRead(currentUser)}
                         className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] text-slate-400 transition hover:bg-white/5 hover:text-white"
                         title="Tout marquer comme lu"
+                        aria-label="Tout marquer comme lu"
                     >
                         <CheckCheck className="h-3 w-3" />
                         Tout lire
@@ -137,8 +138,9 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
                                             e.stopPropagation();
                                             deleteNotificationForUser(notif.id, currentUser);
                                         }}
-                                        className="p-1 rounded hover:bg-rose-400/15 text-slate-500 hover:text-rose-400 transition opacity-0 group-hover:opacity-100"
+                                        className="p-1.5 rounded hover:bg-rose-400/15 text-slate-500 hover:text-rose-400 transition opacity-0 group-hover:opacity-100"
                                         title="Supprimer cette notification"
+                                        aria-label="Supprimer cette notification"
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </button>

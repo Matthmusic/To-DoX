@@ -54,6 +54,7 @@ export function ChildTaskTree({ parentTask, allTasks, onOpenTask }: ChildTaskTre
                         className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2 py-1 hover:bg-white/10 transition cursor-pointer group"
                         onClick={(e) => { e.stopPropagation(); onOpenTask(child, e.clientX, e.clientY); }}
                         title={`Ouvrir : ${child.title}`}
+                        aria-label={`Ouvrir : ${child.title}`}
                     >
                         <span className="shrink-0">{STATUS_ICONS[child.status] ?? STATUS_ICONS.todo}</span>
                         <span className={`flex-1 text-xs font-medium truncate ${child.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
@@ -69,6 +70,7 @@ export function ChildTaskTree({ parentTask, allTasks, onOpenTask }: ChildTaskTre
                             onClick={(e) => { e.stopPropagation(); setTaskParent(child.id, null); }}
                             className="shrink-0 opacity-0 group-hover:opacity-100 rounded p-0.5 text-slate-500 hover:text-rose-400 hover:bg-rose-400/10 transition"
                             title="Délier de cette tâche"
+                            aria-label="Délier de cette tâche"
                         >
                             <Link2Off className="h-3 w-3" />
                         </button>

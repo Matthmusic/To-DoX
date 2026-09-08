@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import jsPDF from "jspdf";
-import { Printer, FileDown, CheckCircle2, Loader2, FileText, History, Trash2 } from "lucide-react";
+import { Printer, FileDown, CheckCircle2, Loader2, FileText, History, Trash2, X } from "lucide-react";
 import useStore from "../store/useStore";
 import { STATUSES } from "../constants";
 import { formatTimestampToDate, getCurrentWeekRange, getPreviousWeekRange, getCurrentMonthRange, getPreviousMonthRange } from "../utils";
@@ -939,9 +939,10 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                     </div>
                     <button
                         onClick={onClose}
-                        className="rounded-xl border border-white/20 bg-white/5 px-3 py-1.5 text-sm text-slate-100 transition-all hover:bg-white/10"
+                        aria-label="Fermer"
+                        className="ml-auto flex items-center justify-center w-10 h-10 rounded-full border border-theme-primary bg-white/5 text-theme-muted transition-colors hover:text-theme-primary hover:bg-red-500/20 hover:border-red-500/50"
                     >
-                        Fermer
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 

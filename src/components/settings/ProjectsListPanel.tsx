@@ -141,6 +141,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                 <button
                     onClick={toggleSort}
                     title={sortDir === 'asc' ? 'Tri A→Z (cliquer pour Z→A)' : sortDir === 'desc' ? 'Tri Z→A (cliquer pour désactiver)' : 'Tri désactivé (cliquer pour A→Z)'}
+                    aria-label={sortDir === 'asc' ? 'Tri A→Z (cliquer pour Z→A)' : sortDir === 'desc' ? 'Tri Z→A (cliquer pour désactiver)' : 'Tri désactivé (cliquer pour A→Z)'}
                     className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
                         sortDir
                             ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-200'
@@ -194,15 +195,17 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                                 </span>
                                 <button
                                     onClick={() => startEditing(index)}
-                                    className="rounded-lg border border-cyan-400/40 bg-cyan-400/10 p-1.5 text-cyan-100 transition hover:bg-cyan-400/20"
+                                    className="rounded-lg border border-cyan-400/40 bg-cyan-400/10 p-2 text-cyan-100 transition hover:bg-cyan-400/20"
                                     title="Renommer"
+                                    aria-label="Renommer"
                                 >
                                     <Pencil className="h-3.5 w-3.5" />
                                 </button>
                                 <button
                                     onClick={() => deleteProject(index)}
-                                    className="rounded-lg border border-rose-400/40 bg-rose-400/10 p-1.5 text-rose-100 transition hover:bg-rose-400/20"
+                                    className="rounded-lg border border-rose-400/40 bg-rose-400/10 p-2 text-rose-100 transition hover:bg-rose-400/20"
                                     title="Supprimer"
+                                    aria-label="Supprimer"
                                 >
                                     <Trash2 className="h-3.5 w-3.5" />
                                 </button>

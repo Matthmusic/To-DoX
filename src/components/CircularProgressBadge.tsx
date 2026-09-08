@@ -154,6 +154,7 @@ export function CircularProgressBadge({
                         : "hover:brightness-110 hover:scale-102 ring-1 ring-white/5"
                 }`}
                 title={`${cleanProjectName}: ${done}/${total} tâches (${percentage}%) — Clic droit pour options`}
+                aria-label={`${cleanProjectName}: ${done}/${total} tâches (${percentage}%) — Clic droit pour options`}
             >
                 {/* Circular Progress Indicator */}
                 <div className="relative flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center flex-shrink-0">
@@ -247,6 +248,7 @@ export function CircularProgressBadge({
                                     outlineOffset: '2px',
                                 }}
                                 title={`Couleur ${idx + 1}`}
+                                aria-label={`Couleur ${idx + 1}`}
                             >
                                 <span className="block w-3 h-3 rounded-full mx-auto" style={{ backgroundColor: hex }} />
                             </button>

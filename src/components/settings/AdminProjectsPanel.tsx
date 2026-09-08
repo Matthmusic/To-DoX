@@ -187,6 +187,7 @@ export function AdminProjectsPanel({ onClose }: AdminProjectsPanelProps) {
                                 onClick={() => deleteProjectEverywhere(p.name)}
                                 className="inline-flex items-center gap-1 rounded-lg border border-rose-400/40 bg-rose-400/10 px-2.5 py-1 text-xs font-semibold text-rose-100 transition hover:bg-rose-400/20"
                                 title="Supprimer totalement du JSON"
+                                aria-label="Supprimer totalement du JSON"
                             >
                                 <Trash2 className="h-3.5 w-3.5" />
                                 Supprimer

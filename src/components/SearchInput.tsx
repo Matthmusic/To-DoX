@@ -52,6 +52,7 @@ export const SearchInput = forwardRef<{ focus: () => void }, SearchInputProps>(
         <input
           ref={inputRef}
           type="text"
+          aria-label="Rechercher des tâches"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -62,7 +63,7 @@ export const SearchInput = forwardRef<{ focus: () => void }, SearchInputProps>(
         {value && (
           <button
             onClick={handleClear}
-            className="absolute right-3 rounded-full p-1 transition hover:bg-white/10"
+            className="absolute right-3 rounded-full p-1.5 transition hover:bg-white/10"
             type="button"
             aria-label="Effacer la recherche"
           >

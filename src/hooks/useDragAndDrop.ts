@@ -102,7 +102,7 @@ export function useDragAndDrop() {
             if (nestTargetRef.current) clearNest();
             const midY = rect.top + rect.height / 2;
             const position: 'before' | 'after' = e.clientY < midY ? 'before' : 'after';
-            setDropIndicator({ taskId, position });
+            setDropIndicator(prev => (prev?.taskId === taskId && prev?.position === position) ? prev : { taskId, position });
         }
     };
 

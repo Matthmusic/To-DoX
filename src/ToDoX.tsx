@@ -456,6 +456,7 @@ export default function ToDoX() {
                 triggerOpenQuickAdd={quickAddTrigger}
                 triggerOpenWithProject={quickAddWithProject ?? undefined}
                 showSearch={showSearch}
+                onOpenSearch={shortcutsCallbacks.focusSearch}
             />
 
             {/* Bandeau mode consultation */}

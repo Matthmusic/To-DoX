@@ -177,9 +177,8 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
               <button
                 onClick={() => handleToggle('quietHoursEnabled')}
                 disabled={!notificationSettings.enabled}
-                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                  notificationSettings.quietHoursEnabled ? 'bg-indigo-500' : 'bg-slate-600'
-                }`}
+                className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: notificationSettings.quietHoursEnabled ? primaryColor : '#475569' }}
               >
                 <span
                   className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
@@ -248,9 +247,8 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
             <button
               onClick={() => handleToggle('sound')}
               disabled={!notificationSettings.enabled}
-              className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                notificationSettings.sound ? 'bg-emerald-500' : 'bg-slate-600'
-              }`}
+              className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: notificationSettings.sound ? primaryColor : '#475569' }}
             >
               <span
                 className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
@@ -301,6 +299,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                       disabled={!notificationSettings.enabled || playingSound === sound.file}
                       className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-slate-700 hover:border-theme-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Écouter un aperçu"
+                      aria-label="Écouter un aperçu"
                     >
                       <Play className="w-4 h-4" style={{ color: playingSound === sound.file ? primaryColor : undefined }} />
                     </button>

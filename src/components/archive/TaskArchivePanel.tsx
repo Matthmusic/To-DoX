@@ -1,9 +1,11 @@
 import { useMemo } from "react";
+import { Archive } from "lucide-react";
 import useStore from "../../store/useStore";
 import type { Task } from "../../types";
 import { classNames } from "../../utils";
 import { confirmModal } from "../../utils/confirm";
 import { GlassModal } from "../ui/GlassModal";
+import { useTheme } from "../../hooks/useTheme";
 
 interface TaskArchivePanelProps {
     onClose: () => void;
@@ -11,13 +13,15 @@ interface TaskArchivePanelProps {
 
 export function TaskArchivePanel({ onClose }: TaskArchivePanelProps) {
     const { tasks, unarchiveTask, removeTask } = useStore();
+    const { activeTheme } = useTheme();
+    const primaryColor = activeTheme.palette.primary;
 
     const archivedTasks = useMemo(() => {
         return tasks.filter((t: Task) => t.archived && !t.deletedAt).sort((a, b) => (b.archivedAt || 0) - (a.archivedAt || 0));
     }, [tasks]);
 
     return (
-        <GlassModal isOpen={true} onClose={onClose} title="Archives des tâches" size="xl">
+        <GlassModal isOpen={true} onClose={onClose} title={<><Archive className="w-6 h-6 mr-2" style={{ color: primaryColor }} />Archives des tâches</>} size="xl">
             <p className="mt-2 text-sm text-slate-400">
                 Tâches archivées. Vous pouvez les désarchiver pour les remettre actives ou les supprimer définitivement.
             </p>

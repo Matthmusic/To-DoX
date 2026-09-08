@@ -293,6 +293,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                     className="flex-1 flex items-center justify-center transition-all duration-200 relative"
                     onClick={() => handleTabClick('notifs')}
                     title="Notifications"
+                    aria-label="Notifications"
                     style={{
                         background: isOpen && activeTab === 'notifs'
                             ? `radial-gradient(ellipse at 70% 50%, ${withOpacity(primary, 0.10)} 0%, transparent 70%)`
@@ -338,6 +339,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                     className="flex-1 flex items-center justify-center transition-all duration-200 relative"
                     onClick={() => handleTabClick('messages')}
                     title="Messages"
+                    aria-label="Messages"
                     style={{
                         background: isOpen && activeTab === 'messages'
                             ? `radial-gradient(ellipse at 70% 50%, ${withOpacity(primary, 0.10)} 0%, transparent 70%)`
@@ -443,6 +445,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                                         className="ml-auto flex items-center gap-1 text-[10px] transition-colors"
                                         style={{ color: withOpacity(primary, 0.35) }}
                                         title="Tout marquer comme lu"
+                                        aria-label="Tout marquer comme lu"
                                     >
                                         <CheckCheck className="h-3 w-3" />
                                     </button>
@@ -497,7 +500,8 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                                                     {currentUser && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); deleteNotificationForUser(notif.id, currentUser); }}
-                                                            className="p-1 rounded-lg text-white/15 hover:text-rose-400 hover:bg-rose-400/10 transition opacity-0 group-hover:opacity-100"
+                                                            className="p-1.5 rounded-lg text-white/15 hover:text-rose-400 hover:bg-rose-400/10 transition opacity-0 group-hover:opacity-100"
+                                                            aria-label="Supprimer cette notification"
                                                         >
                                                             <Trash2 className="h-3 w-3" />
                                                         </button>

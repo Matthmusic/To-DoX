@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
@@ -53,18 +53,20 @@ export function CalendarContent({ value, onSelect, onClose, showCloseButton = fa
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
-                        className="rounded-lg border border-white/10 bg-white/5 p-1 text-slate-200 transition hover:bg-white/10"
+                        className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-slate-200 transition hover:bg-white/10"
                         onClick={() => setViewDate(new Date(monthMeta.year, monthMeta.month - 1, 1))}
                         title="Mois précédent"
+                        aria-label="Mois précédent"
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
                     <div className="text-sm font-semibold">{monthLabel}</div>
                     <button
                         type="button"
-                        className="rounded-lg border border-white/10 bg-white/5 p-1 text-slate-200 transition hover:bg-white/10"
+                        className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-slate-200 transition hover:bg-white/10"
                         onClick={() => setViewDate(new Date(monthMeta.year, monthMeta.month + 1, 1))}
                         title="Mois suivant"
+                        aria-label="Mois suivant"
                     >
                         <ChevronRight className="h-4 w-4" />
                     </button>
@@ -72,9 +74,10 @@ export function CalendarContent({ value, onSelect, onClose, showCloseButton = fa
                 {showCloseButton && (
                     <button
                         type="button"
-                        className="rounded-lg border border-white/10 bg-white/5 p-1 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                        className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
                         onClick={onClose}
                         title="Fermer"
+                        aria-label="Fermer"
                     >
                         <X className="h-4 w-4" />
                     </button>
@@ -125,8 +128,11 @@ export function CalendarContent({ value, onSelect, onClose, showCloseButton = fa
 }
 
 // ── DatePickerDropdown ───────────────────────────────────────────────────────
-// Calendrier en dropdown inline (pas de portal, pas d'overlay).
-// À utiliser dans un conteneur `position: relative`.
+// Calendrier en dropdown, rendu en portal (document.body) et positionné par
+// rapport à `anchorRef`. Un simple `position: absolute` dans un conteneur
+// `backdrop-blur` (QuickAdd, TaskEditPanel) faisait apparaître le contenu
+// derrière le calendrier en transparence — sortir du flux via portal règle
+// le souci de composition, comme le fait déjà Autocomplete.
 
 interface DatePickerDropdownProps {
     isOpen: boolean;
@@ -135,17 +141,47 @@ interface DatePickerDropdownProps {
     onClose: () => void;
     /** Alignement horizontal du dropdown (défaut: left) */
     align?: 'left' | 'right';
+    /** Élément déclencheur, sert à positionner le dropdown en portal */
+    anchorRef: React.RefObject<HTMLElement | null>;
 }
 
-export function DatePickerDropdown({ isOpen, value, onSelect, onClose, align = 'left' }: DatePickerDropdownProps) {
-    if (!isOpen) return null;
-    return (
+export function DatePickerDropdown({ isOpen, value, onSelect, onClose, align = 'left', anchorRef }: DatePickerDropdownProps) {
+    const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+    const dropdownWidth = 300;
+
+    useLayoutEffect(() => {
+        if (!isOpen) {
+            setCoords(null);
+            return;
+        }
+
+        function updatePosition() {
+            if (!anchorRef.current) return;
+            const rect = anchorRef.current.getBoundingClientRect();
+            const left = align === 'right' ? rect.right - dropdownWidth : rect.left;
+            setCoords({ top: rect.bottom + 4, left });
+        }
+
+        updatePosition();
+        window.addEventListener('resize', updatePosition);
+        window.addEventListener('scroll', updatePosition, true);
+        return () => {
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('scroll', updatePosition, true);
+        };
+    }, [isOpen, align, anchorRef]);
+
+    if (!isOpen || !coords) return null;
+
+    return createPortal(
         <div
-            className={`absolute top-full z-[200] mt-1 w-[300px] rounded-2xl border border-white/20 bg-[#161b2e] p-3 text-slate-100 shadow-2xl ${align === 'right' ? 'right-0' : 'left-0'}`}
+            className="fixed z-[100000] rounded-2xl border border-white/20 bg-[#161b2e] p-3 text-slate-100 shadow-2xl"
+            style={{ top: coords.top, left: coords.left, width: dropdownWidth }}
             onMouseDown={(e) => e.stopPropagation()}
         >
             <CalendarContent value={value} onSelect={onSelect} onClose={onClose} />
-        </div>
+        </div>,
+        document.body
     );
 }
 
