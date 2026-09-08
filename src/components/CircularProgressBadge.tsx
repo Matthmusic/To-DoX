@@ -148,16 +148,16 @@ export function CircularProgressBadge({
                 type="button"
                 onClick={onClick}
                 onContextMenu={handleContextMenu}
-                className={`group relative flex items-center gap-1.5 sm:gap-2 rounded-xl sm:rounded-2xl border px-2 sm:px-3 py-1.5 sm:py-2 transition-all duration-300 ${colors.border} ${colors.bg} ${
+                className={`group relative flex shrink-0 items-center gap-2 rounded-xl border px-2.5 py-1.5 transition-all duration-300 ${colors.border} ${colors.bg} ${
                     isSelected
-                        ? `${colors.ring} ring-2 shadow-2xl brightness-125 scale-105 ${colors.glow}`
-                        : "hover:brightness-110 hover:scale-102 ring-1 ring-white/5"
+                        ? `${colors.ring} ring-2 brightness-125 ${colors.glow}`
+                        : "hover:brightness-110 ring-1 ring-white/5"
                 }`}
                 title={`${cleanProjectName}: ${done}/${total} tâches (${percentage}%) — Clic droit pour options`}
                 aria-label={`${cleanProjectName}: ${done}/${total} tâches (${percentage}%) — Clic droit pour options`}
             >
                 {/* Circular Progress Indicator */}
-                <div className="relative flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center flex-shrink-0">
+                <div className="relative flex h-8 w-8 items-center justify-center flex-shrink-0">
                     <svg
                         className="absolute inset-0 -rotate-90 transform"
                         width="100%"
@@ -207,8 +207,8 @@ export function CircularProgressBadge({
                 </div>
 
                 {/* Project name */}
-                <div className="hidden sm:flex flex-col items-start justify-center min-w-0 max-w-[120px]">
-                    <span className={`text-[10px] font-black uppercase tracking-wide leading-tight transition-colors line-clamp-2 ${colors.text} group-hover:text-white`}>
+                <div className="flex flex-col items-start justify-center min-w-0 max-w-[140px]">
+                    <span className={`text-[11px] font-semibold leading-tight transition-colors line-clamp-2 ${colors.text} group-hover:text-white`}>
                         {cleanProjectName}
                     </span>
                 </div>

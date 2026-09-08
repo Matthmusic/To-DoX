@@ -415,7 +415,7 @@ export default function ToDoX() {
 
     return (
         <ShortcutsProvider value={shortcutsCallbacks}>
-        <div className="flex h-full w-full flex-col bg-transparent text-theme-primary font-sans selection:bg-purple-500/30">
+        <div className="flex h-full min-h-0 w-full flex-col bg-transparent text-theme-primary font-sans selection:bg-purple-500/30">
             {/* HEADER PREMIUM */}
             <KanbanHeaderPremium
                 filterProject={filterProject}

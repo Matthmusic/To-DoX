@@ -74,11 +74,7 @@ body {
   margin-right: auto;
 }
 
-@media (min-aspect-ratio: 16/9) {
-  .kanban-row {
-    width: 90vw;
-  }
-}
+
 
 .kanban-header {
   width: 100%;
@@ -86,11 +82,7 @@ body {
   margin-right: auto;
 }
 
-@media (min-aspect-ratio: 16/9) {
-  .kanban-header {
-    width: 90vw;
-  }
-}
+
 
 /* ── Mobile UX ─────────────────────────────────────────────────────────── */
 
@@ -457,21 +449,4 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   );
 }
 
-/* Responsive header height constraints */
-@media (min-width: 1920px) {
-  .kanban-header {
-    max-height: 10vh;
-  }
-}
-
-@media (min-width: 2560px) {
-  .kanban-header {
-    max-height: 11vh;
-  }
-}
-
-@media (min-width: 3840px) {
-  .kanban-header {
-    max-height: 7vh;
-  }
-}
+/* The header stays in normal flow; its content determines its height. */

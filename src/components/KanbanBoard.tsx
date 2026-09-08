@@ -86,7 +86,7 @@ export function KanbanBoard({
     };
 
     return (
-        <main className="flex-1 overflow-hidden flex flex-col md:block bg-transparent pr-24">
+        <main className="min-h-0 flex-1 overflow-hidden flex flex-col md:block bg-transparent pr-24">
 
             {/* ── MOBILE : onglets + vue colonne unique ── */}
             <div className="md:hidden flex flex-col h-full">
@@ -129,7 +129,7 @@ export function KanbanBoard({
             </div>
 
             {/* ── DESKTOP : colonnes côte à côte ── */}
-            <div className="hidden md:flex h-full p-4 lg:p-6 gap-4 lg:gap-6 overflow-x-auto">
+            <div className="hidden md:flex h-full pl-4 pr-0 pb-4 pt-1 lg:pl-6 lg:pb-6 gap-4 lg:gap-6 overflow-x-auto">
                 <div className="kanban-row flex h-full gap-4 lg:gap-6 w-full">
                     {kanbanStatuses.map((status) => (
                         <div

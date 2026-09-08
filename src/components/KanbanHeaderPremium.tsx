@@ -26,7 +26,6 @@ import {
     LayoutTemplate,
     Calendar,
 } from "lucide-react";
-import ToDoXLogo from "../assets/To Do X.svg";
 import { QuickAddPremium } from "./QuickAddPremium";
 import { CircularProgressBadge } from "./CircularProgressBadge";
 import { DropdownMenu, DropdownItem, DropdownSection } from ".";
@@ -231,15 +230,26 @@ export function KanbanHeaderPremium({
     ];
 
     return (
-        <header className="kanban-header relative z-10 flex min-w-0 flex-col gap-2 px-2 py-2 sm:px-4 md:px-6 sm:py-3">
-            <div className="min-w-0 rounded-2xl border border-theme-primary px-3 py-3 sm:px-4" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+        <header className="kanban-header relative z-10 flex shrink-0 min-w-0 flex-col gap-2 pl-2 pr-24 py-2 sm:pl-4 lg:pl-6">
+            <div className="min-w-0 rounded-2xl border border-theme-primary px-3 py-2.5 sm:px-4" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                 <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
-                    <div className="mr-auto hidden shrink-0 items-center gap-2 sm:flex">
-                        <div aria-hidden="true" className="h-7 w-7 sm:h-8 sm:w-8" style={{
-                            maskImage: `url(${ToDoXLogo})`, maskSize: 'contain', maskRepeat: 'no-repeat', maskPosition: 'center', backgroundColor: primaryColor,
-                        }} />
-                        <h1 className="hidden text-lg font-bold tracking-tight text-theme-primary sm:block">TO DO X</h1>
-                    </div>
+                    <select
+                        aria-label="Vue des tâches"
+                        value={activeView}
+                        onChange={(event) => onViewChange(event.target.value as KanbanHeaderPremiumProps['activeView'])}
+                        className="min-w-0 flex-1 rounded-lg border border-theme-primary bg-theme-secondary px-3 py-2 text-sm text-theme-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:hidden"
+                    >
+                        {viewButtons.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
+                    </select>
+                    <nav aria-label="Vues des tâches" className="hidden min-w-0 flex-1 flex-wrap gap-1 md:flex">
+                        {viewButtons.map(({ id, Icon, label }) => (
+                            <button key={id} type="button" onClick={() => onViewChange(id)} aria-current={activeView === id ? 'page' : undefined}
+                                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:text-sm ${activeView === id ? 'bg-white/10 text-theme-primary' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}>
+                                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                {label}
+                            </button>
+                        ))}
+                    </nav>
                     <button
                         ref={toggleButtonRef}
                         type="button"
@@ -292,26 +302,9 @@ export function KanbanHeaderPremium({
                         <SearchInput ref={searchInputRef} value={filterSearch} onChange={onSearchChange} placeholder="Rechercher des tâches… (Échap pour fermer)" />
                     </div>
                 )}
-                <div className="mt-3 flex min-w-0 flex-col gap-3 border-t border-theme-primary pt-3 xl:flex-row xl:items-center xl:gap-6">
-                    <select
-                        aria-label="Vue des tâches"
-                        value={activeView}
-                        onChange={(event) => onViewChange(event.target.value as KanbanHeaderPremiumProps['activeView'])}
-                        className="mr-24 min-w-0 rounded-lg border border-theme-primary bg-theme-secondary px-3 py-2 text-sm text-theme-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-white md:hidden"
-                    >
-                        {viewButtons.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
-                    </select>
-                    <nav aria-label="Vues des tâches" className="hidden shrink-0 flex-wrap gap-1 md:flex">
-                        {viewButtons.map(({ id, Icon, label }) => (
-                            <button key={id} type="button" onClick={() => onViewChange(id)} aria-current={activeView === id ? 'page' : undefined}
-                                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:text-sm ${activeView === id ? 'bg-white/10 text-theme-primary' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}>
-                                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                                {label}
-                            </button>
-                        ))}
-                    </nav>
+                <div className="mt-2 min-w-0 border-t border-theme-primary pt-2">
                     {projectStats.length > 0 && (
-                        <div role="region" aria-label="Filtrer par projet" tabIndex={0} className="flex min-w-0 flex-1 items-center gap-3 overflow-x-auto px-1 py-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+                        <div role="region" aria-label="Filtrer par projet" tabIndex={0} className="flex min-w-0 items-center gap-2 overflow-x-auto px-1 py-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
                             {projectStats.map((stat) => (
                                 <CircularProgressBadge key={stat.project} project={stat.project} percentage={stat.pct} total={stat.total} done={stat.done}
                                     isSelected={filterProject === stat.project} onClick={() => onProjectClick(stat.project)}
@@ -322,7 +315,7 @@ export function KanbanHeaderPremium({
                     )}
                 </div>
             </div>
-            <div id="header-quick-add" ref={quickAddContainerRef} hidden={!showQuickAdd} className="mx-auto w-full overflow-visible sm:w-[90%] xl:w-[80%]">
+            <div id="header-quick-add" ref={quickAddContainerRef} hidden={!showQuickAdd} className="w-full overflow-visible">
                 <QuickAddPremium ref={quickAddRef} />
             </div>
         </header>
