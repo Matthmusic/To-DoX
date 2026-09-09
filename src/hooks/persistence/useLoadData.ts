@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { STORAGE_KEY, FIXED_USERS } from '../../constants';
+import { STORAGE_KEY } from '../../constants';
 import type { AppNotification, OutlookConfig, StoredData, Task, SavedReport, TimeEntry } from '../../types';
 
 const DEFAULT_OUTLOOK_CONFIG: OutlookConfig = { enabled: false, icsUrl: '', exportEnabled: false, lastSync: null };
+import { normalizeUsers } from '../../utils/users';
 import useStore from '../../store/useStore';
 import { devLog, devWarn } from '../../utils';
 import { migrateTask } from '../../utils/taskMigration';
@@ -38,12 +39,10 @@ export function useLoadData(refs: PersistenceRefs) {
 
             devLog('🚀 [DATA LOADING] Début du chargement des données...');
 
-            setUsers(FIXED_USERS);
+
 
             const savedUserId = localStorage.getItem('current_user_id');
-            const importingUser = (savedUserId && FIXED_USERS.some(u => u.id === savedUserId))
-                ? savedUserId
-                : null;
+            let importingUser: string | null = null;
 
             let localTasks: Task[] = [];
 
@@ -54,6 +53,9 @@ export function useLoadData(refs: PersistenceRefs) {
             if (raw) {
                 try {
                     const parsed = JSON.parse(raw) as StoredDataRaw;
+                    const localUsers = normalizeUsers(parsed.users);
+                    setUsers(localUsers, parsed.usersUpdatedAt ?? 0);
+                    importingUser = localUsers.some(user => user.id === savedUserId) ? savedUserId : null;
                     if (parsed.tasks) {
                         localTasks = parsed.tasks.map((t) => migrateTask(t, { fallbackUser: importingUser }));
                         devLog('✅ [LOCALSTORAGE] Tâches migrées:', localTasks.length);
@@ -105,16 +107,6 @@ export function useLoadData(refs: PersistenceRefs) {
                 } catch { /* silencieux */ }
             }
 
-            // 3. Utilisateur courant
-            devLog('👤 [USER] Utilisateur sauvegardé:', savedUserId || 'AUCUN');
-            if (importingUser) {
-                setCurrentUser(importingUser);
-            } else if (savedUserId) {
-                devLog('⚠️ [USER] ID invalide (ancien?), forcer reconnexion');
-                localStorage.removeItem('current_user_id');
-                setCurrentUser(null);
-            }
-
             // 4. Electron — lecture data.json + comments.json
             if (window.electronAPI?.isElectron) {
                 devLog('✅ [ELECTRON] Environnement Electron détecté');
@@ -133,6 +125,10 @@ export function useLoadData(refs: PersistenceRefs) {
 
                     if (result.success && result.data) {
                         devLog('✅ [ELECTRON] data.json lu avec succès');
+                        if (Array.isArray(result.data.users) && (result.data.usersUpdatedAt ?? 0) >= useStore.getState().usersUpdatedAt) {
+                            setUsers(result.data.users, result.data.usersUpdatedAt ?? 0);
+                        }
+                        importingUser = useStore.getState().users.some(user => user.id === savedUserId) ? savedUserId : null;
 
                         if (result.data.tasks) {
                             const fileTasks: Task[] = result.data.tasks.map(
@@ -212,6 +208,8 @@ export function useLoadData(refs: PersistenceRefs) {
                 }
             }
 
+            const finalState = useStore.getState();
+            setCurrentUser(savedUserId && finalState.users.some(user => user.id === savedUserId) ? savedUserId : null);
             devLog('🏁 [DATA LOADING] Chargement terminé, setIsLoadingData(false)');
             setIsLoadingData(false);
         }

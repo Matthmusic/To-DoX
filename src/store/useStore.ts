@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { todayISO, uid, devWarn } from '../utils';
+import { normalizeUsers } from '../utils/users';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
 import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, TaskTemplate, SavedReport, AppNotification, TimeEntry, OutlookConfig, OutlookEvent } from '../types';
@@ -43,6 +44,7 @@ export interface StoreState {
     projectHistory: string[];
     projectColors: Record<string, number>;
     users: User[];
+    usersUpdatedAt: number;
     currentUser: string | null; // ID de l'utilisateur actuellement connecté
     viewAsUser: string | null;  // Vue en tant que (filtre visuel, sans changer la session)
     collapsedProjects: Record<string, boolean>;
@@ -58,7 +60,7 @@ export interface StoreState {
     setProjectHistory: (history: string[]) => void;
     setProjectColors: (colors: Record<string, number>) => void;
     setProjectColor: (projectName: string, colorIndex: number) => void;
-    setUsers: (users: User[]) => void;
+    setUsers: (users: User[], updatedAt?: number) => void;
     setCurrentUser: (userId: string | null) => void;
     setViewAsUser: (userId: string | null) => void;
     setStoragePath: (path: string | null) => void;
@@ -168,6 +170,7 @@ const useStore = create<StoreState>((set, get) => ({
     projectHistory: [],
     projectColors: {},
     users: FIXED_USERS,
+    usersUpdatedAt: 0,
     currentUser: null,
     viewAsUser: null,
     collapsedProjects: {},
@@ -218,7 +221,11 @@ const useStore = create<StoreState>((set, get) => ({
     setProjectColor: (projectName, colorIndex) => {
         set((state) => ({ projectColors: { ...state.projectColors, [projectName]: colorIndex } }));
     },
-    setUsers: (users) => set({ users }),
+    setUsers: (value, updatedAt) => set(state => {
+        const users = normalizeUsers(value);
+        return { users, usersUpdatedAt: updatedAt ?? Math.max(Date.now(), state.usersUpdatedAt + 1),
+            viewAsUser: users.some(user => user.id === state.viewAsUser) ? state.viewAsUser : null };
+    }),
     setCurrentUser: (userId) => set((state) => {
         const DEFAULT_OUTLOOK: OutlookConfig = { enabled: false, icsUrl: '', exportEnabled: false, lastSync: null };
         const outlookConfig = userId ? (state.outlookConfigs[userId] ?? DEFAULT_OUTLOOK) : DEFAULT_OUTLOOK;

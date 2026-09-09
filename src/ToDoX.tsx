@@ -284,6 +284,11 @@ export default function ToDoX() {
                 const parsed = JSON.parse(result) as StoredDataRaw;
                 const state = useStore.getState();
                 const { setTasks, setDirectories, setProjectHistory } = state;
+                if (Array.isArray(parsed.users)) {
+                    const importedUsers = new Map(parsed.users.map(user => [user.id, user]));
+                    for (const user of state.users) importedUsers.set(user.id, user);
+                    state.setUsers([...importedUsers.values()]);
+                }
 
                 // Récupérer les données existantes pour le merge
                 const existingTasks = state.tasks;

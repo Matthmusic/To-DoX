@@ -63,6 +63,7 @@ export interface StoredData {
   projectHistory?: string[];
   projectColors?: Record<string, number>;
   users?: User[];
+  usersUpdatedAt?: number;
   notificationSettings?: NotificationSettings;
   themeSettings?: ThemeSettings;
   comments?: Record<string, Comment[]>;

@@ -52,7 +52,7 @@ The application uses a **centralized Zustand store** located in [src/store/useSt
 - `directories: Directories` - Project name → folder path mappings
 - `projectHistory: string[]` - Recently used project names (for autocomplete)
 - `projectColors: Record<string, number>` - Project → color index mapping
-- `users: User[]` - User list (always FIXED_USERS, not stored in data.json)
+- `users: User[]` - Editable user directory, persisted in localStorage and data.json with usersUpdatedAt; FIXED_USERS is the migration default only.
 - `currentUser: string | null` - ID of currently logged-in user (saved in `current_user_id` localStorage key)
 - `viewAsUser: string | null` - "View as" filter (transient, not persisted)
 - `collapsedProjects: Record<string, boolean>` - UI state for collapsed project cards (keyed as `${status}_${project}`)
@@ -397,4 +397,4 @@ Tasks can have a `parentTaskId` linking them to a parent task. `convertSubtaskBa
 - **Icons:** Icon files are in [src/assets/](src/assets/) - PNG for macOS/Linux, ICO for Windows
 - **Theme system:** Theme mode is dynamic (light/dark/auto). `setNativeTheme()` is called on theme change. Dark mode is no longer forced — `nativeTheme.themeSource` follows user's `ThemeSettings.mode`.
 - **Custom title bar:** Uses frameless window with custom controls in TitleBar component
-- **FIXED_USERS** in `src/constants.ts` is a hardcoded list — not stored in `data.json` and not editable via the UI. `users` in the store is always initialized from this constant.
+- **FIXED_USERS** in `src/constants.ts` seeds installations without a saved directory. UI components must read `useStore().users`. Saved directories are loaded before restoring the current session and synchronized via `usersUpdatedAt`; only user edits should generate a new timestamp.

@@ -2,12 +2,13 @@ import { useEffect } from 'react';
 import { STORAGE_KEY } from '../../constants';
 import type { TimeEntry } from '../../types';
 import { devError, devLog } from '../../utils';
+import useStore from '../../store/useStore';
 import { type PersistenceRefs, type StoreSnapshot } from './persistence.utils';
 
 /** Sauvegarde debounced : localStorage + Electron data.json + comments.json + thème + utilisateur courant */
 export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
     const {
-        tasks, directories, projectHistory, projectColors, notificationSettings,
+        users, usersUpdatedAt, tasks, directories, projectHistory, projectColors, notificationSettings,
         themeSettings, comments, templates, savedReports, appNotifications,
         timeEntries, outlookConfigs, currentUser, storagePath, isLoadingData, setSaveError,
     } = store;
@@ -15,9 +16,9 @@ export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
     // ─── Sauvegarde localStorage (full payload pour fallback web) ─────────────
     useEffect(() => {
         if (isLoadingData) return;
-        const fullPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, comments, templates, savedReports, appNotifications, timeEntries, outlookConfigs };
+        const fullPayload = { users, usersUpdatedAt, tasks, directories, projectHistory, projectColors, notificationSettings, comments, templates, savedReports, appNotifications, timeEntries, outlookConfigs };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(fullPayload));
-    }, [tasks, directories, projectHistory, projectColors, notificationSettings, comments, templates, savedReports, appNotifications, timeEntries, outlookConfigs, isLoadingData]);
+    }, [users, usersUpdatedAt, tasks, directories, projectHistory, projectColors, notificationSettings, comments, templates, savedReports, appNotifications, timeEntries, outlookConfigs, isLoadingData]);
 
     // ─── Sauvegarde Electron data.json (sans commentaires, debounce 100ms) ────
     useEffect(() => {
@@ -39,7 +40,12 @@ export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
                         safeTimeEntries = Array.from(byId.values());
                     }
                     refs.lastKnownFileTimeEntries.current = safeTimeEntries;
-                    const dataPayload = { tasks, directories, projectHistory, projectColors, notificationSettings, templates, savedReports, appNotifications, timeEntries: safeTimeEntries, outlookConfigs };
+                    // A task save must not overwrite a newer shared user directory.
+                    const latest = await window.electronAPI.readData(filePath);
+                    const sharedUsers = latest?.success && Array.isArray(latest.data?.users)
+                        && (latest.data.usersUpdatedAt ?? 0) > usersUpdatedAt ? latest.data : null;
+                    if (sharedUsers) useStore.getState().setUsers(sharedUsers.users!, sharedUsers.usersUpdatedAt ?? 0);
+                    const dataPayload = { users: sharedUsers?.users ?? users, usersUpdatedAt: sharedUsers?.usersUpdatedAt ?? usersUpdatedAt, tasks, directories, projectHistory, projectColors, notificationSettings, templates, savedReports, appNotifications, timeEntries: safeTimeEntries, outlookConfigs };
                     devLog('💾 [SAVE] data.json...');
                     const saveResult = await window.electronAPI.saveData(filePath, dataPayload);
                     if (saveResult && !saveResult.success) {
@@ -55,7 +61,7 @@ export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
             }
         }, 100);
         return () => clearTimeout(timer);
-    }, [tasks, directories, projectHistory, projectColors, notificationSettings, templates, savedReports, appNotifications, timeEntries, outlookConfigs, storagePath, isLoadingData, setSaveError]);
+    }, [users, usersUpdatedAt, tasks, directories, projectHistory, projectColors, notificationSettings, templates, savedReports, appNotifications, timeEntries, outlookConfigs, storagePath, isLoadingData, setSaveError]);
 
     // ─── Sauvegarde Electron comments.json (fichier dédié, debounce 100ms) ───
     useEffect(() => {
@@ -87,10 +93,11 @@ export function usePersistSave(refs: PersistenceRefs, store: StoreSnapshot) {
 
     // ─── Utilisateur courant ──────────────────────────────────────────────────
     useEffect(() => {
+        if (isLoadingData) return;
         if (currentUser) {
             localStorage.setItem('current_user_id', currentUser);
         } else {
             localStorage.removeItem('current_user_id');
         }
-    }, [currentUser]);
+    }, [currentUser, isLoadingData]);
 }
