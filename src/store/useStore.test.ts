@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- fixtures de test partielles (objets
+   Task/Subtask volontairement incomplets, réponses API mockées génériques) : le brief de la
+   tâche 5 utilise lui-même `as any` pour ce même usage (voir ses tests Step 1, reproduits
+   verbatim plus bas) ; retyper chaque fixture avec un objet Task/Subtask complet n'apporterait
+   rien à la couverture et alourdirait fortement ce fichier. */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import useStore from './useStore';
@@ -9,14 +14,89 @@ import * as api from '../services/api';
 // construisent un ApiError réel pour simuler une erreur serveur.
 vi.mock('../services/api', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../services/api')>();
-    return { ...actual, apiGet: vi.fn(), apiPost: vi.fn(), apiPut: vi.fn(), apiDelete: vi.fn() };
+    return { ...actual, apiGet: vi.fn(), apiPost: vi.fn(), apiPut: vi.fn(), apiPatch: vi.fn(), apiDelete: vi.fn() };
 });
 
 const ALICE = { id: 'alice', name: 'Alice Dupont', email: 'alice@test.com' };
 const BOB   = { id: 'bob',   name: 'Bob Martin',   email: 'bob@test.com'   };
 
+/**
+ * Mocks par défaut de apiPost/apiPut/apiDelete/apiPatch, appelés dans le beforeEach de
+ * chaque describe ci-dessous. Ils imitent d'assez près le comportement réel du backend
+ * (todox-backend/src/routes/tasks.ts et .../subtasks.ts) pour que les tests écrits à
+ * l'origine pour un store 100% local restent représentatifs sans retaper un objet Task
+ * complet dans chaque test :
+ * - apiPost : renvoie un objet plausible côté serveur (id généré, champs du payload
+ *   recopiés) pour /api/tasks et /api/tasks/:id/subtasks.
+ * - apiPut : recopie le corps envoyé (comme le ferait une vraie réponse PATCH-like), sauf
+ *   pour 2 comportements serveur qu'il reproduit explicitement car des tests en dépendent :
+ *   (a) `completedAt` est déduit automatiquement du changement de statut / de `completed`
+ *   (jamais envoyé par le client, voir le commentaire de `updateTask` dans useStore.ts) ;
+ *   (b) les champs de workflow de révision sont normalisés `null` → `undefined` quand ils
+ *   sont vidés, exactement comme `formatTask` côté backend (voir le commentaire du type
+ *   `TaskPatch` dans useStore.ts).
+ * - apiDelete/apiPatch : résolvent simplement (204 / {ok:true}), ces actions ne dépendent
+ *   pas du contenu de la réponse.
+ * Un test qui a besoin d'une réponse exacte (les 4 tests de l'étape 1 du brief, entre
+ * autres) écrase ce mock par défaut avec son propre `mockResolvedValue`/`mockResolvedValueOnce`.
+ */
+function installDefaultApiMocks() {
+    vi.mocked(api.apiPost).mockImplementation(async (path: string, body: any) => {
+        if (path.endsWith('/subtasks')) {
+            return {
+                id: 'sub-' + Math.random().toString(36).slice(2),
+                title: body.title,
+                completed: false,
+                createdAt: Date.now(),
+                completedAt: null,
+                completedBy: null,
+            };
+        }
+        return {
+            id: 'srv-' + Math.random().toString(36).slice(2),
+            title: body.title,
+            project: body.project,
+            due: body.due ?? null,
+            priority: body.priority ?? 'med',
+            status: body.status ?? 'todo',
+            createdBy: body.assignedTo?.[0] ?? 'unassigned',
+            assignedTo: body.assignedTo ?? [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            completedAt: body.status === 'done' ? Date.now() : null,
+            notes: body.notes ?? '',
+            archived: false,
+            archivedAt: null,
+            favorite: !!body.favorite,
+            deletedAt: null,
+            subtasks: [],
+            reviewers: [],
+        };
+    });
+    vi.mocked(api.apiPut).mockImplementation(async (path: string, body: any) => {
+        const id = path.split('/').filter(Boolean).pop()!;
+        const result: any = { id, ...body };
+        for (const f of ['reviewValidatedBy', 'reviewValidatedAt', 'reviewRejectedBy', 'reviewRejectedAt', 'rejectionComment']) {
+            if (result[f] === null) result[f] = undefined;
+        }
+        if (body.status === 'done') result.completedAt = Date.now();
+        else if (body.status) result.completedAt = null;
+        if (body.completed !== undefined) {
+            result.completedAt = body.completed ? Date.now() : null;
+            // Réplique PUT /api/tasks/:taskId/subtasks/:subId : `completedBy` est déduit
+            // serveur de l'appelant (req.userId), jamais envoyé par le client (voir
+            // todox-backend/src/routes/subtasks.ts).
+            result.completedBy = body.completed ? useStore.getState().currentUser : null;
+        }
+        return result;
+    });
+    vi.mocked(api.apiDelete).mockResolvedValue(undefined);
+    vi.mocked(api.apiPatch).mockResolvedValue({ ok: true });
+}
+
 describe('useStore', () => {
     beforeEach(() => {
+        vi.clearAllMocks();
         const { setState } = useStore;
         act(() => {
             setState({
@@ -27,12 +107,13 @@ describe('useStore', () => {
                 projectHistory: [],
                 collapsedProjects: {},
                 currentUser: 'matthieu',
+                authToken: 'tok',
             });
         });
-        vi.restoreAllMocks();
+        installDefaultApiMocks();
     });
 
-    it('should add a task', () => {
+    it('should add a task', async () => {
         const { result } = renderHook(() => useStore());
 
         const newTaskData = {
@@ -40,8 +121,8 @@ describe('useStore', () => {
             priority: 'med' as const,
         };
 
-        act(() => {
-            result.current.addTask(newTaskData);
+        await act(async () => {
+            await result.current.addTask(newTaskData);
         });
 
         expect(result.current.tasks).toHaveLength(1);
@@ -55,17 +136,17 @@ describe('useStore', () => {
         expect(result.current.tasks[0].createdAt).toBeDefined();
     });
 
-    it('should update a task', () => {
+    it('should update a task', async () => {
         const { result } = renderHook(() => useStore());
         let taskId = '';
 
-        act(() => {
-            result.current.addTask({ title: 'Initial Title', priority: 'low' });
+        await act(async () => {
+            await result.current.addTask({ title: 'Initial Title', priority: 'low' });
         });
         taskId = result.current.tasks[0].id;
 
-        act(() => {
-            result.current.updateTask(taskId, { title: 'Updated Title', status: 'doing' });
+        await act(async () => {
+            await result.current.updateTask(taskId, { title: 'Updated Title', status: 'doing' });
         });
 
         const updatedTask = result.current.tasks.find(t => t.id === taskId);
@@ -74,48 +155,49 @@ describe('useStore', () => {
         expect(updatedTask?.status).toBe('doing');
     });
 
-    it('should soft-delete a task (set deletedAt, keep in array)', () => {
+    it('should soft-delete a task (set deletedAt, keep in array)', async () => {
         const { result } = renderHook(() => useStore());
         let taskId = '';
 
-        act(() => {
-            result.current.addTask({ title: 'To Delete', priority: 'low' });
+        await act(async () => {
+            await result.current.addTask({ title: 'To Delete', priority: 'low' });
         });
         taskId = result.current.tasks[0].id;
 
-        act(() => {
-            result.current.removeTask(taskId);
+        await act(async () => {
+            await result.current.removeTask(taskId);
         });
 
         expect(result.current.tasks).toHaveLength(1);
         expect(result.current.tasks[0].deletedAt).not.toBeNull();
         expect(result.current.tasks[0].updatedAt).toBeGreaterThan(0);
+        expect(api.apiDelete).toHaveBeenCalledWith(`/api/tasks/${taskId}`, 'tok');
     });
 
-    it('should move a task (change status)', () => {
+    it('should move a task (change status)', async () => {
         const { result } = renderHook(() => useStore());
         let taskId = '';
 
-        act(() => {
-            result.current.addTask({ title: 'Moving Task', priority: 'med' });
+        await act(async () => {
+            await result.current.addTask({ title: 'Moving Task', priority: 'med' });
         });
         taskId = result.current.tasks[0].id;
 
-        act(() => {
-            result.current.moveTask(taskId, 'done');
+        await act(async () => {
+            await result.current.moveTask(taskId, 'done');
         });
 
         const task = result.current.tasks.find(t => t.id === taskId);
         expect(task?.status).toBe('done');
     });
 
-    it('should moveProject: move all tasks of a project from one status to another', () => {
+    it('should moveProject: move all tasks of a project from one status to another', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.addTask({ title: 'Task A', project: 'ALPHA', priority: 'med', status: 'todo' });
-            result.current.addTask({ title: 'Task B', project: 'ALPHA', priority: 'low', status: 'todo' });
-            result.current.addTask({ title: 'Task C', project: 'BETA', priority: 'high', status: 'todo' });
+        await act(async () => {
+            await result.current.addTask({ title: 'Task A', project: 'ALPHA', priority: 'med', status: 'todo' });
+            await result.current.addTask({ title: 'Task B', project: 'ALPHA', priority: 'low', status: 'todo' });
+            await result.current.addTask({ title: 'Task C', project: 'BETA', priority: 'high', status: 'todo' });
         });
 
         act(() => {
@@ -129,11 +211,11 @@ describe('useStore', () => {
         expect(betaTasks[0].status).toBe('todo');
     });
 
-    it('should moveProject to done: set completedAt', () => {
+    it('should moveProject to done: set completedAt', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.addTask({ title: 'Task A', project: 'GAMMA', priority: 'med', status: 'doing' });
+        await act(async () => {
+            await result.current.addTask({ title: 'Task A', project: 'GAMMA', priority: 'med', status: 'doing' });
         });
 
         act(() => {
@@ -145,12 +227,12 @@ describe('useStore', () => {
         expect(task?.completedAt).not.toBeNull();
     });
 
-    it('should archiveProject: set archived + archivedAt on all project tasks', () => {
+    it('should archiveProject: set archived + archivedAt on all project tasks', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.addTask({ title: 'Task A', project: 'DELTA', priority: 'med' });
-            result.current.addTask({ title: 'Task B', project: 'DELTA', priority: 'low' });
+        await act(async () => {
+            await result.current.addTask({ title: 'Task A', project: 'DELTA', priority: 'med' });
+            await result.current.addTask({ title: 'Task B', project: 'DELTA', priority: 'low' });
         });
 
         act(() => {
@@ -162,11 +244,11 @@ describe('useStore', () => {
         expect(deltaTasks.every(t => t.archivedAt !== null)).toBe(true);
     });
 
-    it('should deleteArchivedProject: soft-delete all archived tasks of a project', () => {
+    it('should deleteArchivedProject: soft-delete all archived tasks of a project', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.addTask({ title: 'Task A', project: 'EPSILON', priority: 'med' });
+        await act(async () => {
+            await result.current.addTask({ title: 'Task A', project: 'EPSILON', priority: 'med' });
         });
 
         act(() => {
@@ -183,10 +265,214 @@ describe('useStore', () => {
     });
 });
 
+// ── Tasks via API (brief Step 1 — subset couvrant create / PATCH semantics / delete / subtask) ──
+
+describe('tasks via API', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        useStore.setState({ authToken: 'tok', tasks: [], currentUser: 'u1' });
+    });
+
+    it('addTask posts to /api/tasks and stores the server-returned task (server id, not client uid())', async () => {
+        const serverTask = { id: 'srv-1', title: 'TEST TASK', project: 'X', status: 'todo', priority: 'med', createdBy: 'u1', assignedTo: ['u1'], createdAt: 1000, updatedAt: 1000, completedAt: null, notes: '', archived: false, archivedAt: null, favorite: false, deletedAt: null, subtasks: [], reviewers: [] };
+        vi.mocked(api.apiPost).mockResolvedValue(serverTask);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.addTask({ title: 'Test Task', project: 'X', priority: 'med' }); });
+
+        expect(api.apiPost).toHaveBeenCalledWith('/api/tasks', expect.objectContaining({ title: 'TEST TASK', project: 'X' }), 'tok');
+        expect(result.current.tasks[0].id).toBe('srv-1');
+    });
+
+    it('updateTask sends only the changed fields (PATCH semantics) via PUT', async () => {
+        useStore.setState({ tasks: [{ id: 't1', title: 'A', status: 'todo' } as any] });
+        vi.mocked(api.apiPut).mockResolvedValue({ id: 't1', title: 'A', status: 'doing' });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.updateTask('t1', { status: 'doing' }); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t1', { status: 'doing' }, 'tok');
+    });
+
+    it('removeTask calls DELETE (soft-delete server-side)', async () => {
+        useStore.setState({ tasks: [{ id: 't1', title: 'A' } as any] });
+        vi.mocked(api.apiDelete).mockResolvedValue(undefined);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.removeTask('t1'); });
+
+        expect(api.apiDelete).toHaveBeenCalledWith('/api/tasks/t1', 'tok');
+    });
+
+    it('addSubtask posts to /api/tasks/:taskId/subtasks', async () => {
+        useStore.setState({ tasks: [{ id: 't1', title: 'A', subtasks: [] } as any] });
+        vi.mocked(api.apiPost).mockResolvedValue({ id: 's1', title: 'Sub', completed: false, createdAt: 1000, completedAt: null, completedBy: null, assignedTo: [], startDate: null, endDate: null });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.addSubtask('t1', 'Sub'); });
+
+        expect(api.apiPost).toHaveBeenCalledWith('/api/tasks/t1/subtasks', { title: 'Sub' }, 'tok');
+        expect(result.current.tasks[0].subtasks).toHaveLength(1);
+    });
+
+    it('addTask preserves ganttDays/convertedFromSubtask locally even though the server response never includes them', async () => {
+        // Le backend n'a aucune colonne pour ces 2 champs (voir todox-backend formatTask) —
+        // updateTask/addTask doivent donc les recréer/conserver localement plutôt que de
+        // remplacer intégralement la tâche par la réponse serveur.
+        vi.mocked(api.apiPost).mockResolvedValue({ id: 'srv-2', title: 'ENFANT', project: 'X', status: 'todo', priority: 'med', createdBy: 'u1', assignedTo: ['u1'], createdAt: 1000, updatedAt: 1000, completedAt: null, notes: '', archived: false, archivedAt: null, favorite: false, deletedAt: null, subtasks: [], reviewers: [] });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => {
+            await result.current.addTask({
+                title: 'Enfant',
+                project: 'X',
+                priority: 'med',
+                convertedFromSubtask: { parentTaskId: 'parent-1', parentTaskTitle: 'PARENT' },
+            });
+        });
+
+        expect(result.current.tasks[0].ganttDays).toEqual([]);
+        expect(result.current.tasks[0].convertedFromSubtask).toEqual({ parentTaskId: 'parent-1', parentTaskTitle: 'PARENT' });
+    });
+
+    it('updateTask does not overwrite ganttDays with a server response that omits it', async () => {
+        useStore.setState({
+            tasks: [{ id: 't1', title: 'A', status: 'todo', ganttDays: [{ date: '2026-01-01' }] } as any],
+        });
+        // Réponse serveur réaliste : pas de champ ganttDays du tout (comme formatTask le ferait).
+        vi.mocked(api.apiPut).mockResolvedValue({ id: 't1', title: 'A', status: 'doing' } as any);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.updateTask('t1', { status: 'doing' }); });
+
+        expect(result.current.tasks[0].ganttDays).toEqual([{ date: '2026-01-01' }]);
+    });
+});
+
+// ── Subtasks via API ─────────────────────────────────────────────────────────
+
+describe('subtasks via API', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        useStore.setState({ authToken: 'tok', currentUser: 'alice', users: [ALICE, BOB] });
+        installDefaultApiMocks();
+    });
+
+    function taskWithSubtask() {
+        return {
+            id: 't1',
+            title: 'A',
+            subtasks: [{ id: 's1', title: 'Sub', completed: false, createdAt: 1, completedAt: null, completedBy: null }],
+        } as any;
+    }
+
+    it('toggleSubtask PUTs { completed } and updates local state', async () => {
+        useStore.setState({ tasks: [taskWithSubtask()] });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.toggleSubtask('t1', 's1'); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t1/subtasks/s1', { completed: true }, 'tok');
+        const sub = result.current.tasks[0].subtasks[0];
+        expect(sub.completed).toBe(true);
+        expect(sub.completedBy).toBe('alice');
+    });
+
+    it('deleteSubtask calls DELETE and removes the subtask locally', async () => {
+        useStore.setState({ tasks: [taskWithSubtask()] });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.deleteSubtask('t1', 's1'); });
+
+        expect(api.apiDelete).toHaveBeenCalledWith('/api/tasks/t1/subtasks/s1', 'tok');
+        expect(result.current.tasks[0].subtasks).toHaveLength(0);
+    });
+
+    it('updateSubtaskTitle PUTs { title } and updates local state', async () => {
+        useStore.setState({ tasks: [taskWithSubtask()] });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.updateSubtaskTitle('t1', 's1', 'Nouveau titre'); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t1/subtasks/s1', { title: 'Nouveau titre' }, 'tok');
+        expect(result.current.tasks[0].subtasks[0].title).toBe('Nouveau titre');
+    });
+
+    it('reorderSubtasks reorders locally then PATCHes the new order', async () => {
+        useStore.setState({
+            tasks: [{
+                id: 't1', title: 'A',
+                subtasks: [
+                    { id: 's1', title: 'First', completed: false, createdAt: 1, completedAt: null, completedBy: null },
+                    { id: 's2', title: 'Second', completed: false, createdAt: 2, completedAt: null, completedBy: null },
+                ],
+            } as any],
+        });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.reorderSubtasks('t1', 0, 1); });
+
+        expect(result.current.tasks[0].subtasks.map(s => s.id)).toEqual(['s2', 's1']);
+        expect(api.apiPatch).toHaveBeenCalledWith('/api/tasks/t1/subtasks/reorder', { order: ['s2', 's1'] }, 'tok');
+    });
+
+    it('assignSubtask PUTs { assignedTo } (adds the user) and updates local state', async () => {
+        useStore.setState({ tasks: [taskWithSubtask()] });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.assignSubtask('t1', 's1', 'bob'); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t1/subtasks/s1', { assignedTo: ['bob'] }, 'tok');
+        expect(result.current.tasks[0].subtasks[0].assignedTo).toEqual(['bob']);
+    });
+
+    it('assignSubtask is a no-op (no API call) if the user is already assigned', async () => {
+        useStore.setState({ tasks: [{ id: 't1', title: 'A', subtasks: [{ id: 's1', title: 'Sub', completed: false, createdAt: 1, completedAt: null, completedBy: null, assignedTo: ['bob'] }] } as any] });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.assignSubtask('t1', 's1', 'bob'); });
+
+        expect(api.apiPut).not.toHaveBeenCalled();
+    });
+
+    it('unassignSubtask PUTs { assignedTo } (removes the user) and updates local state', async () => {
+        useStore.setState({ tasks: [{ id: 't1', title: 'A', subtasks: [{ id: 's1', title: 'Sub', completed: false, createdAt: 1, completedAt: null, completedBy: null, assignedTo: ['alice', 'bob'] }] } as any] });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.unassignSubtask('t1', 's1', 'bob'); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t1/subtasks/s1', { assignedTo: ['alice'] }, 'tok');
+        expect(result.current.tasks[0].subtasks[0].assignedTo).toEqual(['alice']);
+    });
+
+    it('setSubtaskDates PUTs only the provided field(s) (PATCH semantics) and updates local state', async () => {
+        useStore.setState({ tasks: [taskWithSubtask()] });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.setSubtaskDates('t1', 's1', { startDate: '2026-01-01' }); });
+
+        // Seul `startDate` était fourni : `endDate` ne doit pas apparaître dans le corps envoyé.
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t1/subtasks/s1', { startDate: '2026-01-01' }, 'tok');
+        expect(result.current.tasks[0].subtasks[0].startDate).toBe('2026-01-01');
+    });
+
+    it('toggleSubtask uses the server-returned completedBy (no client-side derivation)', async () => {
+        useStore.setState({ tasks: [taskWithSubtask()] });
+        vi.mocked(api.apiPut).mockResolvedValue({ id: 's1', title: 'Sub', completed: true, createdAt: 1, completedAt: 2000, completedBy: 'alice', assignedTo: [], startDate: null, endDate: null });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.toggleSubtask('t1', 's1'); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t1/subtasks/s1', { completed: true }, 'tok');
+        expect(result.current.tasks[0].subtasks[0].completedBy).toBe('alice');
+    });
+});
+
 // ── Review workflow ────────────────────────────────────────────────────────
 
 describe('review workflow', () => {
     beforeEach(() => {
+        vi.clearAllMocks();
         act(() => {
             useStore.setState({
                 tasks: [],
@@ -195,48 +481,32 @@ describe('review workflow', () => {
                 collapsedProjects: {},
                 currentUser: 'alice',
                 appNotifications: [],
+                authToken: 'tok',
             });
         });
+        installDefaultApiMocks();
     });
 
-    it('setReviewers: sets reviewers and auto-assigns them', () => {
+    it('setReviewers: sets reviewers and auto-assigns them', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.addTask({ title: 'Ma tâche', priority: 'med', assignedTo: ['alice'] });
+        await act(async () => {
+            await result.current.addTask({ title: 'Ma tâche', priority: 'med', assignedTo: ['alice'] });
         });
         const taskId = result.current.tasks[0].id;
 
-        act(() => {
-            result.current.setReviewers(taskId, ['bob']);
+        await act(async () => {
+            await result.current.setReviewers(taskId, ['bob']);
         });
 
         const task = result.current.tasks.find(t => t.id === taskId)!;
         expect(task.reviewers).toEqual(['bob']);
         // Bob doit être auto-assigné à la tâche
         expect(task.assignedTo).toContain('bob');
+        expect(api.apiPut).toHaveBeenCalledWith(`/api/tasks/${taskId}`, { reviewers: ['bob'], assignedTo: expect.arrayContaining(['alice', 'bob']) }, 'tok');
     });
 
-    it('setReviewers: creates review_requested notification for each reviewer', () => {
-        const { result } = renderHook(() => useStore());
-
-        act(() => {
-            result.current.addTask({ title: 'Notification test', priority: 'low', assignedTo: ['alice'] });
-        });
-        const taskId = result.current.tasks[0].id;
-
-        act(() => {
-            result.current.setReviewers(taskId, ['bob']);
-        });
-
-        const notifs = result.current.appNotifications.filter(n => n.type === 'review_requested');
-        expect(notifs).toHaveLength(1);
-        expect(notifs[0].toUserId).toBe('bob');
-        expect(notifs[0].fromUserId).toBe('alice');
-        expect(notifs[0].taskId).toBe(taskId);
-    });
-
-    it('setReviewers: no-op if currentUser is null', () => {
+    it('setReviewers: no-op if currentUser is null', async () => {
         // Injecter directement une tâche (addTask est no-op sans currentUser)
         const fakeTask = { id: 'task-null-user', title: 'TACHE', project: 'TEST', priority: 'low' as const, status: 'todo' as const,
             due: null, assignedTo: [], createdBy: 'alice', createdAt: 0, updatedAt: 0, completedAt: null,
@@ -245,24 +515,25 @@ describe('review workflow', () => {
         act(() => { useStore.setState({ tasks: [fakeTask], currentUser: null }); });
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.setReviewers('task-null-user', ['bob']);
+        await act(async () => {
+            await result.current.setReviewers('task-null-user', ['bob']);
         });
 
         const task = result.current.tasks.find(t => t.id === 'task-null-user')!;
         expect(task.reviewers ?? []).toHaveLength(0);
+        expect(api.apiPut).not.toHaveBeenCalled();
     });
 
-    it('validateTask: sets status to done and records validator', () => {
+    it('validateTask: sets status to done and records validator', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.addTask({ title: 'À valider', priority: 'med', status: 'review', assignedTo: ['alice'] });
+        await act(async () => {
+            await result.current.addTask({ title: 'À valider', priority: 'med', status: 'review', assignedTo: ['alice'] });
         });
         const taskId = result.current.tasks[0].id;
 
-        act(() => {
-            result.current.validateTask(taskId);
+        await act(async () => {
+            await result.current.validateTask(taskId);
         });
 
         const task = result.current.tasks.find(t => t.id === taskId)!;
@@ -272,34 +543,16 @@ describe('review workflow', () => {
         expect(task.completedAt).not.toBeNull();
     });
 
-    it('validateTask: creates review_validated notifications for all assignees', () => {
+    it('requestCorrections: sets status to doing and records rejection info', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.addTask({ title: 'Tâche validée', priority: 'med', status: 'review', assignedTo: ['alice', 'bob'] });
+        await act(async () => {
+            await result.current.addTask({ title: 'À corriger', priority: 'med', status: 'review', assignedTo: ['alice'] });
         });
         const taskId = result.current.tasks[0].id;
 
-        act(() => {
-            result.current.validateTask(taskId);
-        });
-
-        const notifs = result.current.appNotifications.filter(n => n.type === 'review_validated');
-        expect(notifs).toHaveLength(2);
-        const toIds = notifs.map(n => n.toUserId).sort();
-        expect(toIds).toEqual(['alice', 'bob']);
-    });
-
-    it('requestCorrections: sets status to doing and records rejection info', () => {
-        const { result } = renderHook(() => useStore());
-
-        act(() => {
-            result.current.addTask({ title: 'À corriger', priority: 'med', status: 'review', assignedTo: ['alice'] });
-        });
-        const taskId = result.current.tasks[0].id;
-
-        act(() => {
-            result.current.requestCorrections(taskId, 'Le titre est trop vague');
+        await act(async () => {
+            await result.current.requestCorrections(taskId, 'Le titre est trop vague');
         });
 
         const task = result.current.tasks.find(t => t.id === taskId)!;
@@ -309,16 +562,16 @@ describe('review workflow', () => {
         expect(task.rejectionComment).toBe('Le titre est trop vague');
     });
 
-    it('requestCorrections: adds a comment in the task thread', () => {
+    it('requestCorrections: adds a comment in the task thread', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.addTask({ title: 'Tâche commentée', priority: 'low', status: 'review', assignedTo: ['alice'] });
+        await act(async () => {
+            await result.current.addTask({ title: 'Tâche commentée', priority: 'low', status: 'review', assignedTo: ['alice'] });
         });
         const taskId = result.current.tasks[0].id;
 
-        act(() => {
-            result.current.requestCorrections(taskId, 'Voir remarques');
+        await act(async () => {
+            await result.current.requestCorrections(taskId, 'Voir remarques');
         });
 
         const comments = result.current.comments[taskId] ?? [];
@@ -326,38 +579,22 @@ describe('review workflow', () => {
         expect(comments[0].text).toContain('Voir remarques');
     });
 
-    it('requestCorrections: creates review_rejected notifications for all assignees', () => {
+    it('reopenTask: sets status to doing and clears all review fields', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.addTask({ title: 'Rejet notif', priority: 'low', status: 'review', assignedTo: ['alice', 'bob'] });
+        await act(async () => {
+            await result.current.addTask({ title: 'Rouvrir', priority: 'med', status: 'done', assignedTo: ['alice'] });
         });
         const taskId = result.current.tasks[0].id;
-
-        act(() => {
-            result.current.requestCorrections(taskId, 'Corrections requises');
-        });
-
-        const notifs = result.current.appNotifications.filter(n => n.type === 'review_rejected');
-        expect(notifs).toHaveLength(2);
-    });
-
-    it('reopenTask: sets status to doing and clears all review fields', () => {
-        const { result } = renderHook(() => useStore());
-
-        act(() => {
-            result.current.addTask({ title: 'Rouvrir', priority: 'med', status: 'done', assignedTo: ['alice'] });
-        });
-        const taskId = result.current.tasks[0].id;
-        act(() => {
-            result.current.updateTask(taskId, {
+        await act(async () => {
+            await result.current.updateTask(taskId, {
                 reviewValidatedBy: 'alice',
                 reviewValidatedAt: Date.now(),
             });
         });
 
-        act(() => {
-            result.current.reopenTask(taskId);
+        await act(async () => {
+            await result.current.reopenTask(taskId);
         });
 
         const task = result.current.tasks.find(t => t.id === taskId)!;
@@ -367,12 +604,67 @@ describe('review workflow', () => {
         expect(task.reviewRejectedBy).toBeUndefined();
         expect(task.rejectionComment).toBeUndefined();
     });
+
+    it('reopenTask: sends explicit null (not undefined) for review fields so the server actually clears them', async () => {
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => {
+            await result.current.addTask({ title: 'Rouvrir 2', priority: 'med', status: 'done', assignedTo: ['alice'] });
+        });
+        const taskId = result.current.tasks[0].id;
+
+        await act(async () => {
+            await result.current.reopenTask(taskId);
+        });
+
+        // Un patch `undefined` serait supprimé par JSON.stringify (voir services/api.ts) et
+        // ne viderait donc jamais ces champs côté serveur — seul `null` explicite le permet.
+        expect(api.apiPut).toHaveBeenCalledWith(`/api/tasks/${taskId}`, expect.objectContaining({
+            status: 'doing',
+            reviewValidatedBy: null,
+            reviewValidatedAt: null,
+            reviewRejectedBy: null,
+            reviewRejectedAt: null,
+            rejectionComment: null,
+        }), 'tok');
+    });
+
+    // Régression du point critique du brief de la tâche 5 : PUT /api/tasks/:id crée déjà les
+    // AppNotifications de revue côté serveur (todox-backend, `createReviewNotifications`) —
+    // ces 4 actions ne doivent plus en créer localement (elles le faisaient avant cette
+    // tâche), sous peine de double notification. `fetchAppNotifications` (hors périmètre de
+    // cette tâche) sera la seule source qui peuple `appNotifications` à l'avenir.
+    // (On filtre sur les 3 types review_* spécifiquement, pas sur `appNotifications` en
+    // entier : `requestCorrections` appelle légitimement `addComment`, qui crée de son côté
+    // une notification `comment_added` pour les autres assignés — comportement inchangé,
+    // sans rapport avec le bug de double notification visé ici, voir addComment.)
+    it('setReviewers/validateTask/requestCorrections/reopenTask never create review_* AppNotifications locally (server creates them)', async () => {
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => {
+            await result.current.addTask({ title: 'Sans double notif', priority: 'med', status: 'review', assignedTo: ['alice', 'bob'] });
+        });
+        const taskId = result.current.tasks[0].id;
+        const reviewNotifTypes = new Set(['review_requested', 'review_validated', 'review_rejected']);
+        const countReviewNotifs = () => result.current.appNotifications.filter(n => reviewNotifTypes.has(n.type)).length;
+
+        await act(async () => { await result.current.setReviewers(taskId, ['bob']); });
+        expect(countReviewNotifs()).toBe(0);
+
+        await act(async () => { await result.current.validateTask(taskId); });
+        expect(countReviewNotifs()).toBe(0);
+
+        await act(async () => { await result.current.reopenTask(taskId); });
+        await act(async () => { await result.current.requestCorrections(taskId, 'Corrige ceci'); });
+        expect(countReviewNotifs()).toBe(0);
+    });
 });
 
 // ── convertSubtaskBack ─────────────────────────────────────────────────────
 
 describe('convertSubtaskBack', () => {
     beforeEach(() => {
+        vi.clearAllMocks();
         act(() => {
             useStore.setState({
                 tasks: [],
@@ -381,20 +673,22 @@ describe('convertSubtaskBack', () => {
                 collapsedProjects: {},
                 currentUser: 'alice',
                 appNotifications: [],
+                authToken: 'tok',
             });
         });
+        installDefaultApiMocks();
     });
 
-    it('returns ok and re-adds the subtask to the parent', () => {
+    it('returns ok and re-adds the subtask to the parent', async () => {
         const { result } = renderHook(() => useStore());
 
         // Créer la tâche parente
-        act(() => { result.current.addTask({ title: 'Parent', priority: 'med' }); });
+        await act(async () => { await result.current.addTask({ title: 'Parent', priority: 'med' }); });
         const parentId = result.current.tasks[0].id;
 
         // Créer la tâche fille simulant une sous-tâche convertie (addTask uppercasse le titre)
-        act(() => {
-            result.current.addTask({
+        await act(async () => {
+            await result.current.addTask({
                 title: 'Sous-tâche convertie',
                 priority: 'low',
                 convertedFromSubtask: { parentTaskId: parentId, parentTaskTitle: 'PARENT' },
@@ -402,9 +696,9 @@ describe('convertSubtaskBack', () => {
         });
         const childId = result.current.tasks.find(t => t.title === 'SOUS-TÂCHE CONVERTIE')!.id;
 
-        let returnValue: ReturnType<typeof result.current.convertSubtaskBack>;
-        act(() => {
-            returnValue = result.current.convertSubtaskBack(childId);
+        let returnValue: Awaited<ReturnType<typeof result.current.convertSubtaskBack>>;
+        await act(async () => {
+            returnValue = await result.current.convertSubtaskBack(childId);
         });
 
         expect(returnValue!).toBe('ok');
@@ -418,15 +712,15 @@ describe('convertSubtaskBack', () => {
         expect(parent.subtasks?.some(st => st.title === 'SOUS-TÂCHE CONVERTIE')).toBe(true);
     });
 
-    it('returns parent_deleted when parent is archived (but not deleted)', () => {
+    it('returns parent_deleted when parent is archived (but not deleted)', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => { result.current.addTask({ title: 'Parent archivé', priority: 'low' }); });
+        await act(async () => { await result.current.addTask({ title: 'Parent archivé', priority: 'low' }); });
         const parentId = result.current.tasks[0].id;
-        act(() => { result.current.archiveTask(parentId); });
+        await act(async () => { await result.current.archiveTask(parentId); });
 
-        act(() => {
-            result.current.addTask({
+        await act(async () => {
+            await result.current.addTask({
                 title: 'Enfant',
                 priority: 'low',
                 convertedFromSubtask: { parentTaskId: parentId, parentTaskTitle: 'PARENT ARCHIVÉ' },
@@ -434,17 +728,19 @@ describe('convertSubtaskBack', () => {
         });
         const childId = result.current.tasks.find(t => t.title === 'ENFANT')!.id;
 
-        let returnValue: ReturnType<typeof result.current.convertSubtaskBack>;
-        act(() => { returnValue = result.current.convertSubtaskBack(childId); });
+        let returnValue: Awaited<ReturnType<typeof result.current.convertSubtaskBack>>;
+        await act(async () => {
+            returnValue = await result.current.convertSubtaskBack(childId);
+        });
 
         expect(returnValue!).toBe('parent_deleted');
     });
 
-    it('returns parent_not_found when parent task does not exist', () => {
+    it('returns parent_not_found when parent task does not exist', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => {
-            result.current.addTask({
+        await act(async () => {
+            await result.current.addTask({
                 title: 'Orphelin',
                 priority: 'low',
                 convertedFromSubtask: { parentTaskId: 'inexistant-id', parentTaskTitle: 'Ghost' },
@@ -452,21 +748,21 @@ describe('convertSubtaskBack', () => {
         });
         const childId = result.current.tasks[0].id;
 
-        let returnValue: ReturnType<typeof result.current.convertSubtaskBack>;
-        act(() => { returnValue = result.current.convertSubtaskBack(childId); });
+        let returnValue: Awaited<ReturnType<typeof result.current.convertSubtaskBack>>;
+        await act(async () => { returnValue = await result.current.convertSubtaskBack(childId); });
 
         expect(returnValue!).toBe('parent_not_found');
     });
 
-    it('returns parent_not_found when parent task is soft-deleted', () => {
+    it('returns parent_not_found when parent task is soft-deleted', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => { result.current.addTask({ title: 'Parent supprimé', priority: 'low' }); });
+        await act(async () => { await result.current.addTask({ title: 'Parent supprimé', priority: 'low' }); });
         const parentId = result.current.tasks[0].id;
-        act(() => { result.current.removeTask(parentId); });
+        await act(async () => { await result.current.removeTask(parentId); });
 
-        act(() => {
-            result.current.addTask({
+        await act(async () => {
+            await result.current.addTask({
                 title: 'Enfant orphelin',
                 priority: 'low',
                 convertedFromSubtask: { parentTaskId: parentId, parentTaskTitle: 'PARENT SUPPRIMÉ' },
@@ -474,22 +770,65 @@ describe('convertSubtaskBack', () => {
         });
         const childId = result.current.tasks.find(t => t.title === 'ENFANT ORPHELIN')!.id;
 
-        let returnValue: ReturnType<typeof result.current.convertSubtaskBack>;
-        act(() => { returnValue = result.current.convertSubtaskBack(childId); });
+        let returnValue: Awaited<ReturnType<typeof result.current.convertSubtaskBack>>;
+        await act(async () => { returnValue = await result.current.convertSubtaskBack(childId); });
 
         expect(returnValue!).toBe('parent_not_found');
     });
 
-    it('returns parent_not_found when task has no convertedFromSubtask', () => {
+    it('returns parent_not_found when task has no convertedFromSubtask', async () => {
         const { result } = renderHook(() => useStore());
 
-        act(() => { result.current.addTask({ title: 'Tâche normale', priority: 'low' }); });
+        await act(async () => { await result.current.addTask({ title: 'Tâche normale', priority: 'low' }); });
         const taskId = result.current.tasks[0].id;
 
-        let returnValue: ReturnType<typeof result.current.convertSubtaskBack>;
-        act(() => { returnValue = result.current.convertSubtaskBack(taskId); });
+        let returnValue: Awaited<ReturnType<typeof result.current.convertSubtaskBack>>;
+        await act(async () => { returnValue = await result.current.convertSubtaskBack(taskId); });
 
         expect(returnValue!).toBe('parent_not_found');
+    });
+
+    // Régression du finding de review : addSubtask/removeTask sont maintenant de vrais appels
+    // réseau (avant cette tâche, c'étaient des mutations locales synchrones qui ne pouvaient
+    // jamais échouer) — si addSubtask réussit mais removeTask échoue ensuite, l'app se
+    // retrouve avec la sous-tâche dupliquée sur le parent ET la tâche d'origine toujours
+    // présente. Ce test prouve que cet état partiellement converti est réel et détectable
+    // (via le retour 'error'), pas silencieusement empêché.
+    it('returns error (without silently losing the failure) when removeTask fails after addSubtask already succeeded', async () => {
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.addTask({ title: 'Parent', priority: 'med' }); });
+        const parentId = result.current.tasks[0].id;
+
+        await act(async () => {
+            await result.current.addTask({
+                title: 'Enfant en échec',
+                priority: 'low',
+                convertedFromSubtask: { parentTaskId: parentId, parentTaskTitle: 'PARENT' },
+            });
+        });
+        const childId = result.current.tasks.find(t => t.title === 'ENFANT EN ÉCHEC')!.id;
+
+        // removeTask échoue (erreur réseau), après qu'addSubtask (mock par défaut) a réussi.
+        vi.mocked(api.apiDelete).mockRejectedValue(new Error('network error'));
+
+        let returnValue: Awaited<ReturnType<typeof result.current.convertSubtaskBack>>;
+        await act(async () => {
+            returnValue = await result.current.convertSubtaskBack(childId);
+        });
+
+        expect(returnValue!).toBe('error');
+
+        // La sous-tâche A BIEN été ajoutée au parent (addSubtask a réussi) : l'état
+        // partiellement converti est réel, pas empêché.
+        expect(api.apiPost).toHaveBeenCalledWith(`/api/tasks/${parentId}/subtasks`, { title: 'ENFANT EN ÉCHEC' }, 'tok');
+        const parent = result.current.tasks.find(t => t.id === parentId)!;
+        expect(parent.subtasks?.some(st => st.title === 'ENFANT EN ÉCHEC')).toBe(true);
+
+        // La tâche d'origine n'a PAS été soft-deleted (removeTask a échoué avant de mettre
+        // à jour l'état local).
+        const child = result.current.tasks.find(t => t.id === childId)!;
+        expect(child.deletedAt).toBeNull();
     });
 });
 
@@ -497,6 +836,7 @@ describe('convertSubtaskBack', () => {
 
 describe('users via API', () => {
     beforeEach(() => {
+        vi.clearAllMocks();
         useStore.setState({ authToken: 'tok', users: [] });
     });
 
@@ -526,7 +866,10 @@ describe('users via API', () => {
 // ── Projects via API ────────────────────────────────────────────────────────
 
 describe('projects via API', () => {
-    beforeEach(() => { useStore.setState({ authToken: 'tok', directories: {}, projectHistory: [], projectColors: {} }); });
+    beforeEach(() => {
+        vi.clearAllMocks();
+        useStore.setState({ authToken: 'tok', directories: {}, projectHistory: [], projectColors: {} });
+    });
 
     it('fetchProjects fans the API response into directories/projectHistory/projectColors', async () => {
         vi.mocked(api.apiGet).mockResolvedValue([

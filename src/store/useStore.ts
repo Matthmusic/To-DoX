@@ -2,8 +2,27 @@ import { create } from 'zustand';
 import { todayISO, uid, devWarn } from '../utils';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
-import { apiGet, apiPost, apiPut, apiDelete } from '../services/api';
-import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, TaskTemplate, SavedReport, AppNotification, TimeEntry, OutlookConfig, OutlookEvent } from '../types';
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from '../services/api';
+import type { Task, TaskData, Subtask, User, Directories, NotificationSettings, ThemeSettings, Comment, TaskTemplate, SavedReport, AppNotification, TimeEntry, OutlookConfig, OutlookEvent } from '../types';
+
+/**
+ * Patch envoyé à `updateTask` : identique à `Partial<Task>`, sauf pour les champs de
+ * workflow de révision qui acceptent explicitement `null` (en plus de leur type usuel)
+ * pour permettre de les effacer côté serveur. `JSON.stringify` supprime les clés dont
+ * la valeur est `undefined` (voir `apiPut`/`services/api.ts`), donc un patch contenant
+ * `{ reviewValidatedBy: undefined }` n'envoie RIEN au serveur et ne peut donc jamais
+ * vider ce champ — seul `null` explicite le peut (voir `reopenTask`, qui a besoin de
+ * réinitialiser ces champs). `Task` lui-même garde ces champs typés sans `null` car la
+ * réponse serveur (`formatTask` côté backend) les normalise toujours en `undefined`
+ * quand ils sont absents — donc un `Task` en mémoire ne contient jamais `null` ici.
+ */
+type TaskPatch = Omit<Partial<Task>, 'reviewValidatedBy' | 'reviewValidatedAt' | 'reviewRejectedBy' | 'reviewRejectedAt' | 'rejectionComment'> & {
+    reviewValidatedBy?: string | null;
+    reviewValidatedAt?: number | null;
+    reviewRejectedBy?: string | null;
+    reviewRejectedAt?: number | null;
+    rejectionComment?: string | null;
+};
 
 /**
  * Calcule la prochaine occurrence d'une tâche récurrente.
@@ -85,26 +104,31 @@ export interface StoreState {
     setThemeSettings: (settings: ThemeSettings) => void;
     updateThemeSettings: (patch: Partial<ThemeSettings>) => void;
 
-    // Task Actions
-    addTask: (data: TaskData) => void;
-    updateTask: (id: string, patch: Partial<Task>) => void;
-    removeTask: (id: string) => void;
-    convertSubtaskBack: (taskId: string) => 'ok' | 'parent_deleted' | 'parent_not_found';
-    setTaskParent: (childId: string, parentId: string | null) => void;
-    moveTask: (id: string, status: string) => void;
-    archiveTask: (id: string) => void;
-    unarchiveTask: (id: string) => void;
+    // Task Actions — via API (todox-backend), voir src/services/api.ts
+    addTask: (data: TaskData) => Promise<void>;
+    updateTask: (id: string, patch: TaskPatch) => Promise<void>;
+    removeTask: (id: string) => Promise<void>;
+    convertSubtaskBack: (taskId: string) => Promise<'ok' | 'parent_deleted' | 'parent_not_found' | 'error'>;
+    setTaskParent: (childId: string, parentId: string | null) => Promise<void>;
+    moveTask: (id: string, status: string) => Promise<void>;
+    archiveTask: (id: string) => Promise<void>;
+    unarchiveTask: (id: string) => Promise<void>;
     moveProject: (projectName: string, fromStatus: Task['status'], toStatus: Task['status']) => void;
 
-    // Subtasks
-    addSubtask: (taskId: string, title: string) => void;
-    toggleSubtask: (taskId: string, subtaskId: string) => void;
-    deleteSubtask: (taskId: string, subtaskId: string) => void;
-    updateSubtaskTitle: (taskId: string, subtaskId: string, title: string) => void;
-    assignSubtask: (taskId: string, subtaskId: string, userId: string) => void;
-    unassignSubtask: (taskId: string, subtaskId: string, userId: string) => void;
-    setSubtaskDates: (taskId: string, subtaskId: string, patch: { startDate?: string | null; endDate?: string | null }) => void;
-    reorderSubtasks: (taskId: string, start: number, end: number) => void;
+    // Subtasks — via API (todox-backend)
+    addSubtask: (taskId: string, title: string) => Promise<void>;
+    toggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
+    deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
+    updateSubtaskTitle: (taskId: string, subtaskId: string, title: string) => Promise<void>;
+    // assignSubtask/unassignSubtask/setSubtaskDates : initialement laissées 100% locales dans
+    // ce chantier car PUT /api/tasks/:taskId/subtasks/:subId n'acceptait/ne renvoyait que
+    // `completed`/`title` — gap comblé côté backend (todox-backend commit 6c02616, redéployé)
+    // qui accepte désormais `assignedTo`/`startDate`/`endDate` en écriture et les renvoie en
+    // lecture ; converties ci-dessous en conséquence.
+    assignSubtask: (taskId: string, subtaskId: string, userId: string) => Promise<void>;
+    unassignSubtask: (taskId: string, subtaskId: string, userId: string) => Promise<void>;
+    setSubtaskDates: (taskId: string, subtaskId: string, patch: { startDate?: string | null; endDate?: string | null }) => Promise<void>;
+    reorderSubtasks: (taskId: string, start: number, end: number) => Promise<void>;
 
     // Comments
     comments: Record<string, Comment[]>;
@@ -146,11 +170,15 @@ export interface StoreState {
     markNotificationsByTypeRead: (types: import('../types').AppNotifType[], userId: string) => void;
     deleteNotificationForUser: (notifId: string, userId: string) => void;
 
-    // Review workflow
-    setReviewers: (taskId: string, reviewers: string[]) => void;
-    validateTask: (taskId: string) => void;
-    requestCorrections: (taskId: string, comment: string) => void;
-    reopenTask: (taskId: string) => void;
+    // Review workflow — via API (todox-backend). Les notifications AppNotification de revue
+    // (review_requested/review_validated/review_rejected) sont créées côté serveur par
+    // PUT /api/tasks/:id (voir `createReviewNotifications` dans
+    // todox-backend/src/routes/tasks.ts) : ces 4 actions ne doivent PAS aussi les créer
+    // localement via addAppNotification, sous peine de double notification.
+    setReviewers: (taskId: string, reviewers: string[]) => Promise<void>;
+    validateTask: (taskId: string) => Promise<void>;
+    requestCorrections: (taskId: string, comment: string) => Promise<void>;
+    reopenTask: (taskId: string) => Promise<void>;
 
     // Ephemeral UI state — dialog d'assignation réviseur (action locale uniquement, non persisté)
     pendingReviewDialogTaskId: string | null;
@@ -320,8 +348,8 @@ const useStore = create<StoreState>((set, get) => ({
         }));
     },
 
-    // Task Actions
-    addTask: (data) => {
+    // Task Actions — via API (todox-backend/src/routes/tasks.ts)
+    addTask: async (data) => {
         const currentUser = get().currentUser;
 
         if (!currentUser || currentUser === "unassigned") {
@@ -329,30 +357,31 @@ const useStore = create<StoreState>((set, get) => ({
             return;
         }
 
+        const token = get().authToken;
         const projectName = (data.project?.trim() || "DIVERS").toUpperCase();
-        const now = Date.now();
         const status = data.status || "todo";
 
-        const newTask: Task = {
-            id: uid(),
+        const payload = {
             title: (data.title?.trim() || "Sans titre").toUpperCase(),
             project: projectName,
             due: data.due || todayISO(),
             priority: data.priority || "med",
             status,
-            createdBy: data.createdBy || currentUser,
             assignedTo: data.assignedTo || [currentUser],
-            createdAt: now,
-            updatedAt: now,
-            completedAt: status === "done" ? now : null,
             notes: data.notes || "",
-            archived: false,
-            archivedAt: null,
-            subtasks: [],
             favorite: false,
-            deletedAt: null,
+        };
+
+        const created = await apiPost<Task>('/api/tasks', payload, token ?? undefined);
+
+        // `ganttDays` (planning Timeline) et `convertedFromSubtask` (traçabilité de
+        // "convertir en tâche") n'ont aucune colonne équivalente côté backend — la réponse
+        // serveur ne les contient jamais. On les recrée localement pour ne pas perdre ces
+        // deux fonctionnalités (voir aussi le merge `{ ...t, ...updated }` de `updateTask`,
+        // même raison).
+        const newTask: Task = {
+            ...created,
             ganttDays: [],
-            order: 0,
             ...(data.convertedFromSubtask ? { convertedFromSubtask: data.convertedFromSubtask } : {}),
         };
 
@@ -365,26 +394,36 @@ const useStore = create<StoreState>((set, get) => ({
         }
     },
 
-    updateTask: (id, patch) => {
+    updateTask: async (id, patch) => {
         if (patch.project) {
             get().addToProjectHistory(patch.project);
         }
 
-        const updatedPatch = { ...patch };
+        // Patch effectivement envoyé au serveur : on part du patch demandé et on n'y ajoute
+        // QUE ce que le serveur ne sait pas déduire lui-même (titre en majuscules — le
+        // backend n'uppercase que `project`, pas `title` ; horodatage de passage en revue —
+        // le backend ne le déduit jamais automatiquement). À l'inverse, `completedAt` n'est
+        // PAS calculé ici : PUT /api/tasks/:id le déduit déjà lui-même du changement de
+        // `status` (voir todox-backend/src/routes/tasks.ts) — le serveur est la source de
+        // vérité pour les horodatages (contrainte globale du plan). Le dupliquer ici casserait
+        // la sémantique PATCH (le corps envoyé ne contiendrait plus uniquement les champs
+        // modifiés) — c'est d'ailleurs ce que vérifie le test "PATCH semantics".
+        const outgoingPatch: TaskPatch = { ...patch };
         if (patch.title) {
-            updatedPatch.title = (patch.title.trim() || patch.title).toUpperCase();
-        }
-        if (patch.status === "done") {
-            updatedPatch.completedAt = Date.now();
-        } else if (patch.status) {
-            updatedPatch.completedAt = null;
+            outgoingPatch.title = (patch.title.trim() || patch.title).toUpperCase();
         }
         if (patch.status === 'review') {
-            updatedPatch.movedToReviewBy = get().currentUser ?? undefined;
-            updatedPatch.movedToReviewAt = Date.now();
+            outgoingPatch.movedToReviewBy = get().currentUser ?? undefined;
+            outgoingPatch.movedToReviewAt = Date.now();
         }
 
-        // Workflow review : si la tâche passe en "review" avec des réviseurs déjà définis → notifier
+        // Workflow review : si la tâche passe en "review" avec des réviseurs déjà définis
+        // (ex : renvoi en revue après corrections, sans que la liste des réviseurs change) →
+        // notifier localement. Ce cas précis n'est PAS couvert par les AppNotifications
+        // générées côté serveur dans PUT /api/tasks/:id, qui ne se déclenchent que lorsque
+        // le champ `reviewers` change dans la requête (voir `createReviewNotifications` côté
+        // backend) — ici `reviewers` n'est pas dans `outgoingPatch`, donc aucun risque de
+        // double notification avec le serveur.
         if (patch.status === 'review') {
             const existingTask = get().tasks.find(t => t.id === id);
             if (existingTask && existingTask.reviewers?.length) {
@@ -404,29 +443,41 @@ const useStore = create<StoreState>((set, get) => ({
             }
         }
 
-        const now = Date.now();
+        const token = get().authToken;
+        const updated = await apiPut<Task>(`/api/tasks/${id}`, outgoingPatch, token ?? undefined);
+
+        // Merge (pas remplacement complet) : `updated` (réponse serveur) ne contient jamais
+        // `ganttDays`/`convertedFromSubtask` (aucune colonne backend) — un remplacement
+        // complet les effacerait silencieusement à chaque updateTask, même pour un simple
+        // changement de statut. Le merge préserve ces deux champs locaux tout en laissant le
+        // serveur faire autorité sur tout le reste (id, timestamps, champs de revue, etc.).
         set((state) => ({
-            tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updatedPatch, updatedAt: now } : t))
+            tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updated } : t))
         }));
 
         // Récurrence : si la tâche passe en "done", créer la prochaine occurrence si applicable
         if (patch.status === "done") {
             const completedTask = get().tasks.find(t => t.id === id);
             if (completedTask) {
-                const nextTask = buildRecurringTask(completedTask, now);
+                const nextTask = buildRecurringTask(completedTask, Date.now());
                 if (nextTask) set(state => ({ tasks: [nextTask, ...state.tasks] }));
             }
         }
     },
 
-    removeTask: (id) => {
+    removeTask: async (id) => {
+        const token = get().authToken;
+        await apiDelete(`/api/tasks/${id}`, token ?? undefined);
+        // DELETE renvoie 204 (pas de corps) : le serveur fait bien le soft-delete
+        // (`deletedAt`), mais sans nous renvoyer son horodatage exact — on approxime
+        // localement avec l'heure client, comme le reste du soft-delete optimiste ici.
         const now = Date.now();
         set((state) => ({
             tasks: state.tasks.map((t) => t.id === id ? { ...t, deletedAt: now, updatedAt: now } : t)
         }));
     },
 
-    convertSubtaskBack: (taskId) => {
+    convertSubtaskBack: async (taskId) => {
         const task = get().tasks.find(t => t.id === taskId);
         if (!task?.convertedFromSubtask) return 'parent_not_found';
         const { parentTaskId } = task.convertedFromSubtask;
@@ -434,19 +485,23 @@ const useStore = create<StoreState>((set, get) => ({
         // Parent introuvable ou définitivement supprimé → impossible, on ne touche pas à la tâche
         if (!parentTask || parentTask.deletedAt) return 'parent_not_found';
         // Parent archivé → reconversion possible (sous-tâche rattachée à la tâche archivée)
-        get().addSubtask(parentTaskId, task.title);
-        get().removeTask(taskId);
+        // addSubtask/removeTask font désormais un vrai appel réseau (depuis cette tâche) : si
+        // addSubtask réussit mais removeTask échoue ensuite, la sous-tâche serait dupliquée sur
+        // le parent ET la tâche d'origine resterait présente — état partiellement converti.
+        // On l'attrape explicitement pour prévenir l'appelant plutôt que de laisser l'erreur
+        // se perdre silencieusement (les deux appels étaient des mutations locales synchrones
+        // avant cette tâche, qui ne pouvaient jamais échouer).
+        try {
+            await get().addSubtask(parentTaskId, task.title);
+            await get().removeTask(taskId);
+        } catch {
+            return 'error';
+        }
         return parentTask.archived ? 'parent_deleted' : 'ok';
     },
 
     setTaskParent: (childId, parentId) => {
-        set(state => ({
-            tasks: state.tasks.map(t =>
-                t.id === childId
-                    ? { ...t, parentTaskId: parentId ?? undefined, updatedAt: Date.now() }
-                    : t
-            ),
-        }));
+        return get().updateTask(childId, { parentTaskId: parentId });
     },
 
     moveTask: (id, status) => {
@@ -456,7 +511,7 @@ const useStore = create<StoreState>((set, get) => ({
                 set({ pendingReviewDialogTaskId: id });
             }
         }
-        get().updateTask(id, { status: status as Task['status'] });
+        return get().updateTask(id, { status: status as Task['status'] });
     },
 
     setPendingReviewDialogTaskId: (taskId) => set({ pendingReviewDialogTaskId: taskId }),
@@ -481,126 +536,146 @@ const useStore = create<StoreState>((set, get) => ({
         }));
     },
 
-    // Subtasks
-    addSubtask: (taskId, title) => {
+    // Subtasks — via API (todox-backend/src/routes/subtasks.ts, monté sous
+    // /api/tasks/:taskId/subtasks)
+    addSubtask: async (taskId, title) => {
         if (!title.trim()) return;
-        const now = Date.now();
-        const newSubtask = {
-            id: uid(),
-            title: title.trim(),
-            completed: false,
-            createdAt: now,
-            completedAt: null,
-            completedBy: null,
-        };
+        const token = get().authToken;
+        const created = await apiPost<Subtask>(`/api/tasks/${taskId}/subtasks`, { title: title.trim() }, token ?? undefined);
         set(state => ({
             tasks: state.tasks.map(t => {
                 if (t.id === taskId) {
-                    return {
-                        ...t,
-                        subtasks: [...(t.subtasks || []), newSubtask],
-                        updatedAt: now
-                    };
+                    return { ...t, subtasks: [...(t.subtasks || []), created] };
                 }
                 return t;
             })
         }));
     },
 
-    toggleSubtask: (taskId, subtaskId) => {
+    toggleSubtask: async (taskId, subtaskId) => {
+        const token = get().authToken;
         // Trouver l'état actuel pour déterminer la nouvelle valeur
         const task = get().tasks.find(t => t.id === taskId);
         const sub = task?.subtasks?.find(s => s.id === subtaskId);
         const newCompleted = sub ? !sub.completed : true;
-        const completedBy = newCompleted ? (get().currentUser || null) : null;
 
-        // Optimiste
+        // `completedBy` est désormais déduit côté serveur de l'appelant (req.userId) et
+        // renvoyé dans la réponse — plus besoin de le calculer/fusionner côté client (voir
+        // todox-backend/src/routes/subtasks.ts, commit 6c02616).
+        const updated = await apiPut<Subtask>(`/api/tasks/${taskId}/subtasks/${subtaskId}`, { completed: newCompleted }, token ?? undefined);
+
         set(state => ({
             tasks: state.tasks.map(t => {
                 if (t.id === taskId) {
-                    const sts = (t.subtasks || []).map(st => st.id === subtaskId ? { ...st, completed: newCompleted, completedAt: newCompleted ? Date.now() : null, completedBy } : st);
-                    return { ...t, subtasks: sts, updatedAt: Date.now() };
-                }
-                return t;
-            })
-        }));
-
-    },
-
-    deleteSubtask: (taskId, subtaskId) => {
-        set(state => ({
-            tasks: state.tasks.map(t => {
-                if (t.id === taskId) {
-                    return { ...t, subtasks: (t.subtasks || []).filter(st => st.id !== subtaskId), updatedAt: Date.now() };
+                    const sts = (t.subtasks || []).map(st => st.id === subtaskId ? { ...st, ...updated } : st);
+                    return { ...t, subtasks: sts };
                 }
                 return t;
             })
         }));
     },
 
-    updateSubtaskTitle: (taskId, subtaskId, title) => {
+    deleteSubtask: async (taskId, subtaskId) => {
+        const token = get().authToken;
+        await apiDelete(`/api/tasks/${taskId}/subtasks/${subtaskId}`, token ?? undefined);
         set(state => ({
             tasks: state.tasks.map(t => {
                 if (t.id === taskId) {
-                    const sts = (t.subtasks || []).map(st => st.id === subtaskId ? { ...st, title } : st);
-                    return { ...t, subtasks: sts, updatedAt: Date.now() };
+                    return { ...t, subtasks: (t.subtasks || []).filter(st => st.id !== subtaskId) };
                 }
                 return t;
             })
         }));
     },
 
-    assignSubtask: (taskId, subtaskId, userId) => {
+    updateSubtaskTitle: async (taskId, subtaskId, title) => {
+        const token = get().authToken;
+        const updated = await apiPut<Subtask>(`/api/tasks/${taskId}/subtasks/${subtaskId}`, { title }, token ?? undefined);
+        set(state => ({
+            tasks: state.tasks.map(t => {
+                if (t.id === taskId) {
+                    const sts = (t.subtasks || []).map(st => st.id === subtaskId ? { ...st, ...updated } : st);
+                    return { ...t, subtasks: sts };
+                }
+                return t;
+            })
+        }));
+    },
+
+    assignSubtask: async (taskId, subtaskId, userId) => {
+        const task = get().tasks.find(t => t.id === taskId);
+        const sub = task?.subtasks?.find(s => s.id === subtaskId);
+        const current = sub?.assignedTo || [];
+        if (current.includes(userId)) return;
+
+        const token = get().authToken;
+        const newAssignedTo = [...current, userId];
+        const updated = await apiPut<Subtask>(`/api/tasks/${taskId}/subtasks/${subtaskId}`, { assignedTo: newAssignedTo }, token ?? undefined);
+
         set(state => ({
             tasks: state.tasks.map(t => {
                 if (t.id !== taskId) return t;
-                const sts = (t.subtasks || []).map(st => {
-                    if (st.id !== subtaskId) return st;
-                    const current = st.assignedTo || [];
-                    return current.includes(userId) ? st : { ...st, assignedTo: [...current, userId] };
-                });
-                return { ...t, subtasks: sts, updatedAt: Date.now() };
+                const sts = (t.subtasks || []).map(st => st.id === subtaskId ? { ...st, ...updated } : st);
+                return { ...t, subtasks: sts };
             })
         }));
     },
 
-    unassignSubtask: (taskId, subtaskId, userId) => {
+    unassignSubtask: async (taskId, subtaskId, userId) => {
+        const task = get().tasks.find(t => t.id === taskId);
+        const sub = task?.subtasks?.find(s => s.id === subtaskId);
+        const newAssignedTo = (sub?.assignedTo || []).filter(id => id !== userId);
+
+        const token = get().authToken;
+        const updated = await apiPut<Subtask>(`/api/tasks/${taskId}/subtasks/${subtaskId}`, { assignedTo: newAssignedTo }, token ?? undefined);
+
         set(state => ({
             tasks: state.tasks.map(t => {
                 if (t.id !== taskId) return t;
-                const sts = (t.subtasks || []).map(st => {
-                    if (st.id !== subtaskId) return st;
-                    return { ...st, assignedTo: (st.assignedTo || []).filter(id => id !== userId) };
-                });
-                return { ...t, subtasks: sts, updatedAt: Date.now() };
+                const sts = (t.subtasks || []).map(st => st.id === subtaskId ? { ...st, ...updated } : st);
+                return { ...t, subtasks: sts };
             })
         }));
     },
 
-    setSubtaskDates: (taskId, subtaskId, patch) => {
+    setSubtaskDates: async (taskId, subtaskId, patch) => {
+        // PATCH semantics : on envoie uniquement les champs fournis par l'appelant (`patch`
+        // tel quel), jamais startDate/endDate par défaut si non fournis.
+        const token = get().authToken;
+        const updated = await apiPut<Subtask>(`/api/tasks/${taskId}/subtasks/${subtaskId}`, patch, token ?? undefined);
+
         set(state => ({
             tasks: state.tasks.map(t => {
                 if (t.id !== taskId) return t;
                 const sts = (t.subtasks || []).map(st =>
-                    st.id === subtaskId ? { ...st, ...patch } : st
+                    st.id === subtaskId ? { ...st, ...updated } : st
                 );
-                return { ...t, subtasks: sts, updatedAt: Date.now() };
+                return { ...t, subtasks: sts };
             })
         }));
     },
 
-    reorderSubtasks: (taskId, start, end) => {
+    reorderSubtasks: async (taskId, start, end) => {
+        // Réordonnancement local optimiste — logique de splice inchangée par rapport à la
+        // version 100% locale d'avant cette tâche.
+        let newOrderIds: string[] | null = null;
         set(state => ({
             tasks: state.tasks.map(t => {
                 if (t.id === taskId) {
                     const sts = [...(t.subtasks || [])];
                     const [rem] = sts.splice(start, 1);
                     sts.splice(end, 0, rem);
-                    return { ...t, subtasks: sts, updatedAt: Date.now() };
+                    newOrderIds = sts.map(s => s.id);
+                    return { ...t, subtasks: sts };
                 }
                 return t;
             })
         }));
+
+        if (newOrderIds) {
+            const token = get().authToken;
+            await apiPatch(`/api/tasks/${taskId}/subtasks/reorder`, { order: newOrderIds }, token ?? undefined);
+        }
     },
 
     // Comments
@@ -865,109 +940,70 @@ const useStore = create<StoreState>((set, get) => ({
     },
 
     // ── Review workflow ─────────────────────────────────────────────────────
-    setReviewers: (taskId, reviewers) => {
-        const { currentUser, users, tasks } = get();
+    // Les 4 actions ci-dessous appelaient auparavant `addAppNotification` localement pour
+    // chaque événement de revue. PUT /api/tasks/:id crée désormais ces mêmes
+    // AppNotifications côté serveur, dans la même transaction que la mise à jour de la
+    // tâche (voir `createReviewNotifications` dans todox-backend/src/routes/tasks.ts) — ces
+    // appels locaux ont donc été retirés ici pour ne pas doubler la notification. C'est la
+    // SEULE chose retirée de chacune de ces 4 actions ; le reste (mise à jour de la tâche via
+    // `updateTask`, ajout du commentaire de `requestCorrections`) est inchangé.
+    setReviewers: async (taskId, reviewers) => {
+        const { currentUser, tasks } = get();
         const task = tasks.find(t => t.id === taskId);
         if (!task || !currentUser) return;
 
-        const fromUser = users.find(u => u.id === currentUser);
-        const fromUserName = fromUser?.name || currentUser;
-        const now = Date.now();
+        // Auto-assigner les réviseurs non encore affectés (même logique qu'avant, calculée
+        // côté client puis envoyée en un seul PUT avec `reviewers`).
+        const newAssignees = reviewers.filter(r => !task.assignedTo.includes(r) && r !== 'unassigned');
+        const baseAssigned = task.assignedTo.filter(id => id !== 'unassigned');
+        const updatedAssignedTo = newAssignees.length > 0
+            ? [...baseAssigned, ...newAssignees]
+            : task.assignedTo;
 
-        set(state => ({
-            tasks: state.tasks.map(t => {
-                if (t.id !== taskId) return t;
-                // Auto-assigner les réviseurs non encore affectés
-                const newAssignees = reviewers.filter(r => !t.assignedTo.includes(r) && r !== 'unassigned');
-                const baseAssigned = t.assignedTo.filter(id => id !== 'unassigned');
-                const updatedAssignedTo = newAssignees.length > 0
-                    ? [...baseAssigned, ...newAssignees]
-                    : t.assignedTo;
-                return { ...t, reviewers, assignedTo: updatedAssignedTo, updatedAt: now };
-            })
-        }));
-
-        reviewers.forEach(reviewerId => {
-            get().addAppNotification({
-                type: 'review_requested',
-                taskId,
-                taskTitle: task.title,
-                fromUserId: currentUser,
-                toUserId: reviewerId,
-                message: `${fromUserName} t'a assigné comme réviseur sur ${task.title}`,
-            });
-        });
+        await get().updateTask(taskId, { reviewers, assignedTo: updatedAssignedTo });
     },
 
-    validateTask: (taskId) => {
-        const { currentUser, users, tasks } = get();
+    validateTask: async (taskId) => {
+        const { currentUser, tasks } = get();
         const task = tasks.find(t => t.id === taskId);
         if (!task || !currentUser) return;
-
-        const fromUser = users.find(u => u.id === currentUser);
-        const fromUserName = fromUser?.name || currentUser;
-        const now = Date.now();
 
         // Utilise updateTask pour déclencher la logique de récurrence automatiquement
-        get().updateTask(taskId, {
+        await get().updateTask(taskId, {
             status: 'done',
             reviewValidatedBy: currentUser,
-            reviewValidatedAt: now,
-        });
-
-        // Notifier tous les assignés
-        task.assignedTo.forEach(assigneeId => {
-            get().addAppNotification({
-                type: 'review_validated',
-                taskId,
-                taskTitle: task.title,
-                fromUserId: currentUser,
-                toUserId: assigneeId,
-                message: `${fromUserName} a validé la tâche ${task.title} ✅`,
-            });
+            reviewValidatedAt: Date.now(),
         });
     },
 
-    requestCorrections: (taskId, comment) => {
-        const { currentUser, users, tasks } = get();
+    requestCorrections: async (taskId, comment) => {
+        const { currentUser, tasks } = get();
         const task = tasks.find(t => t.id === taskId);
         if (!task || !currentUser) return;
 
-        const fromUser = users.find(u => u.id === currentUser);
-        const fromUserName = fromUser?.name || currentUser;
-        const now = Date.now();
-
-        get().updateTask(taskId, {
+        await get().updateTask(taskId, {
             status: 'doing',
             reviewRejectedBy: currentUser,
-            reviewRejectedAt: now,
+            reviewRejectedAt: Date.now(),
             rejectionComment: comment,
         });
 
         // Ajouter comme commentaire visible dans le fil
-        get().addComment(taskId, `↩️ Corrections demandées : ${comment}`);
-
-        // Notifier tous les assignés
-        task.assignedTo.forEach(assigneeId => {
-            get().addAppNotification({
-                type: 'review_rejected',
-                taskId,
-                taskTitle: task.title,
-                fromUserId: currentUser,
-                toUserId: assigneeId,
-                message: `${fromUserName} demande des corrections sur ${task.title} : ${comment}`,
-            });
-        });
+        await get().addComment(taskId, `↩️ Corrections demandées : ${comment}`);
     },
 
     reopenTask: (taskId) => {
-        get().updateTask(taskId, {
+        // `null` explicite (pas `undefined`) : voir le commentaire du type `TaskPatch` plus
+        // haut dans ce fichier — un patch `undefined` ne serait jamais envoyé au serveur
+        // (JSON.stringify supprime les clés `undefined`) et ces champs ne seraient donc
+        // jamais réinitialisés côté backend.
+        return get().updateTask(taskId, {
             status: 'doing',
-            reviewValidatedBy: undefined,
-            reviewValidatedAt: undefined,
-            reviewRejectedBy: undefined,
-            reviewRejectedAt: undefined,
-            rejectionComment: undefined,
+            reviewValidatedBy: null,
+            reviewValidatedAt: null,
+            reviewRejectedBy: null,
+            reviewRejectedAt: null,
+            rejectionComment: null,
         });
     },
 

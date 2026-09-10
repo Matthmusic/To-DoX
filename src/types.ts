@@ -310,7 +310,12 @@ export interface Task {
   movedToReviewBy?: string;     // ID de celui qui a soumis la tâche en révision
   movedToReviewAt?: number;     // Timestamp du passage en révision
   convertedFromSubtask?: { parentTaskId: string; parentTaskTitle: string };
-  parentTaskId?: string;            // ID de la tâche parente (hiérarchie de tâches)
+  // string|undefined : jamais encore synchronisé/pas de parent. null : explicitement
+  // détaché côté serveur (seule valeur transmissible en JSON pour "vider" ce champ via
+  // PUT /api/tasks/:id — voir todox-backend/src/routes/tasks.ts, `parentTaskId` y est
+  // stocké/renvoyé en `string | null`, jamais normalisé en undefined comme les champs
+  // de revue ci-dessus).
+  parentTaskId?: string | null;     // ID de la tâche parente (hiérarchie de tâches)
 }
 
 /**

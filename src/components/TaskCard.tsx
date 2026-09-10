@@ -464,14 +464,16 @@ export function TaskCard({
                         onMouseDown={(e) => e.stopPropagation()}
                     >
                         <button
-                            onClick={(e) => {
+                            onClick={async (e) => {
                                 e.stopPropagation();
-                                const result = convertSubtaskBack(task.id);
                                 setSubtaskOriginMenu(null);
+                                const result = await convertSubtaskBack(task.id);
                                 if (result === 'parent_not_found') {
                                     alertModal(`La tâche parente "${task.convertedFromSubtask!.parentTaskTitle}" a été supprimée. Impossible de reconvertir en sous-tâche.`);
                                 } else if (result === 'parent_deleted') {
                                     alertModal(`Reconverti en sous-tâche. Note : la tâche parente "${task.convertedFromSubtask!.parentTaskTitle}" est archivée.`);
+                                } else if (result === 'error') {
+                                    alertModal("Erreur lors de la reconversion en sous-tâche. Réessayez.");
                                 }
                             }}
                             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
