@@ -133,8 +133,9 @@ export interface StoreState {
     // Comments
     comments: Record<string, Comment[]>;
     setComments: (comments: Record<string, Comment[]>) => void;
-    addComment: (taskId: string, text: string) => void;
-    deleteComment: (taskId: string, commentId: string) => void;
+    fetchComments: () => Promise<void>;
+    addComment: (taskId: string, text: string) => Promise<void>;
+    deleteComment: (taskId: string, commentId: string) => Promise<void>;
 
     // Task reorder
     reorderTask: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
@@ -681,26 +682,36 @@ const useStore = create<StoreState>((set, get) => ({
     // Comments
     setComments: (comments) => set({ comments }),
 
-    addComment: (taskId, text) => {
-        const { currentUser, users, tasks } = get();
+    // Bulk, org-scoped (GET /api/comments renvoie un tableau plat de tous les commentaires
+    // de l'organisation) -- regroupé ici en Record<taskId, Comment[]> car TaskCard lit
+    // `comments[task.id]` directement pour son badge de compte sur chaque carte visible.
+    fetchComments: async () => {
+        const token = get().authToken;
+        const flat = await apiGet<Comment[]>('/api/comments', token ?? undefined);
+        const grouped: Record<string, Comment[]> = {};
+        for (const c of flat) {
+            (grouped[c.taskId] ??= []).push(c);
+        }
+        set({ comments: grouped });
+    },
+
+    addComment: async (taskId, text) => {
+        const { currentUser, users, tasks, authToken } = get();
         if (!currentUser || !text.trim()) return;
-        const commentId = uid();
-        const newComment: Comment = {
-            id: commentId,
-            taskId,
-            userId: currentUser,
-            text: text.trim(),
-            createdAt: Date.now(),
-            deletedAt: null,
-        };
+
+        const created = await apiPost<Comment>(`/api/tasks/${taskId}/comments`, { text: text.trim() }, authToken ?? undefined);
+
         set(state => ({
             comments: {
                 ...state.comments,
-                [taskId]: [...(state.comments[taskId] || []), newComment],
+                [taskId]: [...(state.comments[taskId] || []), created],
             }
         }));
 
         // Détecter les @mentions et notifier les utilisateurs concernés
+        // (100% côté client : aucune route serveur ne couvre cette logique -- voir
+        // todox-backend/src/routes/comments.ts, POST /tasks/:taskId/comments ne crée
+        // aucune AppNotification, donc pas de risque de double notification ici).
         const task = tasks.find(t => t.id === taskId);
         const fromUser = users.find(u => u.id === currentUser);
         const taskTitle = task?.title || 'une tâche';
@@ -744,7 +755,9 @@ const useStore = create<StoreState>((set, get) => ({
         }
     },
 
-    deleteComment: (taskId, commentId) => {
+    deleteComment: async (taskId, commentId) => {
+        const token = get().authToken;
+        await apiDelete(`/api/comments/${commentId}`, token ?? undefined);
         const now = Date.now();
         set(state => ({
             comments: {

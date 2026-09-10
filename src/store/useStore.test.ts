@@ -52,6 +52,19 @@ function installDefaultApiMocks() {
                 completedBy: null,
             };
         }
+        if (path.endsWith('/comments')) {
+            // Réplique POST /api/tasks/:taskId/comments (todox-backend/src/routes/comments.ts) :
+            // userId vient de l'utilisateur authentifié côté serveur, jamais du body.
+            const taskId = path.split('/').filter(Boolean)[2];
+            return {
+                id: 'cmt-' + Math.random().toString(36).slice(2),
+                taskId,
+                userId: useStore.getState().currentUser,
+                text: body.text,
+                createdAt: Date.now(),
+                deletedAt: null,
+            };
+        }
         return {
             id: 'srv-' + Math.random().toString(36).slice(2),
             title: body.title,
@@ -925,5 +938,63 @@ describe('projects via API', () => {
 
         expect(api.apiPut).toHaveBeenCalledWith('/api/projects/GAMMA/order', { order: 0 }, 'tok');
         expect(result.current.projectHistory).toEqual(['GAMMA', 'ACME', 'BETA']);
+    });
+});
+
+// ── Comments via API ────────────────────────────────────────────────────────
+
+describe('comments via API', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        useStore.setState({ authToken: 'tok', comments: {}, currentUser: 'u1', users: [], tasks: [] });
+    });
+
+    it('fetchComments groups the flat bulk response by taskId', async () => {
+        vi.mocked(api.apiGet).mockResolvedValue([
+            { id: 'c1', taskId: 't1', userId: 'u1', text: 'A', createdAt: 1000, deletedAt: null },
+            { id: 'c2', taskId: 't1', userId: 'u1', text: 'B', createdAt: 2000, deletedAt: null },
+            { id: 'c3', taskId: 't2', userId: 'u1', text: 'C', createdAt: 3000, deletedAt: null },
+        ]);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.fetchComments(); });
+
+        expect(api.apiGet).toHaveBeenCalledWith('/api/comments', 'tok');
+        expect(result.current.comments.t1).toHaveLength(2);
+        expect(result.current.comments.t2).toHaveLength(1);
+    });
+
+    it('addComment posts to /api/tasks/:taskId/comments and appends the server result', async () => {
+        vi.mocked(api.apiPost).mockResolvedValue({ id: 'c9', taskId: 't1', userId: 'u1', text: 'Hi @bob', createdAt: 1000, deletedAt: null });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.addComment('t1', 'Hi @bob'); });
+
+        expect(api.apiPost).toHaveBeenCalledWith('/api/tasks/t1/comments', { text: 'Hi @bob' }, 'tok');
+        expect(result.current.comments.t1?.[0]?.id).toBe('c9');
+    });
+
+    it('addComment still notifies a mentioned user, using the server-assigned comment (not a locally-generated one)', async () => {
+        useStore.setState({ users: [ALICE, BOB], appNotifications: [] });
+        vi.mocked(api.apiPost).mockResolvedValue({ id: 'c9', taskId: 't1', userId: ALICE.id, text: `Hi @${BOB.name}`, createdAt: 1000, deletedAt: null });
+        useStore.setState({ currentUser: ALICE.id });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.addComment('t1', `Hi @${BOB.name}`); });
+
+        const mentionNotifs = result.current.appNotifications.filter(n => n.type === 'comment_mention');
+        expect(mentionNotifs).toHaveLength(1);
+        expect(mentionNotifs[0].toUserId).toBe(BOB.id);
+    });
+
+    it('deleteComment calls DELETE /api/comments/:id', async () => {
+        useStore.setState({ comments: { t1: [{ id: 'c1', taskId: 't1', userId: 'u1', text: 'A', createdAt: 1000, deletedAt: null } as any] } });
+        vi.mocked(api.apiDelete).mockResolvedValue(undefined);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.deleteComment('t1', 'c1'); });
+
+        expect(api.apiDelete).toHaveBeenCalledWith('/api/comments/c1', 'tok');
+        expect(result.current.comments.t1[0].deletedAt).not.toBeNull();
     });
 });
