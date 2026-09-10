@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog, Notification, protocol } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, nativeTheme, dialog, Notification, protocol, safeStorage } = require('electron');
 const path = require('path');
 const fsSync = require('fs');
 const fs = fsSync.promises;
@@ -586,6 +586,60 @@ ipcMain.handle('save-data', async (event, filePath, data) => {
     console.error('❌ [ELECTRON MAIN] save-data ERREUR:', error);
     return { success: false, error: error.message };
   }
+});
+
+// --- Stockage sécurisé du token JWT (auth backend) ------------------------
+// Chiffré via safeStorage (DPAPI sur Windows, Keychain sur macOS, libsecret
+// sur Linux). Un fichier séparé de data.json, indépendant du dossier de
+// stockage OneDrive choisi par l'utilisateur.
+const AUTH_TOKENS_FILE = () => path.join(app.getPath('userData'), 'auth-tokens.json');
+
+async function readAuthTokensFile() {
+  try {
+    const raw = await fs.readFile(AUTH_TOKENS_FILE(), 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+async function writeAuthTokensFile(data) {
+  await fs.writeFile(AUTH_TOKENS_FILE(), JSON.stringify(data), 'utf-8');
+}
+
+ipcMain.handle('auth:save-token', async (event, userId, token) => {
+  if (!safeStorage.isEncryptionAvailable()) {
+    // Pas de chiffrement OS disponible (rare, ex: certains Linux sans keyring) --
+    // on stocke quand même plutôt que de bloquer la connexion, mieux qu'un crash.
+    const all = await readAuthTokensFile();
+    all[userId] = { plain: token };
+    await writeAuthTokensFile(all);
+    return { success: true, encrypted: false };
+  }
+  const encrypted = safeStorage.encryptString(token).toString('base64');
+  const all = await readAuthTokensFile();
+  all[userId] = { encrypted };
+  await writeAuthTokensFile(all);
+  return { success: true, encrypted: true };
+});
+
+ipcMain.handle('auth:get-token', async (event, userId) => {
+  const all = await readAuthTokensFile();
+  const entry = all[userId];
+  if (!entry) return null;
+  if (entry.plain !== undefined) return entry.plain;
+  try {
+    return safeStorage.decryptString(Buffer.from(entry.encrypted, 'base64'));
+  } catch {
+    return null;
+  }
+});
+
+ipcMain.handle('auth:clear-token', async (event, userId) => {
+  const all = await readAuthTokensFile();
+  delete all[userId];
+  await writeAuthTokensFile(all);
+  return { success: true };
 });
 
 // Handler pour détecter les changements d'un fichier.

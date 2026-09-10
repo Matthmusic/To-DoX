@@ -42,6 +42,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   chooseStorageFolder: () => ipcRenderer.invoke('choose-storage-folder'),
   selectProjectFolder: () => ipcRenderer.invoke('select-project-folder'),
 
+  // Stockage sécurisé du token JWT (auth backend)
+  authSaveToken: (userId, token) => ipcRenderer.invoke('auth:save-token', userId, token),
+  authGetToken: (userId) => ipcRenderer.invoke('auth:get-token', userId),
+  authClearToken: (userId) => ipcRenderer.invoke('auth:clear-token', userId),
+
   // Notifications desktop
   sendNotification: (title, body, tag) => ipcRenderer.invoke('send-notification', title, body, tag),
   requestNotificationPermission: () => ipcRenderer.invoke('request-notification-permission'),
