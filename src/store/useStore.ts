@@ -45,6 +45,11 @@ export interface StoreState {
     users: User[];
     currentUser: string | null; // ID de l'utilisateur actuellement connecté
     viewAsUser: string | null;  // Vue en tant que (filtre visuel, sans changer la session)
+
+    // Session backend (JWT) — voir src/services/api.ts
+    authToken: string | null;
+    authStatus: 'idle' | 'checking' | 'authenticated' | 'error';
+    authError: string | null;
     collapsedProjects: Record<string, boolean>;
     storagePath: string | null;
     isLoadingData: boolean;
@@ -61,6 +66,9 @@ export interface StoreState {
     setUsers: (users: User[]) => void;
     setCurrentUser: (userId: string | null) => void;
     setViewAsUser: (userId: string | null) => void;
+    setAuthToken: (token: string | null) => void;
+    setAuthStatus: (status: 'idle' | 'checking' | 'authenticated' | 'error') => void;
+    setAuthError: (msg: string | null) => void;
     setStoragePath: (path: string | null) => void;
     setIsLoadingData: (loading: boolean) => void;
     setSaveError: (error: string | null) => void;
@@ -170,6 +178,9 @@ const useStore = create<StoreState>((set, get) => ({
     users: FIXED_USERS,
     currentUser: null,
     viewAsUser: null,
+    authToken: null,
+    authStatus: 'idle',
+    authError: null,
     collapsedProjects: {},
     storagePath: null,
     isLoadingData: true,
@@ -225,6 +236,9 @@ const useStore = create<StoreState>((set, get) => ({
         return { currentUser: userId, outlookConfig };
     }),
     setViewAsUser: (userId) => set({ viewAsUser: userId }),
+    setAuthToken: (token) => set({ authToken: token, authStatus: token ? 'authenticated' : 'idle' }),
+    setAuthStatus: (status) => set({ authStatus: status }),
+    setAuthError: (msg) => set({ authError: msg }),
     setStoragePath: (path) => set({ storagePath: path }),
     setIsLoadingData: (loading) => set({ isLoadingData: loading }),
     setSaveError: (error) => set({ saveError: error }),

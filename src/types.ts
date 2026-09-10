@@ -336,6 +336,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  role?: 'admin' | 'member'; // absent pour les users pas encore migrés vers le backend
 }
 
 /**

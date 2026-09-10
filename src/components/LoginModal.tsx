@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { LogIn } from "lucide-react";
 import { motion } from "framer-motion";
 import useStore from "../store/useStore";
 import { useTheme } from "../hooks/useTheme";
 import { GlassModal } from "./ui/GlassModal";
+import { login, getToken, saveToken, ApiError } from "../services/api";
 
 function getUserInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -11,10 +13,14 @@ function getUserInitials(name: string): string {
 }
 
 export function LoginModal() {
-  const { users, setCurrentUser } = useStore();
+  const { users, setCurrentUser, setAuthToken, setAuthError, authError } = useStore();
   const { activeTheme } = useTheme();
   const primary   = activeTheme.palette.primary;
   const secondary = activeTheme.palette.secondary;
+
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const lastUsedId = localStorage.getItem('last_login_user_id');
 
@@ -25,6 +31,80 @@ export function LoginModal() {
     if (!last) return filtered;
     return [last, ...filtered.filter(u => u.id !== lastUsedId)];
   })();
+
+  async function handlePickUser(userId: string) {
+    setAuthError(null);
+    const existingToken = await getToken(userId);
+    if (existingToken) {
+      localStorage.setItem('last_login_user_id', userId);
+      setAuthToken(existingToken);
+      setCurrentUser(userId);
+      return;
+    }
+    setPendingUserId(userId);
+  }
+
+  async function handleSubmitPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pendingUserId) return;
+    const user = users.find(u => u.id === pendingUserId);
+    if (!user) return;
+
+    setSubmitting(true);
+    setAuthError(null);
+    try {
+      const { token } = await login(user.email, password);
+      await saveToken(pendingUserId, token);
+      localStorage.setItem('last_login_user_id', pendingUserId);
+      setAuthToken(token);
+      setCurrentUser(pendingUserId);
+      setPendingUserId(null);
+      setPassword('');
+    } catch (e) {
+      setAuthError(e instanceof ApiError ? e.message : 'Erreur de connexion au serveur');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (pendingUserId) {
+    const user = users.find(u => u.id === pendingUserId);
+    return (
+      <GlassModal isOpen={true} onClose={() => {}} size="sm" showCloseButton={false} closeOnBackdrop={false}>
+        <form onSubmit={handleSubmitPassword} className="text-center">
+          <h1 className="text-xl font-bold mb-2">{user?.name}</h1>
+          <p className="text-theme-muted text-sm mb-6">Entrez votre mot de passe</p>
+          <input
+            type="password"
+            autoFocus
+            placeholder="Mot de passe"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="w-full p-3 rounded-xl border mb-3 bg-transparent text-theme-primary"
+            style={{ borderColor: 'var(--border-primary)' }}
+          />
+          {authError && <p className="text-red-400 text-xs mb-3">{authError}</p>}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => { setPendingUserId(null); setPassword(''); setAuthError(null); }}
+              className="flex-1 p-2.5 rounded-xl border text-theme-secondary"
+            >
+              Retour
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !password}
+              className="flex-1 p-2.5 rounded-xl text-white font-semibold disabled:opacity-50"
+              style={{ backgroundColor: primary }}
+            >
+              Se connecter
+            </button>
+          </div>
+        </form>
+      </GlassModal>
+    );
+  }
 
   return (
     <GlassModal
@@ -75,7 +155,7 @@ export function LoginModal() {
                 return (
                   <motion.button
                     key={user.id}
-                    onClick={() => { localStorage.setItem('last_login_user_id', user.id); setCurrentUser(user.id); }}
+                    onClick={() => handlePickUser(user.id)}
                     whileHover={{ scale: 1.02, x: 3 }}
                     whileTap={{ scale: 0.97 }}
                     className="w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-colors group"
