@@ -9,6 +9,14 @@ interface ProjectDirsProps {
     onClose: () => void;
 }
 
+// Gap Task 4 (bascule backend) : ce panneau édite un brouillon local (`local`) pour TOUS
+// les projets puis enregistre la map complète en un seul `setDirectories(local)` -- un
+// remplacement global, pas une mutation par projet. Le store expose désormais
+// `setProjectDirectory(name, path)` / `removeProjectDirectory(name)` (routes API
+// PUT/DELETE /api/projects/:name/directory), mais les convertir ici demanderait de differ
+// `local` vs `directories` et d'émettre un appel API par ligne modifiée (avec gestion des
+// échecs partiels) -- une vraie refonte, pas un simple remplacement d'appel. Laissé
+// local-only pour l'instant.
 export function ProjectDirs({ onClose }: ProjectDirsProps) {
     const { tasks, directories, setDirectories } = useStore();
     const { activeTheme } = useTheme();

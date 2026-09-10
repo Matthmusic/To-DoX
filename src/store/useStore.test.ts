@@ -9,7 +9,7 @@ import * as api from '../services/api';
 // construisent un ApiError réel pour simuler une erreur serveur.
 vi.mock('../services/api', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../services/api')>();
-    return { ...actual, apiGet: vi.fn(), apiPost: vi.fn() };
+    return { ...actual, apiGet: vi.fn(), apiPost: vi.fn(), apiPut: vi.fn(), apiDelete: vi.fn() };
 });
 
 const ALICE = { id: 'alice', name: 'Alice Dupont', email: 'alice@test.com' };
@@ -520,5 +520,67 @@ describe('users via API', () => {
 
         expect(api.apiPost).toHaveBeenCalledWith('/api/users', { email: 'c@d.com', name: 'C', password: 'x' }, 'tok');
         expect(result.current.users.find(u => u.id === 'u2')).toBeTruthy();
+    });
+});
+
+// ── Projects via API ────────────────────────────────────────────────────────
+
+describe('projects via API', () => {
+    beforeEach(() => { useStore.setState({ authToken: 'tok', directories: {}, projectHistory: [], projectColors: {} }); });
+
+    it('fetchProjects fans the API response into directories/projectHistory/projectColors', async () => {
+        vi.mocked(api.apiGet).mockResolvedValue([
+            { name: 'ACME', color: 2, directory: 'C:\\Acme', sortOrder: 0 },
+            { name: 'BETA', color: null, directory: null, sortOrder: 1 },
+        ]);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.fetchProjects(); });
+
+        expect(result.current.projectHistory).toEqual(['ACME', 'BETA']);
+        expect(result.current.projectColors).toEqual({ ACME: 2 });
+        expect(result.current.directories).toEqual({ ACME: 'C:\\Acme' });
+    });
+
+    it('setProjectColor calls PUT /api/projects/:name/color', async () => {
+        vi.mocked(api.apiPut).mockResolvedValue({ ok: true });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.setProjectColor('ACME', 3); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/projects/ACME/color', { color: 3 }, 'tok');
+        expect(result.current.projectColors.ACME).toBe(3);
+    });
+
+    it('setProjectDirectory calls PUT /api/projects/:name/directory', async () => {
+        vi.mocked(api.apiPut).mockResolvedValue({ ok: true });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.setProjectDirectory('ACME', 'C:\\Acme'); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/projects/ACME/directory', { directory: 'C:\\Acme' }, 'tok');
+        expect(result.current.directories.ACME).toBe('C:\\Acme');
+    });
+
+    it('removeProjectDirectory calls DELETE /api/projects/:name/directory', async () => {
+        useStore.setState({ directories: { ACME: 'C:\\Acme' } });
+        vi.mocked(api.apiDelete).mockResolvedValue(undefined);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.removeProjectDirectory('ACME'); });
+
+        expect(api.apiDelete).toHaveBeenCalledWith('/api/projects/ACME/directory', 'tok');
+        expect(result.current.directories.ACME).toBeUndefined();
+    });
+
+    it('setProjectOrder calls PUT /api/projects/:name/order and repositions the project in projectHistory', async () => {
+        useStore.setState({ projectHistory: ['ACME', 'BETA', 'GAMMA'] });
+        vi.mocked(api.apiPut).mockResolvedValue({ ok: true });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.setProjectOrder('GAMMA', 0); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/projects/GAMMA/order', { order: 0 }, 'tok');
+        expect(result.current.projectHistory).toEqual(['GAMMA', 'ACME', 'BETA']);
     });
 });

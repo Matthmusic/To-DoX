@@ -88,7 +88,7 @@ function ProjectExistsModal({ existingProject, onUseExisting, onCreateNew, onCan
  * Expose une méthode focus() via ref pour permettre le focus programmatique depuis les raccourcis clavier
  */
 export const QuickAddPremium = forwardRef<{ focus: () => void; prefillProject: (project: string) => void }>((_props, ref) => {
-    const { addTask, projectHistory, users, directories, projectColors, setDirectories, setProjectColor, currentUser } = useStore();
+    const { addTask, projectHistory, users, projectColors, setProjectDirectory, setProjectColor, currentUser } = useStore();
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
     const secondaryColor = activeTheme.palette.secondary;
@@ -164,7 +164,7 @@ export const QuickAddPremium = forwardRef<{ focus: () => void; prefillProject: (
     }
 
     function handleSetDirectory(name: string, path: string) {
-        setDirectories({ ...directories, [name]: path });
+        setProjectDirectory(name, path);
     }
 
     function handleSubmit(event: React.FormEvent) {

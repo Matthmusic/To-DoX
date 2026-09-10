@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { todayISO, uid, devWarn } from '../utils';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
-import { apiGet, apiPost } from '../services/api';
+import { apiGet, apiPost, apiPut, apiDelete } from '../services/api';
 import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, TaskTemplate, SavedReport, AppNotification, TimeEntry, OutlookConfig, OutlookEvent } from '../types';
 
 /**
@@ -63,7 +63,12 @@ export interface StoreState {
     setDirectories: (directories: Directories) => void;
     setProjectHistory: (history: string[]) => void;
     setProjectColors: (colors: Record<string, number>) => void;
-    setProjectColor: (projectName: string, colorIndex: number) => void;
+    setProjectColor: (projectName: string, colorIndex: number) => Promise<void>;
+    // Projects via API (todox-backend) — voir src/services/api.ts
+    fetchProjects: () => Promise<void>;
+    setProjectDirectory: (projectName: string, directory: string) => Promise<void>;
+    removeProjectDirectory: (projectName: string) => Promise<void>;
+    setProjectOrder: (projectName: string, order: number) => Promise<void>;
     setUsers: (users: User[]) => void;
     fetchUsers: () => Promise<void>;
     createUser: (data: { email: string; name: string; password: string; role?: 'admin' | 'member' }) => Promise<void>;
@@ -229,8 +234,55 @@ const useStore = create<StoreState>((set, get) => ({
     setDirectories: (directories) => set({ directories }),
     setProjectHistory: (projectHistory) => set({ projectHistory }),
     setProjectColors: (projectColors) => set({ projectColors }),
-    setProjectColor: (projectName, colorIndex) => {
+    setProjectColor: async (projectName, colorIndex) => {
+        const token = get().authToken;
+        await apiPut(`/api/projects/${encodeURIComponent(projectName)}/color`, { color: colorIndex }, token ?? undefined);
         set((state) => ({ projectColors: { ...state.projectColors, [projectName]: colorIndex } }));
+    },
+    fetchProjects: async () => {
+        const token = get().authToken;
+        const projects = await apiGet<Array<{ name: string; color: number | null; directory: string | null; sortOrder: number }>>('/api/projects', token ?? undefined);
+        const sorted = [...projects].sort((a, b) => a.sortOrder - b.sortOrder);
+        const projectHistory = sorted.map(p => p.name);
+        const projectColors: Record<string, number> = {};
+        const directories: Record<string, string> = {};
+        for (const p of sorted) {
+            if (p.color !== null) projectColors[p.name] = p.color;
+            if (p.directory !== null) directories[p.name] = p.directory;
+        }
+        set({ projectHistory, projectColors, directories });
+    },
+    setProjectDirectory: async (projectName, directory) => {
+        const token = get().authToken;
+        await apiPut(`/api/projects/${encodeURIComponent(projectName)}/directory`, { directory }, token ?? undefined);
+        set((state) => ({ directories: { ...state.directories, [projectName]: directory } }));
+    },
+    // Pas de bouton "effacer le dossier" par projet dans l'UI actuelle (ProjectDirs.tsx
+    // fait un enregistrement global de la map complète, voir commentaire dans ce fichier) —
+    // action exposée pour un futur usage ponctuel, conforme à la route backend DELETE.
+    removeProjectDirectory: async (projectName) => {
+        const token = get().authToken;
+        await apiDelete(`/api/projects/${encodeURIComponent(projectName)}/directory`, token ?? undefined);
+        set((state) => {
+            const directories = { ...state.directories };
+            delete directories[projectName];
+            return { directories };
+        });
+    },
+    // Pas de drag-and-drop de réordonnancement des projets dans l'UI actuelle (seul le
+    // drag des tâches et le drag d'un projet entre colonnes/statuts existent aujourd'hui,
+    // voir useDragAndDrop.ts) — action exposée pour un futur usage, conforme à la route
+    // backend PUT .../order. `projectHistory` sert de représentation locale de l'ordre :
+    // repositionner le projet à l'index `order` une fois le serveur confirmé.
+    setProjectOrder: async (projectName, order) => {
+        const token = get().authToken;
+        await apiPut(`/api/projects/${encodeURIComponent(projectName)}/order`, { order }, token ?? undefined);
+        set((state) => {
+            const withoutProject = state.projectHistory.filter(p => p !== projectName);
+            const projectHistory = [...withoutProject];
+            projectHistory.splice(order, 0, projectName);
+            return { projectHistory };
+        });
     },
     setUsers: (users) => set({ users }),
     fetchUsers: async () => {

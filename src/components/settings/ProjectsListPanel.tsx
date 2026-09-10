@@ -9,6 +9,15 @@ interface ProjectsListPanelProps {
     onClose: () => void;
 }
 
+// Gap Task 4 (bascule backend) : `save()` ci-dessous remplace `projectHistory` et
+// `directories` en bloc à partir d'un brouillon local (renommage/suppression/tri visuel),
+// pas via une mutation par projet. Il n'existe par ailleurs aucun drag-and-drop de
+// réordonnancement des projets dans l'UI actuelle -- le tri ici n'est que visuel côté
+// affichage (`sortDir`), il ne persiste pas d'ordre. Le store expose désormais
+// `setProjectOrder(name, order)` (route API PUT /api/projects/:name/order) pour un futur
+// usage, mais brancher ce panneau dessus correctement demanderait de differ le brouillon et
+// d'émettre un appel par ligne modifiée -- une vraie refonte, pas un simple remplacement
+// d'appel. Laissé local-only pour l'instant.
 export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
     const { projectHistory, setProjectHistory, tasks, directories, setDirectories, renameProject } = useStore();
     const { activeTheme } = useTheme();
