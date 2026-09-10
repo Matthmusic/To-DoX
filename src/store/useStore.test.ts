@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import useStore from './useStore';
+import * as api from '../services/api';
+
+// Mock via factory (plutôt qu'automock pur) pour préserver la vraie classe ApiError :
+// l'automock par défaut de Vitest remplace le constructeur des classes exportées et ne
+// reproduit pas l'affectation de `.message`/`.status`, ce qui casse les tests qui
+// construisent un ApiError réel pour simuler une erreur serveur.
+vi.mock('../services/api', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../services/api')>();
+    return { ...actual, apiGet: vi.fn(), apiPost: vi.fn() };
+});
 
 const ALICE = { id: 'alice', name: 'Alice Dupont', email: 'alice@test.com' };
 const BOB   = { id: 'bob',   name: 'Bob Martin',   email: 'bob@test.com'   };
@@ -480,5 +490,35 @@ describe('convertSubtaskBack', () => {
         act(() => { returnValue = result.current.convertSubtaskBack(taskId); });
 
         expect(returnValue!).toBe('parent_not_found');
+    });
+});
+
+// ── Users via API ───────────────────────────────────────────────────────────
+
+describe('users via API', () => {
+    beforeEach(() => {
+        useStore.setState({ authToken: 'tok', users: [] });
+    });
+
+    it('fetchUsers loads users from the API into the store', async () => {
+        vi.mocked(api.apiGet).mockResolvedValue([
+            { id: 'u1', email: 'a@b.com', name: 'A', role: 'member' },
+        ]);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.fetchUsers(); });
+
+        expect(api.apiGet).toHaveBeenCalledWith('/api/users', 'tok');
+        expect(result.current.users).toEqual([{ id: 'u1', email: 'a@b.com', name: 'A', role: 'member' }]);
+    });
+
+    it('createUser posts to the API and appends the result', async () => {
+        vi.mocked(api.apiPost).mockResolvedValue({ id: 'u2', email: 'c@d.com', name: 'C', role: 'member' });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.createUser({ email: 'c@d.com', name: 'C', password: 'x' }); });
+
+        expect(api.apiPost).toHaveBeenCalledWith('/api/users', { email: 'c@d.com', name: 'C', password: 'x' }, 'tok');
+        expect(result.current.users.find(u => u.id === 'u2')).toBeTruthy();
     });
 });

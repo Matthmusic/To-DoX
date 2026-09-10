@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { todayISO, uid, devWarn } from '../utils';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
+import { apiGet, apiPost } from '../services/api';
 import type { Task, TaskData, User, Directories, NotificationSettings, ThemeSettings, Comment, TaskTemplate, SavedReport, AppNotification, TimeEntry, OutlookConfig, OutlookEvent } from '../types';
 
 /**
@@ -64,6 +65,8 @@ export interface StoreState {
     setProjectColors: (colors: Record<string, number>) => void;
     setProjectColor: (projectName: string, colorIndex: number) => void;
     setUsers: (users: User[]) => void;
+    fetchUsers: () => Promise<void>;
+    createUser: (data: { email: string; name: string; password: string; role?: 'admin' | 'member' }) => Promise<void>;
     setCurrentUser: (userId: string | null) => void;
     setViewAsUser: (userId: string | null) => void;
     setAuthToken: (token: string | null) => void;
@@ -230,6 +233,16 @@ const useStore = create<StoreState>((set, get) => ({
         set((state) => ({ projectColors: { ...state.projectColors, [projectName]: colorIndex } }));
     },
     setUsers: (users) => set({ users }),
+    fetchUsers: async () => {
+        const token = get().authToken;
+        const users = await apiGet<User[]>('/api/users', token ?? undefined);
+        get().setUsers(users);
+    },
+    createUser: async (data) => {
+        const token = get().authToken;
+        const created = await apiPost<User>('/api/users', data, token ?? undefined);
+        set((state) => ({ users: [...state.users, created] }));
+    },
     setCurrentUser: (userId) => set((state) => {
         const DEFAULT_OUTLOOK: OutlookConfig = { enabled: false, icsUrl: '', exportEnabled: false, lastSync: null };
         const outlookConfig = userId ? (state.outlookConfigs[userId] ?? DEFAULT_OUTLOOK) : DEFAULT_OUTLOOK;

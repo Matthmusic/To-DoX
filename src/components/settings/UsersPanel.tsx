@@ -11,6 +11,23 @@ interface UsersPanelProps {
     onClose: () => void;
 }
 
+// ⚠️ GAP CONNU (bascule backend, Task 3) : ce panneau gère encore
+// les utilisateurs 100% en local (setUsers) et n'a PAS été branché sur l'API backend
+// (fetchUsers/createUser, désormais disponibles dans useStore.ts). Raisons :
+//  1. "Ajouter" ne collecte aucun mot de passe, or POST /api/users en exige un — il
+//     faudrait un nouveau champ + une UX de création immédiate (pas de "brouillon").
+//  2. "Modifier"/"Supprimer" n'ont pas d'équivalent backend : il n'existe aujourd'hui
+//     aucune route PUT/DELETE /api/users/:id (todox-backend/src/routes/users.ts).
+//     Une suppression pose en plus une vraie question produit (que devient un
+//     utilisateur qui a des tâches/commentaires/etc. assignés ? le schéma Prisma User
+//     n'a pas de cascade configurée sur ces relations) — ce n'est pas un simple ajout
+//     de route mécanique.
+//  3. Le modèle actuel est un "brouillon local" (localUsers) validé en un seul batch au
+//     clic "Enregistrer" (setUsers(localUsers)) ; l'API REST granulaire (un appel par
+//     entité créée/modifiée/supprimée, pas de endpoint bulk) demanderait de repenser ce
+//     flux (diff du brouillon, réconciliation des ids serveur, erreurs partielles), et
+//     pas seulement de remplacer un appel de store par un autre.
+// Conversion volontairement différée — reporté DONE_WITH_CONCERNS plutôt que deviné.
 export function UsersPanel({ onClose }: UsersPanelProps) {
     const { users, setUsers, currentUser, setCurrentUser } = useStore();
     const { activeTheme } = useTheme();
@@ -20,6 +37,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
     const [newUserEmail, setNewUserEmail] = useState("");
 
     function addUser() {
+        // GAP backend cutover (Task 3) : ajout encore 100% local, pas createUser() (pas de mot de passe collecté ici) — voir commentaire en tête de fichier.
         if (!newUserName.trim()) {
             alertModal("Le nom de l'utilisateur est requis");
             return;
@@ -41,6 +59,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
     }
 
     async function removeUser(userId: string) {
+        // GAP backend cutover (Task 3) : pas de DELETE /api/users/:id côté backend — voir commentaire en tête de fichier.
         if (userId === "unassigned") {
             alertModal("Impossible de supprimer l'utilisateur par défaut");
             return;
@@ -51,12 +70,14 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
     }
 
     function updateUser(userId: string, field: keyof User, value: string) {
+        // GAP backend cutover (Task 3) : pas de PUT /api/users/:id côté backend — voir commentaire en tête de fichier.
         setLocalUsers(localUsers.map(u =>
             u.id === userId ? { ...u, [field]: value } : u
         ));
     }
 
     function save() {
+        // GAP backend cutover (Task 3) : commit local uniquement (setUsers) — non persisté au backend, voir commentaire en tête de fichier.
         // Validation des emails
         for (const user of localUsers) {
             if (user.id !== "unassigned" && (!user.email || !user.email.includes("@"))) {
