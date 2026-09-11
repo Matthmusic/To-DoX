@@ -4,12 +4,12 @@ import { UpdateNotification } from './components/UpdateNotification'
 import { TitleBar } from './components/TitleBar'
 import { LoginModal } from './components/LoginModal'
 import useStore from './store/useStore'
-import { useDataPersistence } from './hooks/useDataPersistence'
+import { useApiSync } from './hooks/useApiSync'
 import { useTheme } from './hooks/useTheme'
 
 function App() {
   // IMPORTANT: Charger les données dès le début de l'app
-  useDataPersistence();
+  useApiSync();
 
   // Appliquer le thème dès le chargement de l'app
   useTheme();

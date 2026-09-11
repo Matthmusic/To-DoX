@@ -1,15 +1,38 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import useStore from '../store/useStore';
 import { PRESET_THEMES, DEFAULT_THEME } from '../themes/presets';
-import { devLog } from '../utils';
+import { devLog, devWarn } from '../utils';
 import type { Theme, ThemeMode } from '../types';
+
+const THEME_STORAGE_KEY = 'theme_settings';
 
 /**
  * Hook pour gérer le système de thèmes
  * Applique les variables CSS et gère le mode auto (détection système)
+ *
+ * Le thème est un réglage local au poste (pas synchronisé via le backend) :
+ * il est chargé/sauvegardé dans une clé localStorage dédiée, gérée uniquement ici.
  */
 export function useTheme() {
-  const { themeSettings, updateThemeSettings } = useStore();
+  const { themeSettings, updateThemeSettings, setThemeSettings } = useStore();
+
+  // Empêche l'effet d'application/sauvegarde d'écraser un thème sauvegardé par la
+  // valeur par défaut du store lors du tout premier rendu, avant que l'effet de
+  // chargement (ci-dessous) n'ait eu la chance de restaurer le thème sauvegardé.
+  const hasRunApplyEffectRef = useRef(false);
+
+  // Charger le thème sauvegardé localement (par poste) au montage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(THEME_STORAGE_KEY);
+      if (raw) {
+        setThemeSettings(JSON.parse(raw));
+      }
+    } catch {
+      devWarn('[useTheme] Erreur parsing theme_settings, thème par défaut conservé');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Obtenir le thème actif complet
   const getActiveTheme = (): Theme => {
@@ -138,10 +161,19 @@ export function useTheme() {
     }
   };
 
-  // Appliquer le thème au montage et lors des changements
+  // Appliquer le thème au montage et lors des changements, puis persister
+  // localement (localStorage) — sauf lors du tout premier passage, qui utilise
+  // encore la valeur par défaut du store avant que l'effet de chargement
+  // ci-dessus n'ait restauré un éventuel thème sauvegardé.
   useEffect(() => {
     const activeTheme = getActiveTheme();
     applyTheme(activeTheme, themeSettings.customAccentColor);
+
+    if (!hasRunApplyEffectRef.current) {
+      hasRunApplyEffectRef.current = true;
+      return;
+    }
+    localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(themeSettings));
   }, [themeSettings.activeThemeId, themeSettings.customAccentColor, themeSettings.mode, themeSettings.customThemes]);
 
   // Écouter les changements du thème système (mode auto)

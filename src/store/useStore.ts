@@ -108,6 +108,7 @@ export interface StoreState {
     updateThemeSettings: (patch: Partial<ThemeSettings>) => void;
 
     // Task Actions — via API (todox-backend), voir src/services/api.ts
+    fetchTasks: () => Promise<void>;
     addTask: (data: TaskData) => Promise<void>;
     updateTask: (id: string, patch: TaskPatch) => Promise<void>;
     removeTask: (id: string) => Promise<void>;
@@ -376,6 +377,11 @@ const useStore = create<StoreState>((set, get) => ({
     },
 
     // Task Actions — via API (todox-backend/src/routes/tasks.ts)
+    fetchTasks: async () => {
+        const token = get().authToken;
+        const tasks = await apiGet<Task[]>('/api/tasks', token ?? undefined);
+        set({ tasks });
+    },
     addTask: async (data) => {
         const currentUser = get().currentUser;
 

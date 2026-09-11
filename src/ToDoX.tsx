@@ -132,7 +132,7 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
  * Composant principal orchestrant l'interface et la logique métier
  */
 export default function ToDoX() {
-    // Note: useDataPersistence est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
+    // Note: useApiSync est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
     const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, renameProject, currentUser, viewAsUser, appNotifications, notificationSettings, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId, setHighlightedTaskId } = useStore();
 
