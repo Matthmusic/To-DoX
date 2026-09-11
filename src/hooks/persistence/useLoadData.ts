@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
 import { STORAGE_KEY } from '../../constants';
 import type { AppNotification, OutlookConfig, StoredData, Task, SavedReport, TimeEntry } from '../../types';
-
-const DEFAULT_OUTLOOK_CONFIG: OutlookConfig = { enabled: false, icsUrl: '', exportEnabled: false, lastSync: null };
 import { normalizeUsers } from '../../utils/users';
 import useStore from '../../store/useStore';
 import { devLog, devWarn } from '../../utils';
@@ -29,7 +27,6 @@ export function useLoadData(refs: PersistenceRefs) {
                 setSavedReports,
                 setAppNotifications,
                 setTimeEntries,
-                setOutlookConfig,
                 setOutlookConfigs,
                 setUsers,
                 setCurrentUser,
@@ -78,7 +75,6 @@ export function useLoadData(refs: PersistenceRefs) {
                             configs[importingUser] = parsed.outlookConfig as OutlookConfig;
                         }
                         setOutlookConfigs(configs);
-                        if (importingUser) setOutlookConfig(configs[importingUser] ?? DEFAULT_OUTLOOK_CONFIG);
                     }
                 } catch (error) {
                     // eslint-disable-next-line no-console
@@ -157,7 +153,6 @@ export function useLoadData(refs: PersistenceRefs) {
                                 configs[importingUser] = result.data.outlookConfig as OutlookConfig;
                             }
                             setOutlookConfigs(configs);
-                            if (importingUser) setOutlookConfig(configs[importingUser] ?? DEFAULT_OUTLOOK_CONFIG);
                         }
                         // Note: themeSettings ignoré (clé dédiée 'theme_settings')
 

@@ -1142,3 +1142,70 @@ describe('time entries via API', () => {
     expect(api.apiPut).not.toHaveBeenCalled();
   });
 });
+
+// ── Templates + Saved Reports + Outlook Config via API ────────────────────
+
+describe('templates/reports/outlook via API', () => {
+  beforeEach(() => { useStore.setState({ authToken: 'tok', templates: [], savedReports: [], outlookConfig: { enabled: false, icsUrl: '', exportEnabled: false, lastSync: null } }); });
+
+  it('fetchTemplates loads from GET /api/templates', async () => {
+    vi.mocked(api.apiGet).mockResolvedValue([{ id: 'tp1', name: 'Modèle', subtaskTitles: ['A', 'B'] }]);
+    const { result } = renderHook(() => useStore());
+    await act(async () => { await result.current.fetchTemplates(); });
+    expect(result.current.templates).toHaveLength(1);
+  });
+
+  it('addTemplate posts to /api/templates', async () => {
+    vi.mocked(api.apiPost).mockResolvedValue({ id: 'tp2', name: 'X', subtaskTitles: [] });
+    const { result } = renderHook(() => useStore());
+    await act(async () => { await result.current.addTemplate({ name: 'X', subtaskTitles: [] }); });
+    expect(api.apiPost).toHaveBeenCalledWith('/api/templates', { name: 'X', subtaskTitles: [] }, 'tok');
+  });
+
+  it('deleteTemplate calls DELETE /api/templates/:id and removes it locally', async () => {
+    useStore.setState({ templates: [{ id: 'tp1', name: 'Modèle', subtaskTitles: ['A'] }] });
+    vi.mocked(api.apiDelete).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useStore());
+    await act(async () => { await result.current.deleteTemplate('tp1'); });
+    expect(api.apiDelete).toHaveBeenCalledWith('/api/templates/tp1', 'tok');
+    expect(result.current.templates).toHaveLength(0);
+  });
+
+  it('fetchSavedReports loads from GET /api/saved-reports', async () => {
+    vi.mocked(api.apiGet).mockResolvedValue([{ id: 'r1', generatedAt: 1000, generatedBy: 'u1', periodType: 'weekly_current', periodLabel: 'S1', taskCount: 3, reportText: 'x' }]);
+    const { result } = renderHook(() => useStore());
+    await act(async () => { await result.current.fetchSavedReports(); });
+    expect(result.current.savedReports).toHaveLength(1);
+  });
+
+  it('saveReport posts to /api/saved-reports and appends the result', async () => {
+    vi.mocked(api.apiPost).mockResolvedValue({ id: 'r2', generatedAt: 2000, generatedBy: 'u1', periodType: 'monthly_current', periodLabel: 'M1', taskCount: 5, reportText: 'y' });
+    const { result } = renderHook(() => useStore());
+    await act(async () => { await result.current.saveReport({ generatedAt: 2000, generatedBy: 'u1', periodType: 'monthly_current', periodLabel: 'M1', taskCount: 5, reportText: 'y' }); });
+    expect(api.apiPost).toHaveBeenCalledWith('/api/saved-reports', { generatedAt: 2000, generatedBy: 'u1', periodType: 'monthly_current', periodLabel: 'M1', taskCount: 5, reportText: 'y' }, 'tok');
+    expect(result.current.savedReports).toHaveLength(1);
+  });
+
+  it('deleteReport calls DELETE /api/saved-reports/:id and removes it locally', async () => {
+    useStore.setState({ savedReports: [{ id: 'r1', generatedAt: 1000, generatedBy: 'u1', periodType: 'weekly_current', periodLabel: 'S1', taskCount: 3, reportText: 'x' }] });
+    vi.mocked(api.apiDelete).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useStore());
+    await act(async () => { await result.current.deleteReport('r1'); });
+    expect(api.apiDelete).toHaveBeenCalledWith('/api/saved-reports/r1', 'tok');
+    expect(result.current.savedReports).toHaveLength(0);
+  });
+
+  it('fetchOutlookConfig loads the current user config from GET /api/outlook-config', async () => {
+    vi.mocked(api.apiGet).mockResolvedValue({ enabled: true, icsUrl: 'https://x', exportEnabled: false, lastSync: null });
+    const { result } = renderHook(() => useStore());
+    await act(async () => { await result.current.fetchOutlookConfig(); });
+    expect(result.current.outlookConfig.enabled).toBe(true);
+  });
+
+  it('setOutlookConfig PUTs the patch to /api/outlook-config (no userId in the call)', async () => {
+    vi.mocked(api.apiPut).mockResolvedValue({ enabled: true, icsUrl: '', exportEnabled: false, lastSync: null });
+    const { result } = renderHook(() => useStore());
+    await act(async () => { await result.current.setOutlookConfig({ enabled: true }); });
+    expect(api.apiPut).toHaveBeenCalledWith('/api/outlook-config', { enabled: true }, 'tok');
+  });
+});

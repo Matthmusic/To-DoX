@@ -155,15 +155,17 @@ export interface StoreState {
     // Templates
     templates: TaskTemplate[];
     setTemplates: (templates: TaskTemplate[]) => void;
-    addTemplate: (template: Omit<TaskTemplate, 'id'>) => void;
-    deleteTemplate: (id: string) => void;
+    fetchTemplates: () => Promise<void>;
+    addTemplate: (template: Omit<TaskTemplate, 'id'>) => Promise<void>;
+    deleteTemplate: (id: string) => Promise<void>;
     applyTemplateToTask: (taskId: string, templateId: string) => void;
 
     // Saved Reports (CRs)
     savedReports: SavedReport[];
     setSavedReports: (reports: SavedReport[]) => void;
-    saveReport: (report: Omit<SavedReport, 'id'>) => void;
-    deleteReport: (id: string) => void;
+    fetchSavedReports: () => Promise<void>;
+    saveReport: (report: Omit<SavedReport, 'id'>) => Promise<void>;
+    deleteReport: (id: string) => Promise<void>;
 
     // In-app notifications (workflow de révision)
     appNotifications: AppNotification[];
@@ -202,7 +204,8 @@ export interface StoreState {
     outlookConfig: OutlookConfig;              // config du user courant (dérivée de outlookConfigs)
     outlookConfigs: Record<string, OutlookConfig>; // persisté : une config par userId
     outlookEvents: OutlookEvent[];             // transient (non persisté)
-    setOutlookConfig: (patch: Partial<OutlookConfig>) => void;
+    fetchOutlookConfig: () => Promise<void>;
+    setOutlookConfig: (patch: Partial<OutlookConfig>) => Promise<void>;
     setOutlookConfigs: (configs: Record<string, OutlookConfig>) => void;
     setOutlookEvents: (events: OutlookEvent[]) => void;
 
@@ -907,11 +910,19 @@ const useStore = create<StoreState>((set, get) => ({
 
     // Templates
     setTemplates: (templates) => set({ templates }),
-    addTemplate: (template) => {
-        const newTemplate: TaskTemplate = { ...template, id: uid() };
-        set(state => ({ templates: [...state.templates, newTemplate] }));
+    fetchTemplates: async () => {
+        const token = get().authToken;
+        const templates = await apiGet<TaskTemplate[]>('/api/templates', token ?? undefined);
+        set({ templates });
     },
-    deleteTemplate: (id) => {
+    addTemplate: async (template) => {
+        const token = get().authToken;
+        const created = await apiPost<TaskTemplate>('/api/templates', template, token ?? undefined);
+        set(state => ({ templates: [...state.templates, created] }));
+    },
+    deleteTemplate: async (id) => {
+        const token = get().authToken;
+        await apiDelete(`/api/templates/${id}`, token ?? undefined);
         set(state => ({ templates: state.templates.filter(t => t.id !== id) }));
     },
     applyTemplateToTask: (taskId, templateId) => {
@@ -922,11 +933,19 @@ const useStore = create<StoreState>((set, get) => ({
 
     // Saved Reports
     setSavedReports: (savedReports) => set({ savedReports }),
-    saveReport: (report) => {
-        const newReport: SavedReport = { ...report, id: uid() };
-        set(state => ({ savedReports: [newReport, ...state.savedReports] }));
+    fetchSavedReports: async () => {
+        const token = get().authToken;
+        const reports = await apiGet<SavedReport[]>('/api/saved-reports', token ?? undefined);
+        set({ savedReports: reports });
     },
-    deleteReport: (id) => {
+    saveReport: async (report) => {
+        const token = get().authToken;
+        const created = await apiPost<SavedReport>('/api/saved-reports', report, token ?? undefined);
+        set(state => ({ savedReports: [...state.savedReports, created] }));
+    },
+    deleteReport: async (id) => {
+        const token = get().authToken;
+        await apiDelete(`/api/saved-reports/${id}`, token ?? undefined);
         set(state => ({ savedReports: state.savedReports.filter(r => r.id !== id) }));
     },
 
@@ -1084,15 +1103,23 @@ const useStore = create<StoreState>((set, get) => ({
     },
 
     // ── Outlook / ICS ───────────────────────────────────────────────────────
-    setOutlookConfig: (patch) => {
-        set(state => {
-            const merged = { ...state.outlookConfig, ...patch };
-            const key = state.currentUser ?? '__global__';
-            return {
-                outlookConfig: merged,
-                outlookConfigs: { ...state.outlookConfigs, [key]: merged },
-            };
-        });
+    fetchOutlookConfig: async () => {
+        const token = get().authToken;
+        const config = await apiGet<OutlookConfig>('/api/outlook-config', token ?? undefined);
+        const currentUser = get().currentUser;
+        set(state => ({
+            outlookConfig: config,
+            outlookConfigs: currentUser ? { ...state.outlookConfigs, [currentUser]: config } : state.outlookConfigs,
+        }));
+    },
+    setOutlookConfig: async (patch) => {
+        const token = get().authToken;
+        const updated = await apiPut<OutlookConfig>('/api/outlook-config', patch, token ?? undefined);
+        const currentUser = get().currentUser;
+        set(state => ({
+            outlookConfig: updated,
+            outlookConfigs: currentUser ? { ...state.outlookConfigs, [currentUser]: updated } : state.outlookConfigs,
+        }));
     },
     setOutlookConfigs: (configs) => set({ outlookConfigs: configs }),
     setOutlookEvents: (events) => set({ outlookEvents: events }),
