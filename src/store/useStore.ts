@@ -104,7 +104,6 @@ export interface StoreState {
     setIsLoadingData: (loading: boolean) => void;
     setSaveError: (error: string | null) => void;
     setNotificationSettings: (settings: NotificationSettings) => void;
-    updateNotificationSettings: (patch: Partial<NotificationSettings>) => void;
     setThemeSettings: (settings: ThemeSettings) => void;
     updateThemeSettings: (patch: Partial<ThemeSettings>) => void;
 
@@ -170,10 +169,13 @@ export interface StoreState {
     appNotifications: AppNotification[];
     setAppNotifications: (notifs: AppNotification[]) => void;
     addAppNotification: (notif: Omit<AppNotification, 'id' | 'createdAt'>) => void;
-    markNotificationRead: (notifId: string) => void;
-    markAllNotificationsRead: (userId: string) => void;
-    markNotificationsByTypeRead: (types: import('../types').AppNotifType[], userId: string) => void;
-    deleteNotificationForUser: (notifId: string, userId: string) => void;
+    fetchAppNotifications: () => Promise<void>;
+    markNotificationRead: (notifId: string) => Promise<void>;
+    markAllNotificationsRead: (userId: string) => Promise<void>;
+    markNotificationsByTypeRead: (types: import('../types').AppNotifType[], userId: string) => Promise<void>;
+    deleteNotificationForUser: (notifId: string, userId: string) => Promise<void>;
+    fetchNotificationSettings: () => Promise<void>;
+    updateNotificationSettings: (patch: Partial<NotificationSettings>) => Promise<void>;
 
     // Review workflow — via API (todox-backend). Les notifications AppNotification de revue
     // (review_requested/review_validated/review_rejected) sont créées côté serveur par
@@ -352,10 +354,15 @@ const useStore = create<StoreState>((set, get) => ({
     setIsLoadingData: (loading) => set({ isLoadingData: loading }),
     setSaveError: (error) => set({ saveError: error }),
     setNotificationSettings: (settings) => set({ notificationSettings: settings }),
-    updateNotificationSettings: (patch) => {
-        set((state) => ({
-            notificationSettings: { ...state.notificationSettings, ...patch }
-        }));
+    fetchNotificationSettings: async () => {
+        const token = get().authToken;
+        const settings = await apiGet<NotificationSettings>('/api/notification-settings', token ?? undefined);
+        set({ notificationSettings: settings });
+    },
+    updateNotificationSettings: async (patch) => {
+        const token = get().authToken;
+        const updated = await apiPut<NotificationSettings>('/api/notification-settings', patch, token ?? undefined);
+        set({ notificationSettings: updated });
     },
     setThemeSettings: (settings) => set({ themeSettings: settings }),
     updateThemeSettings: (patch) => {
@@ -930,24 +937,29 @@ const useStore = create<StoreState>((set, get) => ({
         set(state => ({ appNotifications: [full, ...state.appNotifications] }));
     },
 
-    markNotificationRead: (notifId) => {
-        set(state => ({
-            appNotifications: state.appNotifications.map(n =>
-                n.id === notifId ? { ...n, readAt: Date.now() } : n
-            )
-        }));
+    fetchAppNotifications: async () => {
+        const token = get().authToken;
+        const notifs = await apiGet<AppNotification[]>('/api/notifications', token ?? undefined);
+        set({ appNotifications: notifs });
     },
 
-    markAllNotificationsRead: (userId) => {
-        set(state => ({
-            appNotifications: state.appNotifications.map(n =>
-                n.toUserId === userId && !n.readAt ? { ...n, readAt: Date.now() } : n
-            )
-        }));
+    markNotificationRead: async (notifId) => {
+        const token = get().authToken;
+        await apiPatch(`/api/notifications/${notifId}/read`, {}, token ?? undefined);
+        set(state => ({ appNotifications: state.appNotifications.map(n => n.id === notifId ? { ...n, readAt: Date.now() } : n) }));
     },
 
-    markNotificationsByTypeRead: (types, userId) => {
+    markAllNotificationsRead: async (userId) => {
+        const token = get().authToken;
+        await apiPatch('/api/notifications/read-all', {}, token ?? undefined);
+        set(state => ({ appNotifications: state.appNotifications.map(n => n.toUserId === userId ? { ...n, readAt: n.readAt ?? Date.now() } : n) }));
+    },
+
+    markNotificationsByTypeRead: async (types, userId) => {
+        const token = get().authToken;
         const typeSet = new Set(types);
+        const toMark = get().appNotifications.filter(n => n.toUserId === userId && !n.readAt && typeSet.has(n.type));
+        await Promise.all(toMark.map(n => apiPatch(`/api/notifications/${n.id}/read`, {}, token ?? undefined)));
         set(state => ({
             appNotifications: state.appNotifications.map(n =>
                 n.toUserId === userId && !n.readAt && typeSet.has(n.type)
@@ -957,14 +969,10 @@ const useStore = create<StoreState>((set, get) => ({
         }));
     },
 
-    deleteNotificationForUser: (notifId, userId) => {
-        set(state => ({
-            appNotifications: state.appNotifications.map(n =>
-                n.id === notifId
-                    ? { ...n, deletedBy: [...(n.deletedBy ?? []), userId] }
-                    : n
-            )
-        }));
+    deleteNotificationForUser: async (notifId, _userId) => {
+        const token = get().authToken;
+        await apiDelete(`/api/notifications/${notifId}`, token ?? undefined);
+        set(state => ({ appNotifications: state.appNotifications.filter(n => n.id !== notifId) }));
     },
 
     // ── Review workflow ─────────────────────────────────────────────────────

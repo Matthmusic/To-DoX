@@ -1003,3 +1003,105 @@ describe('comments via API', () => {
         expect(result.current.comments.t1[0].deletedAt).not.toBeNull();
     });
 });
+
+// ── Notifications via API ────────────────────────────────────────────────
+
+describe('notifications via API', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useStore.setState({ authToken: 'tok', appNotifications: [], currentUser: 'u1' });
+  });
+
+  it('fetchAppNotifications loads from GET /api/notifications', async () => {
+    vi.mocked(api.apiGet).mockResolvedValue([{ id: 'n1', type: 'review_requested', taskId: 't1', taskTitle: 'T', fromUserId: 'u2', toUserId: 'u1', message: 'M', createdAt: 1000, readAt: undefined }]);
+    const { result } = renderHook(() => useStore());
+
+    await act(async () => { await result.current.fetchAppNotifications(); });
+
+    expect(result.current.appNotifications).toHaveLength(1);
+  });
+
+  it('markNotificationRead calls PATCH /api/notifications/:id/read', async () => {
+    useStore.setState({ appNotifications: [{ id: 'n1', readAt: undefined } as any] });
+    vi.mocked(api.apiPatch).mockResolvedValue({ ok: true });
+    const { result } = renderHook(() => useStore());
+
+    await act(async () => { await result.current.markNotificationRead('n1'); });
+
+    expect(api.apiPatch).toHaveBeenCalledWith('/api/notifications/n1/read', {}, 'tok');
+    expect(result.current.appNotifications[0].readAt).toBeTruthy();
+  });
+
+  it('deleteNotificationForUser calls DELETE /api/notifications/:id and removes it locally', async () => {
+    useStore.setState({ appNotifications: [{ id: 'n1' } as any] });
+    vi.mocked(api.apiDelete).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useStore());
+
+    await act(async () => { await result.current.deleteNotificationForUser('n1', 'u1'); });
+
+    expect(api.apiDelete).toHaveBeenCalledWith('/api/notifications/n1', 'tok');
+    expect(result.current.appNotifications).toHaveLength(0);
+  });
+
+  it('fetchNotificationSettings loads from GET /api/notification-settings', async () => {
+    vi.mocked(api.apiGet).mockResolvedValue({ enabled: true, checkInterval: 30, quietHoursStart: '20:00' });
+    const { result } = renderHook(() => useStore());
+
+    await act(async () => { await result.current.fetchNotificationSettings(); });
+
+    expect(result.current.notificationSettings.checkInterval).toBe(30);
+  });
+
+  it('updateNotificationSettings sends only the patch via PUT', async () => {
+    vi.mocked(api.apiPut).mockResolvedValue({ checkInterval: 45 });
+    const { result } = renderHook(() => useStore());
+
+    await act(async () => { await result.current.updateNotificationSettings({ checkInterval: 45 }); });
+
+    expect(api.apiPut).toHaveBeenCalledWith('/api/notification-settings', { checkInterval: 45 }, 'tok');
+  });
+
+  it('markAllNotificationsRead calls PATCH /api/notifications/read-all and marks all user notifications as read', async () => {
+    useStore.setState({
+      appNotifications: [
+        { id: 'n1', toUserId: 'u1', readAt: undefined } as any,
+        { id: 'n2', toUserId: 'u1', readAt: undefined } as any,
+        { id: 'n3', toUserId: 'u2', readAt: undefined } as any,
+      ]
+    });
+    vi.mocked(api.apiPatch).mockResolvedValue({ ok: true });
+    const { result } = renderHook(() => useStore());
+
+    await act(async () => { await result.current.markAllNotificationsRead('u1'); });
+
+    expect(api.apiPatch).toHaveBeenCalledWith('/api/notifications/read-all', {}, 'tok');
+    expect(result.current.appNotifications[0].readAt).toBeTruthy(); // u1's first notification
+    expect(result.current.appNotifications[1].readAt).toBeTruthy(); // u1's second notification
+    expect(result.current.appNotifications[2].readAt).toBeUndefined(); // u2's notification unchanged
+  });
+
+  it('markNotificationsByTypeRead calls PATCH for each matching notification and marks them as read', async () => {
+    useStore.setState({
+      appNotifications: [
+        { id: 'n1', type: 'review_requested', toUserId: 'u1', readAt: undefined } as any,
+        { id: 'n2', type: 'review_validated', toUserId: 'u1', readAt: undefined } as any,
+        { id: 'n3', type: 'review_requested', toUserId: 'u1', readAt: undefined } as any,
+        { id: 'n4', type: 'comment_mention', toUserId: 'u2', readAt: undefined } as any,
+      ]
+    });
+    vi.mocked(api.apiPatch).mockResolvedValue({ ok: true });
+    const { result } = renderHook(() => useStore());
+
+    await act(async () => { await result.current.markNotificationsByTypeRead(['review_requested'], 'u1'); });
+
+    // Should be called once for each matching notification (n1 and n3)
+    expect(api.apiPatch).toHaveBeenCalledTimes(2);
+    expect(api.apiPatch).toHaveBeenCalledWith('/api/notifications/n1/read', {}, 'tok');
+    expect(api.apiPatch).toHaveBeenCalledWith('/api/notifications/n3/read', {}, 'tok');
+    // Only matching notifications should be marked as read
+    expect(result.current.appNotifications[0].readAt).toBeTruthy(); // n1 matched
+    expect(result.current.appNotifications[1].readAt).toBeUndefined(); // n2 different type
+    expect(result.current.appNotifications[2].readAt).toBeTruthy(); // n3 matched
+    expect(result.current.appNotifications[3].readAt).toBeUndefined(); // n4 different user
+  });
+});
