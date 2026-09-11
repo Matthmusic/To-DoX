@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Paperclip, Edit3, ExternalLink } from "lucide-react";
-import useStore from "../../store/useStore";
 import { alertModal } from "../../utils/confirm";
 import { LinkedTextContent } from "../LinkedTextContent";
 import {
@@ -19,15 +18,14 @@ interface TaskNotesSectionProps {
 
 /** Section notes d'une tâche : édition inline, drag-drop de fichiers, parsing de chemins */
 export function TaskNotesSection({ task, updateTask }: TaskNotesSectionProps) {
-    const storagePath = useStore((state) => state.storagePath);
     const [isEditingNotes, setIsEditingNotes] = useState(false);
     const [localNotes, setLocalNotes] = useState(task.notes || "");
     const [notesDropTarget, setNotesDropTarget] = useState(false);
     const notesTextareaRef = useRef<HTMLTextAreaElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     // stateRef : capture les valeurs latest sans re-créer le listener natif
-    const stateRef = useRef({ isEditingNotes, localNotes, storagePath, task, updateTask, setLocalNotes, setNotesDropTarget });
-    useEffect(() => { stateRef.current = { isEditingNotes, localNotes, storagePath, task, updateTask, setLocalNotes, setNotesDropTarget }; });
+    const stateRef = useRef({ isEditingNotes, localNotes, task, updateTask, setLocalNotes, setNotesDropTarget });
+    useEffect(() => { stateRef.current = { isEditingNotes, localNotes, task, updateTask, setLocalNotes, setNotesDropTarget }; });
 
     // Synchroniser localNotes avec task.notes
     useEffect(() => {
@@ -80,7 +78,6 @@ export function TaskNotesSection({ task, updateTask }: TaskNotesSectionProps) {
             }
             const resolution = await resolveDroppedLinkFromDataTransfer(
                 e.dataTransfer as Pick<DataTransfer, 'files' | 'getData'>,
-                { storagePath: s.storagePath }
             );
             if (!resolution) return;
             if ('error' in resolution) { await alertModal(resolution.error); return; }

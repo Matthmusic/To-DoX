@@ -9,7 +9,6 @@ const mockStore = {
   updateSubtaskTitle: vi.fn(),
   addTask: vi.fn(),
   users: [],
-  storagePath: 'C:\\Storage',
 };
 
 vi.mock('../store/useStore', () => ({

@@ -62,7 +62,6 @@ describe('taskLinks', () => {
         files: [file],
         data: { 'text/plain': 'https://outlook.office.com/mail/inbox/id' },
       }),
-      { storagePath: 'C:\\Storage' },
     );
 
     expect(result).toEqual({
@@ -78,7 +77,6 @@ describe('taskLinks', () => {
       makeDataTransfer({
         data: { 'text/plain': 'https://example.com/spec' },
       }),
-      { storagePath: 'C:\\Storage' },
     );
 
     expect(result).toEqual({
@@ -89,26 +87,18 @@ describe('taskLinks', () => {
     });
   });
 
-  it('saves a virtual Outlook .msg file when no native path is available', async () => {
+  it('returns an error for a dropped Outlook .msg file (no local storage folder available)', async () => {
     const file = new File(['msg-body'], 'Spec review.msg', { type: 'application/vnd.ms-outlook' });
     // jsdom does not implement Blob.arrayBuffer; Electron does.
     Object.defineProperty(file, 'arrayBuffer', { value: async () => new TextEncoder().encode('msg-body').buffer });
-    window.electronAPI!.outlook.saveDroppedMail = vi.fn(async () => ({
-      success: true,
-      path: 'C:\\Mail Store\\Spec review.msg',
-    }));
 
     const result = await resolveDroppedLinkFromDataTransfer(
       makeDataTransfer({ files: [file] }),
-      { storagePath: 'C:\\Storage' },
     );
 
-    expect(window.electronAPI!.outlook.saveDroppedMail).toHaveBeenCalledTimes(1);
+    expect(window.electronAPI!.outlook.saveDroppedMail).not.toHaveBeenCalled();
     expect(result).toEqual({
-      insertedText: 'Spec review "C:\\Mail Store\\Spec review.msg"',
-      type: 'outlook',
-      target: 'C:\\Mail Store\\Spec review.msg',
-      targetType: 'path',
+      error: "Impossible de sauvegarder l'email Outlook: dossier de stockage indisponible.",
     });
   });
 });

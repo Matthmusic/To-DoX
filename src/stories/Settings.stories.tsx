@@ -49,22 +49,11 @@ export const ProjectsList: StoryObj = {
   },
 };
 
-// ─── StoragePanel ────────────────────────────────────────────────────────────
+// ─── StoragePanel (Compte) ────────────────────────────────────────────────────
 
 export const Storage: StoryObj = {
-  name: 'Panneau Stockage',
-  render: () => {
-    useStore.setState({ storagePath: '~/OneDrive - CEA/DATA/To-Do-X' });
-    return <StoragePanel onClose={() => {}} />;
-  },
-};
-
-export const StorageNoPath: StoryObj = {
-  name: 'Panneau Stockage – chemin non configuré',
-  render: () => {
-    useStore.setState({ storagePath: null });
-    return <StoragePanel onClose={() => {}} />;
-  },
+  name: 'Panneau Compte',
+  render: () => <StoragePanel onClose={() => {}} />,
 };
 
 // ─── ThemePanel ──────────────────────────────────────────────────────────────

@@ -29,7 +29,7 @@ interface TaskEditPanelProps {
  * Panneau d'édition pour clic droit sur une tâche
  */
 export function TaskEditPanel({ task: initialTask, position, onClose, centered = false }: TaskEditPanelProps) {
-    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate, setReviewers, setTaskParent, currentUser, storagePath } = useStore();
+    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate, setReviewers, setTaskParent, currentUser } = useStore();
     const sortedUsers = [...users].sort((a, b) => {
         if (a.id === currentUser) return -1;
         if (b.id === currentUser) return 1;
@@ -57,7 +57,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
     const [notesEditDropTarget, setNotesEditDropTarget] = useState(false);
     const notesRef = useRef<HTMLTextAreaElement>(null);
     const notesContainerRef = useRef<HTMLDivElement>(null);
-    const notesStateRef = useRef({ localNotes, notesEditing, storagePath, taskId: task.id, onUpdate, setLocalNotes, setNotesDropTarget, setNotesEditDropTarget, setNotesEditing });
+    const notesStateRef = useRef({ localNotes, notesEditing, taskId: task.id, onUpdate, setLocalNotes, setNotesDropTarget, setNotesEditDropTarget, setNotesEditing });
     const [showDateDropdown, setShowDateDropdown] = useState(false);
     const [parentSearch, setParentSearch] = useState("");
 
@@ -84,7 +84,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
 
     // Sync stateRef pour le listener natif drop
     useEffect(() => {
-        notesStateRef.current = { localNotes, notesEditing, storagePath, taskId: task.id, onUpdate, setLocalNotes, setNotesDropTarget, setNotesEditDropTarget, setNotesEditing };
+        notesStateRef.current = { localNotes, notesEditing, taskId: task.id, onUpdate, setLocalNotes, setNotesDropTarget, setNotesEditDropTarget, setNotesEditing };
     });
 
     // Listener natif notes — React onDrop ne reçoit pas les drops OLE Outlook en Electron
@@ -107,7 +107,6 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
             }
             const resolution = await resolveDroppedLinkFromDataTransfer(
                 e.dataTransfer as Pick<DataTransfer, 'files' | 'getData'>,
-                { storagePath: s.storagePath }
             );
             if (!resolution) return;
             if ('error' in resolution) { await alertModal(resolution.error); return; }

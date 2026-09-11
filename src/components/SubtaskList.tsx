@@ -199,7 +199,7 @@ interface SubtaskItemProps {
  * Item individuel d'une sous-tâche
  */
 export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: SubtaskItemProps) {
-    const { toggleSubtask, deleteSubtask, updateSubtaskTitle, assignSubtask, unassignSubtask, setSubtaskDates, addTask, users, storagePath } = useStore();
+    const { toggleSubtask, deleteSubtask, updateSubtaskTitle, assignSubtask, unassignSubtask, setSubtaskDates, addTask, users } = useStore();
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(subtask.title);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -227,7 +227,6 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
             if (!e.dataTransfer) return;
             const resolution = await resolveDroppedLinkFromDataTransfer(
                 e.dataTransfer as Pick<DataTransfer, 'files' | 'getData'>,
-                { storagePath }
             );
             if (!resolution) return;
             if ('error' in resolution) { await alertModal(resolution.error); return; }
@@ -236,7 +235,7 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
         };
         el.addEventListener('drop', nativeDrop);
         return () => el.removeEventListener('drop', nativeDrop);
-    }, [subtask.title, subtask.id, task.id, storagePath, updateSubtaskTitle]);
+    }, [subtask.title, subtask.id, task.id, updateSubtaskTitle]);
 
     useEffect(() => {
         if (isEditing && inputRef.current) {
@@ -316,7 +315,7 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
                         onDrop={async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            const resolution = await resolveDroppedLinkFromDataTransfer(e.dataTransfer, { storagePath });
+                            const resolution = await resolveDroppedLinkFromDataTransfer(e.dataTransfer);
                             if (!resolution) return;
                             if ('error' in resolution) {
                                 await alertModal(resolution.error);
@@ -470,7 +469,7 @@ interface SubtaskListProps {
  * Liste de sous-tâches avec drag & drop
  */
 export function SubtaskList({ task, hideHeader }: SubtaskListProps) {
-    const { addSubtask, reorderSubtasks, templates, applyTemplateToTask, storagePath } = useStore();
+    const { addSubtask, reorderSubtasks, templates, applyTemplateToTask } = useStore();
     const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const dragFromGrip = useRef(false);
@@ -501,7 +500,6 @@ export function SubtaskList({ task, hideHeader }: SubtaskListProps) {
             if (!e.dataTransfer) return;
             const resolution = await resolveDroppedLinkFromDataTransfer(
                 e.dataTransfer as Pick<DataTransfer, 'files' | 'getData'>,
-                { storagePath }
             );
             if (!resolution) return;
             if ('error' in resolution) { await alertModal(resolution.error); return; }
@@ -509,7 +507,7 @@ export function SubtaskList({ task, hideHeader }: SubtaskListProps) {
         };
         el.addEventListener('drop', nativeDrop);
         return () => el.removeEventListener('drop', nativeDrop);
-    }, [storagePath]);
+    }, []);
 
     const handleAdd = () => {
         if (newSubtaskTitle.trim()) {

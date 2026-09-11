@@ -510,84 +510,6 @@ async function buildUniqueMailPath(mailDir, fileName) {
   return candidatePath;
 }
 
-// Handler pour obtenir le chemin de stockage par défaut
-ipcMain.handle('get-storage-path', () => {
-  const storagePath = getDefaultOneDrivePath();
-  console.log('📂 [ELECTRON MAIN] get-storage-path appelé, retour:', storagePath);
-  return storagePath;
-});
-
-// Handler pour lire les données
-ipcMain.handle('read-data', async (event, filePath) => {
-  console.log('📄 [ELECTRON MAIN] read-data appelé, filePath:', filePath);
-  try {
-    const data = await fs.readFile(filePath, 'utf-8');
-    const parsedData = JSON.parse(data);
-    console.log('✅ [ELECTRON MAIN] Fichier lu avec succès, tâches:', parsedData.tasks?.length || 0);
-    return { success: true, data: parsedData };
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      // Fichier n'existe pas encore, c'est normal
-      console.log('ℹ️ [ELECTRON MAIN] Fichier n\'existe pas encore (ENOENT)');
-      return { success: true, data: null };
-    }
-    console.error('❌ [ELECTRON MAIN] Erreur lors de la lecture:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-// Handler pour sauvegarder les données
-// Pas de proper-lockfile : sur SMB (lecteurs réseau Z:\), le locking fichier est non fiable
-// et génère des "Uncaught Exception" incontrôlables. L'écriture atomique (tmp + rename) suffit.
-ipcMain.handle('save-data', async (event, filePath, data) => {
-  console.log('💾 [ELECTRON MAIN] save-data DÉBUT, filePath:', filePath);
-  try {
-    const dirPath = path.dirname(filePath);
-    await ensureDirectory(dirPath);
-
-    // ATOMIC WRITE: Écrire dans un fichier temporaire puis renommer
-    const tempFilePath = filePath + '.tmp';
-    const jsonContent = JSON.stringify(data, null, 2);
-    await fs.writeFile(tempFilePath, jsonContent, 'utf-8');
-
-    // Renommer atomiquement (remplace l'ancien fichier)
-    await fs.rename(tempFilePath, filePath);
-
-    // IMPORTANT: Attendre que le système de fichiers réseau se synchronise
-    // Les lecteurs réseau Windows (SMB) peuvent avoir un cache qui met 500ms-1s à se rafraîchir
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // Créer une sauvegarde horodatée (conserver les 5 dernières)
-    const backupDir = path.join(dirPath, 'backups');
-    await ensureDirectory(backupDir);
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const backupPath = path.join(backupDir, `backup-${timestamp}.json`);
-    await fs.writeFile(backupPath, jsonContent, 'utf-8');
-
-    // Nettoyer les anciennes sauvegardes (garder les 5 plus récentes)
-    try {
-      const backups = await fs.readdir(backupDir);
-      const sortedBackups = backups
-        .filter(f => f.startsWith('backup-'))
-        .sort()
-        .reverse();
-
-      for (let i = 5; i < sortedBackups.length; i++) {
-        await fs.unlink(path.join(backupDir, sortedBackups[i]));
-      }
-    } catch (backupError) {
-      console.warn('Erreur nettoyage backups:', backupError.message);
-    }
-
-    console.log('✅ [ELECTRON MAIN] save-data TERMINÉ avec succès');
-    return { success: true };
-  } catch (error) {
-    console.error('❌ [ELECTRON MAIN] save-data ERREUR:', error);
-    return { success: false, error: error.message };
-  }
-});
-
 // --- Stockage sécurisé du token JWT (auth backend) ------------------------
 // Chiffré via safeStorage (DPAPI sur Windows, Keychain sur macOS, libsecret
 // sur Linux). Un fichier séparé de data.json, indépendant du dossier de
@@ -640,42 +562,6 @@ ipcMain.handle('auth:clear-token', async (event, userId) => {
   delete all[userId];
   await writeAuthTokensFile(all);
   return { success: true };
-});
-
-// Handler pour détecter les changements d'un fichier.
-// Utilise fs.stat (mtime + size) plutôt que SHA-256 sur le contenu :
-// sur les lecteurs réseau SMB (Z:\...), fs.readFile retourne du contenu mis en cache
-// par le client Windows, ce qui peut masquer les changements pendant plusieurs minutes.
-// fs.stat interroge directement le serveur pour les métadonnées → pas de cache contenu.
-ipcMain.handle('get-file-hash', async (event, filePath) => {
-  try {
-    const stats = await fs.stat(filePath);
-    const fingerprint = `${stats.mtimeMs}-${stats.size}`;
-    console.log('🔍 [ELECTRON MAIN] get-file-hash: stat fingerprint', fingerprint);
-    return { success: true, hash: fingerprint };
-  } catch (error) {
-    if (error.code === 'ENOENT') {
-      console.log('ℹ️ [ELECTRON MAIN] get-file-hash: fichier n\'existe pas (ENOENT)');
-      return { success: true, hash: null };
-    }
-    console.error('❌ [ELECTRON MAIN] get-file-hash ERREUR:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-// Handler pour choisir un dossier personnalisé
-ipcMain.handle('choose-storage-folder', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openDirectory', 'createDirectory'],
-    title: 'Choisir le dossier de stockage',
-    defaultPath: getDefaultOneDrivePath()
-  });
-
-  if (result.canceled) {
-    return { success: false, canceled: true };
-  }
-
-  return { success: true, path: result.filePaths[0] };
 });
 
 // Handler pour sélectionner un dossier projet

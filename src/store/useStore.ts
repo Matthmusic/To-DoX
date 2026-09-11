@@ -73,7 +73,6 @@ export interface StoreState {
     authStatus: 'idle' | 'checking' | 'authenticated' | 'error';
     authError: string | null;
     collapsedProjects: Record<string, boolean>;
-    storagePath: string | null;
     isLoadingData: boolean;
     saveError: string | null;
     notificationSettings: NotificationSettings;
@@ -100,7 +99,6 @@ export interface StoreState {
     setAuthToken: (token: string | null) => void;
     setAuthStatus: (status: 'idle' | 'checking' | 'authenticated' | 'error') => void;
     setAuthError: (msg: string | null) => void;
-    setStoragePath: (path: string | null) => void;
     setIsLoadingData: (loading: boolean) => void;
     setSaveError: (error: string | null) => void;
     setNotificationSettings: (settings: NotificationSettings) => void;
@@ -231,7 +229,6 @@ const useStore = create<StoreState>((set, get) => ({
     authStatus: 'idle',
     authError: null,
     collapsedProjects: {},
-    storagePath: null,
     isLoadingData: true,
     saveError: null,
     comments: {},
@@ -355,7 +352,6 @@ const useStore = create<StoreState>((set, get) => ({
     setAuthToken: (token) => set({ authToken: token, authStatus: token ? 'authenticated' : 'idle' }),
     setAuthStatus: (status) => set({ authStatus: status }),
     setAuthError: (msg) => set({ authError: msg }),
-    setStoragePath: (path) => set({ storagePath: path }),
     setIsLoadingData: (loading) => set({ isLoadingData: loading }),
     setSaveError: (error) => set({ saveError: error }),
     setNotificationSettings: (settings) => set({ notificationSettings: settings }),

@@ -35,11 +35,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
 
   // Gestion du stockage de fichiers
-  getStoragePath: () => ipcRenderer.invoke('get-storage-path'),
-  readData: (filePath) => ipcRenderer.invoke('read-data', filePath),
-  saveData: (filePath, data) => ipcRenderer.invoke('save-data', filePath, data),
-  getFileHash: (filePath) => ipcRenderer.invoke('get-file-hash', filePath),
-  chooseStorageFolder: () => ipcRenderer.invoke('choose-storage-folder'),
   selectProjectFolder: () => ipcRenderer.invoke('select-project-folder'),
 
   // Stockage sécurisé du token JWT (auth backend)

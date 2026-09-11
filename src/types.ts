@@ -115,11 +115,6 @@ export interface TimeEntry {
 
 export interface ElectronAPI {
   isElectron: boolean;
-  getStoragePath: () => Promise<string>;
-  readData: (path: string) => Promise<{ success: boolean; data: StoredData; error?: string }>;
-  saveData: (path: string, data: StoredData) => Promise<{ success: boolean; error?: string }>;
-  getFileHash: (path: string) => Promise<{ success: boolean; hash: string | null; error?: string }>;
-  chooseStorageFolder: () => Promise<{ success: boolean; path?: string }>;
   // Stockage sécurisé du token JWT (auth backend)
   authSaveToken: (userId: string, token: string) => Promise<{ success: boolean; encrypted: boolean }>;
   authGetToken: (userId: string) => Promise<string | null>;

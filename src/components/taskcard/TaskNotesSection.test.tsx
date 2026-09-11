@@ -3,15 +3,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { TaskNotesSection } from './TaskNotesSection';
 import type { Task } from '../../types';
 
-const mockStore = {
-  storagePath: 'C:\\Storage',
-};
-
-vi.mock('../../store/useStore', () => ({
-  default: (selector?: (state: typeof mockStore) => unknown) =>
-    selector ? selector(mockStore) : mockStore,
-}));
-
 const baseTask: Task = {
   id: 'task-notes',
   title: 'Review outlook drop',

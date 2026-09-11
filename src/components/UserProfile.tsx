@@ -2,6 +2,7 @@ import { LogOut } from "lucide-react";
 import useStore from "../store/useStore";
 import { confirmModal } from "../utils/confirm";
 import { useTheme } from "../hooks/useTheme";
+import { clearToken } from "../services/api";
 
 function getUserInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -10,7 +11,7 @@ function getUserInitials(name: string): string {
 }
 
 export function UserProfile() {
-  const { users, currentUser, setCurrentUser } = useStore();
+  const { users, currentUser, setCurrentUser, setAuthToken } = useStore();
   const { activeTheme } = useTheme();
   const primary = activeTheme.palette.primary;
 
@@ -28,8 +29,9 @@ export function UserProfile() {
       `Voulez-vous vraiment vous déconnecter ?\n\nVous devrez vous reconnecter au prochain lancement.`
     );
     if (confirmed) {
+      if (currentUser) await clearToken(currentUser);
+      setAuthToken(null);
       setCurrentUser(null);
-      localStorage.removeItem('current_user_id');
     }
   };
 

@@ -272,7 +272,6 @@ export function parseFilePaths(text: string): ParsedTextPart[] {
 
 export async function resolveDroppedLinkFromDataTransfer(
   dataTransfer: Pick<DataTransfer, 'files' | 'getData'>,
-  options?: { storagePath?: string | null },
 ): Promise<ResolvedDroppedLink | DroppedLinkResolutionError | null> {
   // Outlook drag propriétaire (multimaillistconversationrows) : pas de fichier accessible depuis le renderer
   // → ignorer silencieusement (les bytes OLE CF_FILECONTENTS ne sont pas accessibles sans bindings natifs)
@@ -310,28 +309,9 @@ export async function resolveDroppedLinkFromDataTransfer(
   }
 
   if (file?.name?.toLowerCase().endsWith('.msg')) {
-    const storagePath = options?.storagePath;
-    if (!storagePath) {
-      return { error: "Impossible de sauvegarder l'email Outlook: dossier de stockage indisponible." };
-    }
-
-    if (!window.electronAPI?.isElectron || !window.electronAPI.outlook?.saveDroppedMail) {
-      return { error: "La sauvegarde des emails Outlook n'est disponible qu'en mode Electron." };
-    }
-
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const result = await window.electronAPI.outlook.saveDroppedMail(storagePath, file.name, bytes);
-    if (!result.success || !result.path) {
-      return { error: result.error || "Impossible de sauvegarder l'email Outlook deplace." };
-    }
-
-    const label = extractDroppedLabel(dataTransfer, file, null, 'Mail Outlook');
-    return {
-      insertedText: formatDroppedLinkInsertion(label, result.path, 'path'),
-      type: 'outlook',
-      target: result.path,
-      targetType: 'path',
-    };
+    // Sans dossier de stockage local (application connectée au serveur de l'équipe),
+    // il n'y a plus d'emplacement où déplacer l'email Outlook déposé.
+    return { error: "Impossible de sauvegarder l'email Outlook: dossier de stockage indisponible." };
   }
 
   return null;
