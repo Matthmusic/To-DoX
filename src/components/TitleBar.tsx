@@ -4,7 +4,7 @@ import logoSvg from '../assets/To Do X.svg';
 import { UserProfile } from './UserProfile';
 import { useTheme } from '../hooks/useTheme';
 import useStore from '../store/useStore';
-import { VIP_USERS, FIXED_USERS } from '../constants';
+import { VIP_USERS } from '../constants';
 import { getInitials } from '../utils';
 import citationsData from '../assets/citations_bureau_etudes_elec_btp_400.json';
 
@@ -26,12 +26,12 @@ export function TitleBar({ onTaskClick: _onTaskClick }: TitleBarProps) {
   const [showFullQuote, setShowFullQuote] = useState(false);
   const dailyQuote = getDailyQuote();
   const { activeTheme } = useTheme();
-  const { currentUser, viewAsUser, appNotifications, setCurrentUser, setViewAsUser } = useStore();
+  const { users, currentUser, viewAsUser, appNotifications, setCurrentUser, setViewAsUser } = useStore();
   const isCurrentUserVip = currentUser ? VIP_USERS.includes(currentUser) : false;
   const visibleTabs = (() => {
     const base = isCurrentUserVip
-      ? FIXED_USERS.filter(u => u.id !== 'unassigned')
-      : FIXED_USERS.filter(u => u.id === currentUser && u.id !== 'unassigned');
+      ? users.filter(u => u.id !== 'unassigned')
+      : users.filter(u => u.id === currentUser && u.id !== 'unassigned');
     return [...base].sort((a, b) => {
       if (a.id === currentUser) return -1;
       if (b.id === currentUser) return 1;
@@ -91,7 +91,7 @@ useEffect(() => {
 
         {/* 50px de séparation puis onglets côte à côte */}
         {visibleTabs.length > 0 && (
-          <div className="flex min-w-0 items-center gap-1 overflow-hidden" style={{ marginLeft: '50px' }}>
+          <div className="flex min-w-0 items-center gap-1 overflow-x-auto" style={{ marginLeft: '16px', scrollbarWidth: 'none' }}>
             {visibleTabs.map(user => {
               const isMyTab = currentUser === user.id;
               const isViewing = viewAsUser === user.id;
@@ -112,7 +112,8 @@ useEffect(() => {
                     }
                   }}
                   title={isMyTab ? user.name : `Vue en tant que ${user.name}`}
-                  className="relative h-6 px-1.5 flex items-center gap-1 rounded transition-all"
+                  aria-label={isMyTab ? user.name : `Vue en tant que ${user.name}`}
+                  className="relative h-6 shrink-0 px-1.5 flex items-center gap-1 rounded transition-all"
                   style={isActive
                     ? { backgroundColor: `${activeTheme.palette.primary}30`, color: activeTheme.palette.primary, fontWeight: 700 }
                     : isViewing
@@ -139,7 +140,7 @@ useEffect(() => {
             })}
             {/* Badge "Vue en tant que" quand viewAsUser est actif */}
             {viewAsUser && (() => {
-              const viewedUser = FIXED_USERS.find(u => u.id === viewAsUser);
+              const viewedUser = users.find(u => u.id === viewAsUser);
               return viewedUser ? (
                 <div className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ backgroundColor: '#f59e0b22', color: '#f59e0b', border: '1px solid #f59e0b44' }}>
                   <Eye className="h-2.5 w-2.5" />

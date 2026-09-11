@@ -862,7 +862,12 @@ describe('users via API', () => {
         await act(async () => { await result.current.fetchUsers(); });
 
         expect(api.apiGet).toHaveBeenCalledWith('/api/users', 'tok');
-        expect(result.current.users).toEqual([{ id: 'u1', email: 'a@b.com', name: 'A', role: 'member' }]);
+        // fetchUsers passe par setUsers -> normalizeUsers, qui garantit toujours une entrée
+        // "unassigned" (annuaire local, voir utils/users.ts) en plus des users reçus de l'API.
+        expect(result.current.users).toEqual([
+            { id: 'u1', email: 'a@b.com', name: 'A', role: 'member' },
+            { id: 'unassigned', name: 'Non assigné', email: '' },
+        ]);
     });
 
     it('createUser posts to the API and appends the result', async () => {

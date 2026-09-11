@@ -86,8 +86,7 @@ export const VIP_USERS: string[] = [
     "sakina",
 ];
 
-// Liste FIXE des utilisateurs (commune à tous)
-// Cette liste n'est PAS sauvegardée dans data.json et n'est pas modifiable via l'interface
+// Utilisateurs initiaux pour les installations sans annuaire sauvegardé.
 export const FIXED_USERS = [
     { id: "matthieu", name: "Matthieu Maurel", email: "matthieu.maurel@conception-ea.fr" },
     { id: "william", name: "William Cresson", email: "william.cresson@conception-ea.fr" },

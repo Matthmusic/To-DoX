@@ -20,7 +20,7 @@ export function useSyncPolling(refs: PersistenceRefs, store: StoreSnapshot) {
 
                 // Setters lus depuis getState() : stables, pas besoin de deps
                 const {
-                    setTasks, setDirectories, setProjectHistory, setProjectColors,
+                    setUsers, setTasks, setDirectories, setProjectHistory, setProjectColors,
                     setNotificationSettings, setComments, setTemplates, setSavedReports,
                     setAppNotifications, setTimeEntries,
                 } = useStore.getState();
@@ -33,6 +33,9 @@ export function useSyncPolling(refs: PersistenceRefs, store: StoreSnapshot) {
 
                     const result = await window.electronAPI?.readData(filePath);
                     if (result?.success && result.data) {
+                        if (Array.isArray(result.data.users) && (result.data.usersUpdatedAt ?? 0) > useStore.getState().usersUpdatedAt) {
+                            setUsers(result.data.users, result.data.usersUpdatedAt ?? 0);
+                        }
                         if (result.data.tasks) {
                             const fileTasks: Task[] = result.data.tasks.map(
                                 (t) => migrateTask(t, { fallbackUser: currentUser })

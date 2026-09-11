@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { todayISO, uid, devWarn } from '../utils';
+import { normalizeUsers } from '../utils/users';
 import { FIXED_USERS, DEFAULT_NOTIFICATION_SOUND } from '../constants';
 import { DEFAULT_THEME } from '../themes/presets';
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from '../services/api';
@@ -63,6 +64,7 @@ export interface StoreState {
     projectHistory: string[];
     projectColors: Record<string, number>;
     users: User[];
+    usersUpdatedAt: number;
     currentUser: string | null; // ID de l'utilisateur actuellement connecté
     viewAsUser: string | null;  // Vue en tant que (filtre visuel, sans changer la session)
 
@@ -88,7 +90,9 @@ export interface StoreState {
     setProjectDirectory: (projectName: string, directory: string) => Promise<void>;
     removeProjectDirectory: (projectName: string) => Promise<void>;
     setProjectOrder: (projectName: string, order: number) => Promise<void>;
-    setUsers: (users: User[]) => void;
+    // setUsers garde sa signature "riche" (annuaire local) : le backend n'expose encore
+    // que fetch/create pour les utilisateurs (pas de PUT/DELETE), voir plus bas.
+    setUsers: (users: User[], updatedAt?: number) => void;
     fetchUsers: () => Promise<void>;
     createUser: (data: { email: string; name: string; password: string; role?: 'admin' | 'member' }) => Promise<void>;
     setCurrentUser: (userId: string | null) => void;
@@ -213,6 +217,7 @@ const useStore = create<StoreState>((set, get) => ({
     projectHistory: [],
     projectColors: {},
     users: FIXED_USERS,
+    usersUpdatedAt: 0,
     currentUser: null,
     viewAsUser: null,
     authToken: null,
@@ -313,7 +318,17 @@ const useStore = create<StoreState>((set, get) => ({
             return { projectHistory };
         });
     },
-    setUsers: (users) => set({ users }),
+    // setUsers reste la version "riche" (normalisation + horodatage anti-collision +
+    // garde viewAsUser) : le backend n'expose encore que fetch/create pour les
+    // utilisateurs (pas de PUT/DELETE — voir task-3-report.md), donc l'édition/suppression
+    // locale de UsersPanel.tsx continue de s'appuyer sur cette persistance locale en
+    // parallèle de l'API. fetchUsers/createUser passent par elle pour rester cohérents
+    // avec cette même normalisation et ce même suivi d'horodatage.
+    setUsers: (value, updatedAt) => set(state => {
+        const users = normalizeUsers(value);
+        return { users, usersUpdatedAt: updatedAt ?? Math.max(Date.now(), state.usersUpdatedAt + 1),
+            viewAsUser: users.some(user => user.id === state.viewAsUser) ? state.viewAsUser : null };
+    }),
     fetchUsers: async () => {
         const token = get().authToken;
         const users = await apiGet<User[]>('/api/users', token ?? undefined);
@@ -322,7 +337,7 @@ const useStore = create<StoreState>((set, get) => ({
     createUser: async (data) => {
         const token = get().authToken;
         const created = await apiPost<User>('/api/users', data, token ?? undefined);
-        set((state) => ({ users: [...state.users, created] }));
+        get().setUsers([...get().users, created]);
     },
     setCurrentUser: (userId) => set((state) => {
         const DEFAULT_OUTLOOK: OutlookConfig = { enabled: false, icsUrl: '', exportEnabled: false, lastSync: null };
