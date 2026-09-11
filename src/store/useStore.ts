@@ -194,8 +194,9 @@ export interface StoreState {
     // Feuilles de pointage
     timeEntries: TimeEntry[];
     setTimeEntries: (entries: TimeEntry[]) => void;
-    upsertTimeEntry: (project: string, date: string, hours: number, userId: string, note?: string) => void;
-    deleteTimeEntry: (project: string, date: string, userId: string) => void;
+    fetchTimeEntries: (from?: string, to?: string) => Promise<void>;
+    upsertTimeEntry: (project: string, date: string, hours: number, userId: string, note?: string) => Promise<void>;
+    deleteTimeEntry: (project: string, date: string, userId: string) => Promise<void>;
 
     // Intégration Outlook / ICS
     outlookConfig: OutlookConfig;              // config du user courant (dérivée de outlookConfigs)
@@ -1046,43 +1047,40 @@ const useStore = create<StoreState>((set, get) => ({
     // ── Feuilles de pointage ─────────────────────────────────────────────────
     setTimeEntries: (timeEntries) => set({ timeEntries }),
 
-    upsertTimeEntry: (project, date, hours, userId, note) => {
-        const now = Date.now();
-        set(state => {
-            const idx = state.timeEntries.findIndex(
-                e => e.project === project && e.date === date && e.userId === userId
-            );
-            if (hours <= 0) {
-                // Supprimer si heures = 0
-                return { timeEntries: state.timeEntries.filter((_, i) => i !== idx) };
-            }
-            if (idx >= 0) {
-                // Mettre à jour
-                const updated = [...state.timeEntries];
-                updated[idx] = { ...updated[idx], hours, note, updatedAt: now };
-                return { timeEntries: updated };
-            }
-            // Créer
-            const newEntry: TimeEntry = {
-                id: uid(),
-                project,
-                date,
-                hours,
-                userId,
-                note,
-                createdAt: now,
-                updatedAt: now,
-            };
-            return { timeEntries: [...state.timeEntries, newEntry] };
-        });
+    fetchTimeEntries: async (from?: string, to?: string) => {
+        const token = get().authToken;
+        const qs = from && to ? `?from=${from}&to=${to}` : '';
+        const entries = await apiGet<TimeEntry[]>(`/api/time-entries${qs}`, token ?? undefined);
+        set({ timeEntries: entries });
     },
 
-    deleteTimeEntry: (project, date, userId) => {
-        set(state => ({
-            timeEntries: state.timeEntries.filter(
-                e => !(e.project === project && e.date === date && e.userId === userId)
-            )
-        }));
+    upsertTimeEntry: async (project, date, hours, userId, note) => {
+        const token = get().authToken;
+        const existing = get().timeEntries.find(e => e.project === project && e.date === date && e.userId === userId);
+
+        if (hours <= 0) {
+            if (existing) {
+                await apiDelete(`/api/time-entries/${existing.id}`, token ?? undefined);
+                set(state => ({ timeEntries: state.timeEntries.filter(e => e.id !== existing.id) }));
+            }
+            return;
+        }
+
+        if (existing) {
+            const updated = await apiPut<TimeEntry>(`/api/time-entries/${existing.id}`, { hours, note }, token ?? undefined);
+            set(state => ({ timeEntries: state.timeEntries.map(e => e.id === existing.id ? updated : e) }));
+        } else {
+            const created = await apiPost<TimeEntry>('/api/time-entries', { project, date, hours, note }, token ?? undefined);
+            set(state => ({ timeEntries: [...state.timeEntries, created] }));
+        }
+    },
+
+    deleteTimeEntry: async (project, date, userId) => {
+        const token = get().authToken;
+        const existing = get().timeEntries.find(e => e.project === project && e.date === date && e.userId === userId);
+        if (!existing) return;
+        await apiDelete(`/api/time-entries/${existing.id}`, token ?? undefined);
+        set(state => ({ timeEntries: state.timeEntries.filter(e => e.id !== existing.id) }));
     },
 
     // ── Outlook / ICS ───────────────────────────────────────────────────────

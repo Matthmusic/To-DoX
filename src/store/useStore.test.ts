@@ -1105,3 +1105,40 @@ describe('notifications via API', () => {
     expect(result.current.appNotifications[3].readAt).toBeUndefined(); // n4 different user
   });
 });
+
+// ── Time entries via API ────────────────────────────────────────────────
+
+describe('time entries via API', () => {
+  beforeEach(() => {
+    useStore.setState({ authToken: 'tok', timeEntries: [] });
+  });
+
+  it('fetchTimeEntries loads from GET /api/time-entries', async () => {
+    vi.mocked(api.apiGet).mockResolvedValue([{ id: 'e1', userId: 'u1', project: 'X', date: '2026-09-10', hours: 3, note: null, createdAt: 1000, updatedAt: 1000 }]);
+    const { result } = renderHook(() => useStore());
+
+    await act(async () => { await result.current.fetchTimeEntries(); });
+
+    expect(result.current.timeEntries).toHaveLength(1);
+  });
+
+  it('upsertTimeEntry with positive hours and no existing entry POSTs a new one', async () => {
+    vi.mocked(api.apiPost).mockResolvedValue({ id: 'e2', userId: 'u1', project: 'X', date: '2026-09-10', hours: 5, note: null, createdAt: 1000, updatedAt: 1000 });
+    const { result } = renderHook(() => useStore());
+
+    await act(async () => { await result.current.upsertTimeEntry('X', '2026-09-10', 5, 'u1'); });
+
+    expect(api.apiPost).toHaveBeenCalledWith('/api/time-entries', { project: 'X', date: '2026-09-10', hours: 5, note: undefined }, 'tok');
+  });
+
+  it('upsertTimeEntry with hours <= 0 on an existing entry calls DELETE, not PUT', async () => {
+    useStore.setState({ timeEntries: [{ id: 'e1', userId: 'u1', project: 'X', date: '2026-09-10', hours: 3 } as any] });
+    vi.mocked(api.apiDelete).mockResolvedValue(undefined);
+    const { result } = renderHook(() => useStore());
+
+    await act(async () => { await result.current.upsertTimeEntry('X', '2026-09-10', 0, 'u1'); });
+
+    expect(api.apiDelete).toHaveBeenCalledWith('/api/time-entries/e1', 'tok');
+    expect(api.apiPut).not.toHaveBeenCalled();
+  });
+});

@@ -420,9 +420,9 @@ export function TimesheetView() {
         setDropdownCell({ project, date, rect });
     }
 
-    function selectHours(hours: number) {
+    async function selectHours(hours: number) {
         if (!dropdownCell || !canEditTimesheet || !currentUser) return;
-        upsertTimeEntry(dropdownCell.project, dropdownCell.date, hours, currentUser);
+        await upsertTimeEntry(dropdownCell.project, dropdownCell.date, hours, currentUser);
         setDropdownCell(null);
     }
 
