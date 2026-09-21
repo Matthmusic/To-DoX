@@ -380,9 +380,35 @@ describe('tasks via API', () => {
 
         await act(async () => { await result.current.fetchTasks(); });
 
-        expect(api.apiGet).toHaveBeenCalledWith('/api/tasks', 'tok');
+        expect(api.apiGet).toHaveBeenCalledWith('/api/tasks?archived=true', 'tok');
         expect(result.current.tasks[0].ganttDays).toEqual([{ date: '2026-01-01' }]);
         expect(result.current.tasks[0].convertedFromSubtask).toEqual({ parentTaskId: 'p1', parentTaskTitle: 'PARENT' });
+    });
+
+    it('fetchTasks requests archived=true so archived tasks are not silently dropped by the poll', async () => {
+        // Bug found live during Task 12's manual smoke test: GET /api/tasks defaults to
+        // `archived: false` server-side (todox-backend/src/routes/tasks.ts:20-22) unless the
+        // `archived=true` query param is sent — in which case the server applies NO archived
+        // filter at all (`archived: undefined`) and returns every task regardless of its
+        // archived flag. Without the param, an archived task simply isn't in the response, and
+        // since fetchTasks runs every ~10s (useApiSync), the task vanishes from local `tasks`
+        // entirely within one poll cycle — even though the app's own filtering (useFilters.ts)
+        // has always expected `tasks` to hold archived tasks locally and filter them out for
+        // display, not to have them excluded at the fetch layer. Concretely this broke
+        // unarchiving a project: archiveProject's PUTs succeed, but the very next poll drops
+        // the now-archived tasks from state, so ProjectArchivePanel can no longer find them.
+        useStore.setState({ tasks: [] });
+        vi.mocked(api.apiGet).mockResolvedValue([
+            { id: 'archived-1', title: 'Archivée', status: 'todo', project: 'X', archived: true, archivedAt: 123 },
+            { id: 'active-1', title: 'Active', status: 'todo', project: 'X', archived: false },
+        ]);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.fetchTasks(); });
+
+        expect(api.apiGet).toHaveBeenCalledWith('/api/tasks?archived=true', 'tok');
+        expect(result.current.tasks.map(t => t.id).sort()).toEqual(['active-1', 'archived-1']);
+        expect(result.current.tasks.find(t => t.id === 'archived-1')?.archived).toBe(true);
     });
 });
 

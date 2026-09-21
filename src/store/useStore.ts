@@ -403,7 +403,16 @@ const useStore = create<StoreState>((set, get) => ({
     // Task Actions — via API (todox-backend/src/routes/tasks.ts)
     fetchTasks: async () => {
         const token = get().authToken;
-        const tasks = await apiGet<Task[]>('/api/tasks', token ?? undefined);
+        // `archived=true` : GET /api/tasks filtre `archived: false` par défaut côté serveur
+        // (todox-backend/src/routes/tasks.ts) -- sans ce paramètre, les tâches archivées ne
+        // sont JAMAIS renvoyées, et disparaissent donc silencieusement de l'état local au
+        // prochain poll (voir useApiSync.ts, toutes les ~10s). Avec `archived=true`, le
+        // serveur applique au contraire AUCUN filtre sur ce champ (`archived: undefined`) et
+        // renvoie tout, actif ET archivé -- ce que l'app attend depuis toujours côté client
+        // (useFilters.ts filtre `!t.archived` lui-même pour l'affichage). Trouvé en direct
+        // pendant le smoke test manuel de la Tâche 12 : archiver un projet fonctionnait, mais
+        // le désarchiver redevenait impossible dès que le poll suivant avait tourné.
+        const tasks = await apiGet<Task[]>('/api/tasks?archived=true', token ?? undefined);
 
         // Merge (pas remplacement complet) : le backend n'a aucune colonne pour
         // `ganttDays`/`convertedFromSubtask` (voir le commentaire de `addTask`/`updateTask`
