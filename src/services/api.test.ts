@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { apiGet, apiPost, apiDelete, ApiError, login } from './api';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { apiGet, apiPost, apiDelete, ApiError, login, setRequestErrorHandler, setUnauthorizedHandler } from './api';
 
 describe('api client', () => {
   beforeEach(() => {
@@ -90,5 +90,67 @@ describe('api client', () => {
     (fetch as any).mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'Invalid credentials' }) });
 
     await expect(login('a@b.com', 'wrong')).rejects.toMatchObject({ status: 401, message: 'Email ou mot de passe incorrect' });
+  });
+});
+
+// ── Canal d'erreur partagé (review finale de branche, fixes I3/I4/I4) ─────────────────
+describe('shared error channel', () => {
+  afterEach(() => {
+    // Ne pas laisser un handler de test fuiter vers un autre test (module-level state).
+    setRequestErrorHandler(null);
+    setUnauthorizedHandler(null);
+  });
+
+  it('invokes the registered request-error handler with the server error message on a failed authenticated request', async () => {
+    (fetch as any).mockResolvedValue({ ok: false, status: 500, json: async () => ({ error: 'Erreur interne' }) });
+    const onError = vi.fn();
+    setRequestErrorHandler(onError);
+
+    await expect(apiGet('/api/tasks', 'tok123')).rejects.toBeInstanceOf(ApiError);
+
+    expect(onError).toHaveBeenCalledWith('Erreur interne');
+  });
+
+  it('invokes the request-error handler with a generic French message on a network failure', async () => {
+    (fetch as any).mockRejectedValue(new TypeError('Failed to fetch'));
+    const onError = vi.fn();
+    setRequestErrorHandler(onError);
+
+    await expect(apiGet('/api/tasks', 'tok123')).rejects.toThrow();
+
+    expect(onError).toHaveBeenCalledWith('Erreur de connexion au serveur');
+  });
+
+  it('does NOT invoke the request-error handler for a failed request with no token (login() path)', async () => {
+    (fetch as any).mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'Invalid credentials' }) });
+    const onError = vi.fn();
+    setRequestErrorHandler(onError);
+
+    await expect(login('a@b.com', 'wrong')).rejects.toBeInstanceOf(ApiError);
+
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('invokes the unauthorized handler (not the generic error handler) on a 401 with a token present', async () => {
+    (fetch as any).mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'Token invalide ou expiré' }) });
+    const onError = vi.fn();
+    const onUnauthorized = vi.fn();
+    setRequestErrorHandler(onError);
+    setUnauthorizedHandler(onUnauthorized);
+
+    await expect(apiGet('/api/tasks', 'expired-tok')).rejects.toBeInstanceOf(ApiError);
+
+    expect(onUnauthorized).toHaveBeenCalledTimes(1);
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('does not invoke the unauthorized handler on a non-401 error with a token', async () => {
+    (fetch as any).mockResolvedValue({ ok: false, status: 500, json: async () => ({ error: 'Erreur interne' }) });
+    const onUnauthorized = vi.fn();
+    setUnauthorizedHandler(onUnauthorized);
+
+    await expect(apiGet('/api/tasks', 'tok123')).rejects.toBeInstanceOf(ApiError);
+
+    expect(onUnauthorized).not.toHaveBeenCalled();
   });
 });

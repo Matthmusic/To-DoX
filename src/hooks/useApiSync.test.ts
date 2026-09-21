@@ -9,7 +9,7 @@ describe('useApiSync', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const fetchAll = vi.fn().mockResolvedValue(undefined);
     useStore.setState({
-      authToken: 'tok', currentUser: 'u1', isLoadingData: true,
+      authToken: 'tok', currentUser: 'u1', isLoadingData: true, saveError: null,
       fetchUsers: fetchAll, fetchProjects: fetchAll, fetchTasks: fetchAll, fetchComments: fetchAll,
       fetchAppNotifications: fetchAll, fetchNotificationSettings: fetchAll, fetchTimeEntries: fetchAll,
       fetchTemplates: fetchAll, fetchSavedReports: fetchAll, fetchOutlookConfig: fetchAll,
@@ -41,5 +41,22 @@ describe('useApiSync', () => {
 
     vi.advanceTimersByTime(10_000);
     await vi.waitFor(() => expect((useStore.getState().fetchTasks as any).mock.calls.length).toBeGreaterThan(callsBefore));
+  });
+
+  // Régression I4 (review finale de branche) : avant ce fix, un fetch* rejeté laissait
+  // isLoadingData bloqué à `true` pour toujours (spinner infini) sur l'appel initial, et
+  // produisait une rejection non gérée à chaque tick du timer 10s / focus fenêtre ensuite.
+  // Vitest fait déjà échouer le fichier de test sur une rejection non gérée si elle n'est
+  // pas interceptée -- ce test échoue donc silencieusement (timeout) si la régression
+  // revient, ce qui est exactement ce qu'on veut détecter.
+  it('does not get stuck loading and does not produce an unhandled rejection when a fetch* action rejects', async () => {
+    useStore.setState({
+      fetchTasks: vi.fn().mockRejectedValue(new Error('Erreur réseau simulée')),
+    });
+
+    renderHook(() => useApiSync());
+
+    await waitFor(() => expect(useStore.getState().isLoadingData).toBe(false));
+    expect(useStore.getState().saveError).toBeTruthy();
   });
 });

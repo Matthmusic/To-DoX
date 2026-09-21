@@ -11,6 +11,24 @@ export class ApiError extends Error {
   }
 }
 
+// ── Canal d'erreur partagé (review finale de branche, fixes I3/I4) ─────────────────────
+// Avant cette branche, les mutations étaient 100% locales et ne pouvaient jamais échouer.
+// Désormais ~40 actions du store passent par le réseau, sans qu'aucune ne reporte l'échec
+// à l'utilisateur -- un commentaire/rapport/template qui échoue est silencieusement perdu.
+// `onRequestError`/`onUnauthorized` sont enregistrés une seule fois au démarrage de l'app
+// (voir useApiSync.ts) avec un accès au store -- ce fichier ne peut PAS importer
+// `store/useStore.ts` directement (le store importe déjà `api.ts`, import circulaire).
+let onRequestError: ((message: string) => void) | null = null;
+let onUnauthorized: (() => void) | null = null;
+
+export function setRequestErrorHandler(fn: ((message: string) => void) | null): void {
+  onRequestError = fn;
+}
+
+export function setUnauthorizedHandler(fn: (() => void) | null): void {
+  onUnauthorized = fn;
+}
+
 async function request<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
@@ -21,11 +39,21 @@ async function request<T>(
   if (token) headers.Authorization = `Bearer ${token}`;
   if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (e) {
+    // Échec réseau (serveur injoignable, pas de connexion...) -- `token` distingue un appel
+    // authentifié (post-connexion) d'un appel non-authentifié (essentiellement login(), qui
+    // n'envoie jamais de token) : login() a sa propre UI d'erreur dédiée (LoginModal), pas de
+    // double report ici pour ce cas (voir aussi la branche 401 ci-dessous, même logique).
+    if (token) onRequestError?.('Erreur de connexion au serveur');
+    throw e;
+  }
 
   if (!res.ok) {
     let message = `Erreur serveur (${res.status})`;
@@ -35,6 +63,16 @@ async function request<T>(
     } catch {
       /* pas de corps JSON, on garde le message générique */
     }
+
+    if (token) {
+      // 401 avec token fourni = token expiré/révoqué (login() lui-même n'envoie jamais de
+      // token, donc un 401 sans token est un échec de connexion normal, géré par LoginModal,
+      // pas ici) -- déclenche un retour propre à l'écran de connexion plutôt que de laisser
+      // l'app bloquée sur un spinner avec chaque requête suivante en échec silencieux.
+      if (res.status === 401) onUnauthorized?.();
+      else onRequestError?.(message);
+    }
+
     throw new ApiError(res.status, message);
   }
 

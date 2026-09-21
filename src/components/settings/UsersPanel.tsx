@@ -190,8 +190,16 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                 </div>
             </div>
 
+            {/* Fix I5 (review finale de branche) : save() ci-dessus fait un setUsers(localUsers)
+                100% local -- le poll 10s de fetchUsers (Task 10, useApiSync) peut donc faire
+                réapparaître l'état serveur par-dessus peu après. Avertissement visible plutôt
+                que silencieux, le temps d'une vraie conversion (voir commentaire en tête de fichier). */}
+            <p className="mt-6 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
+                ⚠️ Les modifications enregistrées ici peuvent ne pas persister — fonctionnalité en cours de finalisation.
+            </p>
+
             {/* Boutons d'action */}
-            <div className="mt-6 flex justify-end gap-2">
+            <div className="mt-4 flex justify-end gap-2">
                 <button
                     onClick={onClose}
                     className="rounded-2xl border border-white/20 px-4 py-2 text-theme-primary transition hover:bg-[#1E3A8A]/60"

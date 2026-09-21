@@ -4,6 +4,12 @@ import { getProjectColor } from "../utils";
 import { PROJECT_COLORS } from "../constants";
 import { confirmModal } from "../utils/confirm";
 
+// Renommage de projet désactivé côté UI (review finale de branche, régression C3) :
+// renameProject reste 100% local dans le store (non convertie en appel réseau, voir son
+// commentaire dans useStore.ts) -- le poll 10s de fetchTasks/fetchProjects annulerait donc
+// silencieusement un renommage déclenché ici.
+const RENAME_DISABLED_MESSAGE = "Renommage de projet indisponible pour le moment — sera restauré dans une prochaine mise à jour.";
+
 // Couleurs de prévisualisation pour chaque index
 const COLOR_PREVIEWS = [
     '#60a5fa', // blue
@@ -49,10 +55,7 @@ export function CircularProgressBadge({
 }: CircularProgressBadgeProps) {
     const [animatedPercentage, setAnimatedPercentage] = useState(0);
     const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
-    const [renameMode, setRenameMode] = useState(false);
-    const [renameValue, setRenameValue] = useState('');
     const menuRef = useRef<HTMLDivElement>(null);
-    const renameInputRef = useRef<HTMLInputElement>(null);
     const colors = getProjectColor(project, projectColors);
 
     // Retire la série de chiffres et le " - " du début (ex: "1234567 - PROJET" → "PROJET")
@@ -66,20 +69,12 @@ export function CircularProgressBadge({
         return () => clearTimeout(timer);
     }, [percentage]);
 
-    // Focus l'input quand le mode renommage s'active
-    useEffect(() => {
-        if (renameMode) {
-            setTimeout(() => renameInputRef.current?.focus(), 50);
-        }
-    }, [renameMode]);
-
     // Fermer le menu si clic ailleurs
     useEffect(() => {
         if (!menuPos) return;
         const handler = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
                 setMenuPos(null);
-                setRenameMode(false);
             }
         };
         document.addEventListener('mousedown', handler);
@@ -89,7 +84,6 @@ export function CircularProgressBadge({
     const handleContextMenu = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        setRenameMode(false);
         setMenuPos({ x: e.clientX, y: e.clientY });
     }, []);
 
@@ -101,7 +95,6 @@ export function CircularProgressBadge({
     const handleGlowContextMenu = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        setRenameMode(false);
         setMenuPos({ x: e.clientX, y: e.clientY });
     }, []);
 
@@ -113,25 +106,6 @@ export function CircularProgressBadge({
             setMenuPos(null);
         }
     }, [onArchiveProject, cleanProjectName]);
-
-    const handleRenameOpen = useCallback(() => {
-        setRenameValue(cleanProjectName);
-        setRenameMode(true);
-    }, [cleanProjectName]);
-
-    const handleRenameConfirm = useCallback(() => {
-        const trimmed = renameValue.trim();
-        if (trimmed && trimmed.toUpperCase() !== project.toUpperCase()) {
-            onRenameProject?.(trimmed);
-        }
-        setMenuPos(null);
-        setRenameMode(false);
-    }, [renameValue, project, onRenameProject]);
-
-    const handleRenameKeyDown = useCallback((e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') handleRenameConfirm();
-        if (e.key === 'Escape') { setRenameMode(false); setMenuPos(null); }
-    }, [handleRenameConfirm]);
 
     // Calcul pour le cercle SVG (rayon 16, circonférence 100.53)
     const radius = 16;
@@ -259,35 +233,16 @@ export function CircularProgressBadge({
                         <div className="my-2 h-px bg-white/10" />
                     )}
 
-                    {canRename && !renameMode && (
+                    {canRename && (
                         <button
                             type="button"
-                            onClick={handleRenameOpen}
-                            className="w-full rounded-lg border border-sky-400/30 bg-sky-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-sky-200 transition-colors hover:bg-sky-500/20 mb-1.5"
+                            disabled
+                            title={RENAME_DISABLED_MESSAGE}
+                            aria-label={RENAME_DISABLED_MESSAGE}
+                            className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 opacity-50 cursor-not-allowed mb-1.5"
                         >
                             Renommer ce projet
                         </button>
-                    )}
-
-                    {canRename && renameMode && (
-                        <div className="flex gap-1 mb-1.5">
-                            <input
-                                ref={renameInputRef}
-                                value={renameValue}
-                                onChange={e => setRenameValue(e.target.value)}
-                                onKeyDown={handleRenameKeyDown}
-                                className="flex-1 rounded-lg border border-sky-400/40 bg-sky-500/10 px-2 py-1 text-[11px] text-white placeholder-white/30 outline-none focus:border-sky-400/70 min-w-0"
-                                placeholder="Nouveau nom..."
-                                maxLength={80}
-                            />
-                            <button
-                                type="button"
-                                onClick={handleRenameConfirm}
-                                className="rounded-lg border border-sky-400/40 bg-sky-500/20 px-2 py-1 text-[11px] font-bold text-sky-200 hover:bg-sky-500/35 transition-colors"
-                            >
-                                OK
-                            </button>
-                        </div>
                     )}
 
                     {canArchiveFromMenu && (

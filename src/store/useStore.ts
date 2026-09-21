@@ -115,7 +115,7 @@ export interface StoreState {
     moveTask: (id: string, status: string) => Promise<void>;
     archiveTask: (id: string) => Promise<void>;
     unarchiveTask: (id: string) => Promise<void>;
-    moveProject: (projectName: string, fromStatus: Task['status'], toStatus: Task['status']) => void;
+    moveProject: (projectName: string, fromStatus: Task['status'], toStatus: Task['status']) => Promise<void>;
 
     // Subtasks — via API (todox-backend)
     addSubtask: (taskId: string, title: string) => Promise<void>;
@@ -140,15 +140,17 @@ export interface StoreState {
     deleteComment: (taskId: string, commentId: string) => Promise<void>;
 
     // Task reorder
-    reorderTask: (draggedId: string, targetId: string, position: 'before' | 'after') => void;
+    reorderTask: (draggedId: string, targetId: string, position: 'before' | 'after') => Promise<void>;
 
     // Projects
     addToProjectHistory: (projectName: string) => void;
     toggleProjectCollapse: (status: string, project: string) => void;
     isProjectCollapsed: (status: string, project: string) => boolean;
-    archiveProject: (projectName: string) => void;
-    unarchiveProject: (projectName: string) => void;
-    deleteArchivedProject: (projectName: string) => void;
+    archiveProject: (projectName: string) => Promise<void>;
+    unarchiveProject: (projectName: string) => Promise<void>;
+    deleteArchivedProject: (projectName: string) => Promise<void>;
+    // renameProject reste 100% locale (non convertie, voir commentaire dans l'implémentation
+    // plus bas) — le contrôle est désactivé côté UI plutôt que la fonction convertie.
     renameProject: (oldName: string, newName: string) => void;
 
     // Templates
@@ -288,7 +290,32 @@ const useStore = create<StoreState>((set, get) => ({
             if (p.color !== null) projectColors[p.name] = p.color;
             if (p.directory !== null) directories[p.name] = p.directory;
         }
-        set({ projectHistory, projectColors, directories });
+
+        // Bandage frontend-only (voir commentaire du fix dans le rapport final) : la table
+        // `Project` côté backend n'est peuplée QUE par les routes couleur/dossier/ordre —
+        // POST /api/tasks ne crée jamais de ligne `Project`. Un projet tout juste créé en
+        // tapant un nouveau nom lors de l'ajout d'une tâche (addToProjectHistory, purement
+        // local) n'a donc aucune ligne serveur et serait effacé de l'historique par le
+        // `set` ci-dessus dans les ~10s (poll de useApiSync). On complète donc la liste
+        // serveur avec les projets distincts trouvés localement (tâches non supprimées) qui
+        // n'y figurent pas encore — sans couleur ni dossier, comme un projet fraîchement créé.
+        // Bandage frontend-only (voir commentaire du fix dans le rapport final) : la table
+        // `Project` côté backend n'est peuplée QUE par les routes couleur/dossier/ordre —
+        // POST /api/tasks ne crée jamais de ligne `Project`. Un projet tout juste créé en
+        // tapant un nouveau nom lors de l'ajout d'une tâche (addToProjectHistory, purement
+        // local) n'a donc aucune ligne serveur et serait effacé de l'historique par le
+        // `set` ci-dessus dans les ~10s (poll de useApiSync). On complète donc la liste
+        // serveur avec les projets distincts trouvés localement (tâches non supprimées) qui
+        // n'y figurent pas encore — sans couleur ni dossier, comme un projet fraîchement créé.
+        // "DIVERS" est le projet de repli d'addTask quand aucun nom n'est saisi (jamais un
+        // vrai nom tapé par l'utilisateur) — addToProjectHistory l'exclut déjà pour cette
+        // même raison, on l'exclut ici aussi pour rester cohérent.
+        const serverNames = new Set(projectHistory);
+        const localOnlyProjects = [...new Set(
+            get().tasks.filter(t => !t.deletedAt && t.project && t.project !== 'DIVERS').map(t => t.project)
+        )].filter(p => !serverNames.has(p));
+
+        set({ projectHistory: [...projectHistory, ...localOnlyProjects], projectColors, directories });
     },
     setProjectDirectory: async (projectName, directory) => {
         const token = get().authToken;
@@ -376,7 +403,26 @@ const useStore = create<StoreState>((set, get) => ({
     fetchTasks: async () => {
         const token = get().authToken;
         const tasks = await apiGet<Task[]>('/api/tasks', token ?? undefined);
-        set({ tasks });
+
+        // Merge (pas remplacement complet) : le backend n'a aucune colonne pour
+        // `ganttDays`/`convertedFromSubtask` (voir le commentaire de `addTask`/`updateTask`
+        // plus haut dans ce fichier, même raison) — la réponse de GET /api/tasks ne les
+        // contient donc jamais. Ce hook est appelé toutes les 10s et à chaque focus fenêtre
+        // (voir useApiSync.ts) : un `set({ tasks })` brut effacerait silencieusement ces deux
+        // champs sur TOUTES les tâches à chaque poll. On reporte donc la valeur locale
+        // existante (par id) sur chaque tâche de la réponse serveur, exactement comme le fait
+        // déjà `updateTask`.
+        const localById = new Map(get().tasks.map(t => [t.id, t]));
+        const merged = tasks.map(t => {
+            const local = localById.get(t.id);
+            return {
+                ...t,
+                ganttDays: t.ganttDays ?? local?.ganttDays ?? [],
+                ...(local?.convertedFromSubtask ? { convertedFromSubtask: local.convertedFromSubtask } : {}),
+            };
+        });
+
+        set({ tasks: merged });
     },
     addTask: async (data) => {
         const currentUser = get().currentUser;
@@ -484,12 +530,58 @@ const useStore = create<StoreState>((set, get) => ({
             tasks: state.tasks.map((t) => (t.id === id ? { ...t, ...updated } : t))
         }));
 
-        // Récurrence : si la tâche passe en "done", créer la prochaine occurrence si applicable
+        // Récurrence : si la tâche passe en "done", créer la prochaine occurrence si applicable.
+        // Le serveur fait autorité sur `id` pour toute création (contrainte globale du plan,
+        // voir addTask plus haut) — on ne pousse donc plus une tâche avec un id généré
+        // côté client (uid()) directement en state : avant ce fix, ce push local-only était
+        // effacé silencieusement par le poll 10s de fetchTasks dès que ce dernier a été
+        // branché (régression C3 de la review finale de branche), puisque cette tâche
+        // n'existait tout simplement pas côté serveur.
         if (patch.status === "done") {
             const completedTask = get().tasks.find(t => t.id === id);
             if (completedTask) {
                 const nextTask = buildRecurringTask(completedTask, Date.now());
-                if (nextTask) set(state => ({ tasks: [nextTask, ...state.tasks] }));
+                if (nextTask) {
+                    const recurToken = get().authToken;
+                    const recurPayload = {
+                        title: nextTask.title,
+                        project: nextTask.project,
+                        status: 'todo' as const,
+                        priority: nextTask.priority,
+                        due: nextTask.due,
+                        notes: nextTask.notes,
+                        assignedTo: nextTask.assignedTo,
+                        favorite: nextTask.favorite,
+                        order: nextTask.order,
+                        parentTaskId: nextTask.parentTaskId ?? null,
+                        recurrence: nextTask.recurrence,
+                    };
+                    const createdNext = await apiPost<Task>('/api/tasks', recurPayload, recurToken ?? undefined);
+
+                    // Les sous-tâches n'ont pas d'équivalent dans le payload de création (POST
+                    // /api/tasks ne les accepte pas, voir todox-backend/src/routes/tasks.ts) —
+                    // on les recrée donc une par une via la vraie route subtasks plutôt que de
+                    // les garder en mémoire seule : sinon elles seraient elles-mêmes effacées
+                    // par le prochain poll, exactement le bug que ce fix corrige. Une sous-tâche
+                    // fraîchement créée est déjà `completed: false` par défaut côté serveur, ce
+                    // qui correspond exactement à la remise à zéro voulue ici.
+                    const recreatedSubtasks = await Promise.all(
+                        completedTask.subtasks.map(st =>
+                            apiPost<Subtask>(`/api/tasks/${createdNext.id}/subtasks`, { title: st.title }, recurToken ?? undefined)
+                        )
+                    );
+
+                    // Même raison que addTask/updateTask ci-dessus : `ganttDays` et
+                    // `convertedFromSubtask` n'ont aucune colonne backend.
+                    const finalNextTask: Task = {
+                        ...createdNext,
+                        ganttDays: [],
+                        subtasks: recreatedSubtasks,
+                        ...(nextTask.convertedFromSubtask ? { convertedFromSubtask: nextTask.convertedFromSubtask } : {}),
+                    };
+
+                    set(state => ({ tasks: [finalNextTask, ...state.tasks] }));
+                }
             }
         }
     },
@@ -548,21 +640,14 @@ const useStore = create<StoreState>((set, get) => ({
     archiveTask: (id) => get().updateTask(id, { archived: true, archivedAt: Date.now() }),
     unarchiveTask: (id) => get().updateTask(id, { archived: false, archivedAt: null }),
 
-    moveProject: (projectName, fromStatus, toStatus) => {
-        const now = Date.now();
-        set(state => ({
-            tasks: state.tasks.map(t => {
-                if (t.project === projectName && t.status === fromStatus) {
-                    return {
-                        ...t,
-                        status: toStatus,
-                        completedAt: toStatus === "done" ? now : null,
-                        updatedAt: now,
-                    };
-                }
-                return t;
-            })
-        }));
+    // Convertie en appel réseau (via updateTask, qui gère déjà correctement la dérivation
+    // serveur de `completedAt` et le merge ganttDays/convertedFromSubtask) : cette action
+    // était auparavant 100% locale et synchrone — le poll 10s de useApiSync (fetchTasks,
+    // voir Fix 1 plus haut) l'annulait donc silencieusement peu après (régression C3 de la
+    // review finale de branche).
+    moveProject: async (projectName, fromStatus, toStatus) => {
+        const matching = get().tasks.filter(t => t.project === projectName && t.status === fromStatus);
+        await Promise.all(matching.map(t => get().updateTask(t.id, { status: toStatus })));
     },
 
     // Subtasks — via API (todox-backend/src/routes/subtasks.ts, monté sous
@@ -820,30 +905,36 @@ const useStore = create<StoreState>((set, get) => ({
         return get().collapsedProjects[key] || false;
     },
 
-    archiveProject: (projectName) => {
-        const now = Date.now();
-        set(state => ({
-            tasks: state.tasks.map(t => t.project === projectName ? { ...t, archived: true, archivedAt: now } : t)
-        }));
+    // Convertie en appel réseau via updateTask (voir commentaire de moveProject ci-dessus,
+    // même raison — régression C3). Le backend n'auto-dérive PAS `archivedAt` d'un
+    // changement d'`archived` (contrairement à `completedAt` pour `status`) : il faut donc
+    // envoyer les deux champs explicitement (voir todox-backend/src/routes/tasks.ts,
+    // `if (u.archived !== undefined) ...` / `if (u.archivedAt !== undefined) ...`).
+    archiveProject: async (projectName) => {
+        const matching = get().tasks.filter(t => t.project === projectName);
+        await Promise.all(matching.map(t => get().updateTask(t.id, { archived: true, archivedAt: Date.now() })));
     },
 
-    unarchiveProject: (projectName) => {
-        set(state => ({
-            tasks: state.tasks.map(t => t.project === projectName && t.archived ? { ...t, archived: false, archivedAt: null } : t)
-        }));
+    unarchiveProject: async (projectName) => {
+        const matching = get().tasks.filter(t => t.project === projectName && t.archived);
+        await Promise.all(matching.map(t => get().updateTask(t.id, { archived: false, archivedAt: null })));
     },
 
-    deleteArchivedProject: (projectName) => {
-        const now = Date.now();
-        set(state => ({
-            tasks: state.tasks.map(t =>
-                (t.project === projectName && t.archived)
-                    ? { ...t, deletedAt: now, updatedAt: now }
-                    : t
-            )
-        }));
+    // Convertie via removeTask (déjà un vrai appel réseau — DELETE /api/tasks/:id fait ce
+    // même soft-delete côté serveur) plutôt que de dupliquer un PUT { deletedAt } ici (voir
+    // commentaire de moveProject ci-dessus, même raison — régression C3).
+    deleteArchivedProject: async (projectName) => {
+        const matching = get().tasks.filter(t => t.project === projectName && t.archived);
+        await Promise.all(matching.map(t => get().removeTask(t.id)));
     },
 
+    // NON convertie en appel réseau (contrairement à moveProject/archiveProject/
+    // unarchiveProject/deleteArchivedProject/reorderTask ci-dessus) : cette action touche 4
+    // slices d'état différentes (tasks, timeEntries, directories, projectColors) et il
+    // n'existe aucune route backend bulk pour la plupart d'entre elles -- une conversion
+    // partielle/fragile ici risquerait une régression pire que celle qu'elle corrige. Le
+    // contrôle de renommage est donc désactivé côté UI (voir ProjectsListPanel.tsx et
+    // CircularProgressBadge.tsx) plutôt que silencieusement annulé par le poll.
     renameProject: (oldName, newName) => {
         if (!newName.trim() || newName === oldName) return;
         const trimmed = newName.trim().toUpperCase();
@@ -881,7 +972,7 @@ const useStore = create<StoreState>((set, get) => ({
     },
 
     // Task reorder
-    reorderTask: (draggedId, targetId, position) => {
+    reorderTask: async (draggedId, targetId, position) => {
         const { tasks } = get();
         const dragged = tasks.find(t => t.id === draggedId);
         const target = tasks.find(t => t.id === targetId);
@@ -901,13 +992,16 @@ const useStore = create<StoreState>((set, get) => ({
         const insertIdx = position === 'before' ? targetIdx : targetIdx + 1;
         withoutDragged.splice(insertIdx, 0, dragged);
 
-        const now = Date.now();
         const orderMap = new Map<string, number>();
         withoutDragged.forEach((t, i) => orderMap.set(t.id, i * 1000));
 
-        set(state => ({
-            tasks: state.tasks.map(t => orderMap.has(t.id) ? { ...t, order: orderMap.get(t.id)!, updatedAt: now } : t)
-        }));
+        // Convertie en appel réseau (via updateTask, qui persiste local + serveur) : cette
+        // action était 100% locale et synchrone — le poll 10s de useApiSync l'annulait donc
+        // silencieusement peu après (régression C3). On ne PUT que les tâches dont l'ordre a
+        // réellement changé : la plupart du groupe ne bouge pas lors d'un drag&drop, inutile
+        // d'appeler le serveur pour chaque tâche du groupe à chaque réordonnancement.
+        const changed = withoutDragged.filter(t => (t.order ?? 0) !== orderMap.get(t.id));
+        await Promise.all(changed.map(t => get().updateTask(t.id, { order: orderMap.get(t.id)! })));
     },
 
     // Templates

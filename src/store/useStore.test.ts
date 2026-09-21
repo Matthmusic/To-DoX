@@ -213,8 +213,8 @@ describe('useStore', () => {
             await result.current.addTask({ title: 'Task C', project: 'BETA', priority: 'high', status: 'todo' });
         });
 
-        act(() => {
-            result.current.moveProject('ALPHA', 'todo', 'doing');
+        await act(async () => {
+            await result.current.moveProject('ALPHA', 'todo', 'doing');
         });
 
         const alphaTasks = result.current.tasks.filter(t => t.project === 'ALPHA');
@@ -231,8 +231,8 @@ describe('useStore', () => {
             await result.current.addTask({ title: 'Task A', project: 'GAMMA', priority: 'med', status: 'doing' });
         });
 
-        act(() => {
-            result.current.moveProject('GAMMA', 'doing', 'done');
+        await act(async () => {
+            await result.current.moveProject('GAMMA', 'doing', 'done');
         });
 
         const task = result.current.tasks.find(t => t.project === 'GAMMA');
@@ -248,8 +248,8 @@ describe('useStore', () => {
             await result.current.addTask({ title: 'Task B', project: 'DELTA', priority: 'low' });
         });
 
-        act(() => {
-            result.current.archiveProject('DELTA');
+        await act(async () => {
+            await result.current.archiveProject('DELTA');
         });
 
         const deltaTasks = result.current.tasks.filter(t => t.project === 'DELTA');
@@ -264,12 +264,12 @@ describe('useStore', () => {
             await result.current.addTask({ title: 'Task A', project: 'EPSILON', priority: 'med' });
         });
 
-        act(() => {
-            result.current.archiveProject('EPSILON');
+        await act(async () => {
+            await result.current.archiveProject('EPSILON');
         });
 
-        act(() => {
-            result.current.deleteArchivedProject('EPSILON');
+        await act(async () => {
+            await result.current.deleteArchivedProject('EPSILON');
         });
 
         const epsilonTasks = result.current.tasks.filter(t => t.project === 'EPSILON');
@@ -359,6 +359,208 @@ describe('tasks via API', () => {
         await act(async () => { await result.current.updateTask('t1', { status: 'doing' }); });
 
         expect(result.current.tasks[0].ganttDays).toEqual([{ date: '2026-01-01' }]);
+    });
+
+    // Régression C1 (review finale de branche) : useApiSync appelle fetchTasks() toutes les
+    // 10s (et à chaque focus fenêtre) — un `set({ tasks })` brut à partir de la réponse
+    // GET /api/tasks (qui n'a jamais ganttDays/convertedFromSubtask, aucune colonne backend
+    // pour ces 2 champs) effaçait silencieusement les deux sur TOUTES les tâches à chaque
+    // poll. fetchTasks doit fusionner comme updateTask, pas remplacer.
+    it('fetchTasks preserves ganttDays/convertedFromSubtask (server response omits both) instead of wiping them on every poll', async () => {
+        useStore.setState({
+            tasks: [{
+                id: 't1', title: 'A', status: 'todo',
+                ganttDays: [{ date: '2026-01-01' }],
+                convertedFromSubtask: { parentTaskId: 'p1', parentTaskTitle: 'PARENT' },
+            } as any],
+        });
+        // Réponse serveur réaliste : ni ganttDays ni convertedFromSubtask.
+        vi.mocked(api.apiGet).mockResolvedValue([{ id: 't1', title: 'A', status: 'todo' }]);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.fetchTasks(); });
+
+        expect(api.apiGet).toHaveBeenCalledWith('/api/tasks', 'tok');
+        expect(result.current.tasks[0].ganttDays).toEqual([{ date: '2026-01-01' }]);
+        expect(result.current.tasks[0].convertedFromSubtask).toEqual({ parentTaskId: 'p1', parentTaskTitle: 'PARENT' });
+    });
+});
+
+// ── Project bulk actions via API (moveProject/archiveProject/unarchiveProject/
+// deleteArchivedProject/reorderTask) ──────────────────────────────────────────
+// Régression C3 (review finale de branche) : ces 5 actions étaient 100% locales et
+// synchrones -- le poll 10s de fetchTasks (branché par useApiSync, Task 10) les annulait
+// donc silencieusement peu après. Converties en appels réseau, via updateTask/removeTask
+// (qui gèrent déjà correctement la dérivation serveur de complétedAt et le merge
+// ganttDays/convertedFromSubtask) plutôt qu'un apiPut brut dupliqué ici.
+describe('project bulk actions via API', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        useStore.setState({ authToken: 'tok', tasks: [], currentUser: 'u1' });
+        installDefaultApiMocks();
+    });
+
+    it('moveProject PUTs { status } (via updateTask) for every task matching project+fromStatus, and leaves others untouched', async () => {
+        useStore.setState({
+            tasks: [
+                { id: 't1', project: 'ALPHA', status: 'todo' } as any,
+                { id: 't2', project: 'ALPHA', status: 'todo' } as any,
+                { id: 't3', project: 'ALPHA', status: 'doing' } as any, // status doesn't match fromStatus
+                { id: 't4', project: 'BETA', status: 'todo' } as any,  // different project
+            ],
+        });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.moveProject('ALPHA', 'todo', 'doing'); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t1', { status: 'doing' }, 'tok');
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t2', { status: 'doing' }, 'tok');
+        expect(api.apiPut).toHaveBeenCalledTimes(2);
+        expect(result.current.tasks.find(t => t.id === 't1')?.status).toBe('doing');
+        expect(result.current.tasks.find(t => t.id === 't3')?.status).toBe('doing'); // untouched local value, not PUT
+        expect(result.current.tasks.find(t => t.id === 't4')?.status).toBe('todo');
+    });
+
+    it('archiveProject PUTs { archived: true, archivedAt } (via updateTask) for every task in the project', async () => {
+        useStore.setState({
+            tasks: [
+                { id: 't1', project: 'DELTA', status: 'todo', archived: false } as any,
+                { id: 't2', project: 'OTHER', status: 'todo', archived: false } as any,
+            ],
+        });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.archiveProject('DELTA'); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t1', expect.objectContaining({ archived: true, archivedAt: expect.any(Number) }), 'tok');
+        expect(api.apiPut).toHaveBeenCalledTimes(1);
+        expect(result.current.tasks.find(t => t.id === 't1')?.archived).toBe(true);
+    });
+
+    it('unarchiveProject PUTs { archived: false, archivedAt: null } only for already-archived tasks of the project', async () => {
+        useStore.setState({
+            tasks: [
+                { id: 't1', project: 'DELTA', archived: true } as any,
+                { id: 't2', project: 'DELTA', archived: false } as any, // not archived -> untouched
+            ],
+        });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.unarchiveProject('DELTA'); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/t1', { archived: false, archivedAt: null }, 'tok');
+        expect(api.apiPut).toHaveBeenCalledTimes(1);
+        expect(result.current.tasks.find(t => t.id === 't1')?.archived).toBe(false);
+    });
+
+    it('deleteArchivedProject calls DELETE (via removeTask) for every archived task of the project, not a raw PUT', async () => {
+        useStore.setState({
+            tasks: [
+                { id: 't1', project: 'EPSILON', archived: true, deletedAt: null } as any,
+                { id: 't2', project: 'EPSILON', archived: false, deletedAt: null } as any, // not archived -> untouched
+            ],
+        });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.deleteArchivedProject('EPSILON'); });
+
+        expect(api.apiDelete).toHaveBeenCalledWith('/api/tasks/t1', 'tok');
+        expect(api.apiDelete).toHaveBeenCalledTimes(1);
+        expect(api.apiPut).not.toHaveBeenCalled();
+        expect(result.current.tasks.find(t => t.id === 't1')?.deletedAt).not.toBeNull();
+        expect(result.current.tasks.find(t => t.id === 't2')?.deletedAt).toBeNull();
+    });
+
+    it('reorderTask PUTs { order } (via updateTask) only for tasks whose order actually changed', async () => {
+        useStore.setState({
+            tasks: [
+                { id: 'a', project: 'X', status: 'todo', order: 0, favorite: false } as any,
+                { id: 'b', project: 'X', status: 'todo', order: 1000, favorite: false } as any,
+                { id: 'c', project: 'X', status: 'todo', order: 2000, favorite: false } as any,
+            ],
+        });
+        const { result } = renderHook(() => useStore());
+
+        // 'c' passe avant 'a' : les 3 tâches changent de position (c:0, a:1000, b:2000).
+        await act(async () => { await result.current.reorderTask('c', 'a', 'before'); });
+
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/c', { order: 0 }, 'tok');
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/a', { order: 1000 }, 'tok');
+        expect(api.apiPut).toHaveBeenCalledWith('/api/tasks/b', { order: 2000 }, 'tok');
+        expect(api.apiPut).toHaveBeenCalledTimes(3);
+    });
+
+    it('reorderTask does not PUT anything when the drop does not actually change any order value', async () => {
+        useStore.setState({
+            tasks: [
+                { id: 'a', project: 'X', status: 'todo', order: 0, favorite: false } as any,
+                { id: 'b', project: 'X', status: 'todo', order: 1000, favorite: false } as any,
+                { id: 'c', project: 'X', status: 'todo', order: 2000, favorite: false } as any,
+            ],
+        });
+        const { result } = renderHook(() => useStore());
+
+        // 'b' déposé juste après 'a' : c'est déjà sa position actuelle, aucun ordre ne change.
+        await act(async () => { await result.current.reorderTask('b', 'a', 'after'); });
+
+        expect(api.apiPut).not.toHaveBeenCalled();
+    });
+});
+
+// ── Recurring task spawn via API ────────────────────────────────────────────
+// Régression C3 (review finale de branche) : la prochaine occurrence d'une tâche
+// récurrente était poussée en state avec un id généré côté client (uid()) -- le serveur
+// fait autorité sur `id` pour toute création (contrainte globale du plan, voir addTask).
+// Le poll de fetchTasks effaçait donc silencieusement cette tâche fantôme peu après sa
+// création, puisqu'elle n'existait pas côté serveur.
+describe('recurring task spawn via API', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        useStore.setState({ authToken: 'tok', tasks: [], currentUser: 'u1' });
+    });
+
+    it('completing a recurring task POSTs the next occurrence to /api/tasks and uses the server-assigned id (not a local uid())', async () => {
+        vi.mocked(api.apiPost).mockImplementation(async (path: string, body: any) => {
+            if (path.endsWith('/subtasks')) {
+                return { id: 'sub-srv-1', title: body.title, completed: false, createdAt: 2000, completedAt: null, completedBy: null, assignedTo: [], startDate: null, endDate: null };
+            }
+            return {
+                id: 'srv-next', title: body.title, project: body.project, status: body.status, priority: body.priority,
+                due: body.due, notes: body.notes, assignedTo: body.assignedTo, createdAt: 2000, updatedAt: 2000,
+                completedAt: null, archived: false, archivedAt: null, favorite: !!body.favorite, deletedAt: null,
+                subtasks: [], reviewers: [], order: body.order ?? null, parentTaskId: body.parentTaskId ?? null,
+                recurrence: body.recurrence ?? null,
+            };
+        });
+        vi.mocked(api.apiPut).mockImplementation(async (path: string, body: any) => {
+            const id = path.split('/').filter(Boolean).pop()!;
+            return { id, ...body, completedAt: body.status === 'done' ? Date.now() : null };
+        });
+
+        useStore.setState({
+            tasks: [{
+                id: 't1', title: 'RECURRENTE', project: 'X', status: 'doing', priority: 'med',
+                due: '2026-01-01', notes: '', assignedTo: ['u1'], favorite: false, order: 0,
+                archived: false, archivedAt: null, deletedAt: null, createdAt: 1000, updatedAt: 1000, completedAt: null,
+                subtasks: [{ id: 's1', title: 'Sub', completed: true, createdAt: 1, completedAt: 1, completedBy: 'u1' }],
+                reviewers: [],
+                recurrence: { type: 'weekly' },
+            } as any],
+        });
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.updateTask('t1', { status: 'done' }); });
+
+        // La prochaine occurrence est créée via un vrai POST /api/tasks (id serveur).
+        expect(api.apiPost).toHaveBeenCalledWith('/api/tasks', expect.objectContaining({ title: 'RECURRENTE', project: 'X', status: 'todo' }), 'tok');
+        const nextTask = result.current.tasks.find(t => t.id === 'srv-next');
+        expect(nextTask).toBeDefined();
+
+        // Sous-tâche recréée via la vraie route subtasks (persistée), pas juste gardée en
+        // mémoire (qui serait effacée par le prochain poll -- même bug que le fix corrige).
+        expect(api.apiPost).toHaveBeenCalledWith('/api/tasks/srv-next/subtasks', { title: 'Sub' }, 'tok');
+        expect(nextTask!.subtasks).toHaveLength(1);
+        expect(nextTask!.subtasks[0].completed).toBe(false);
     });
 });
 
@@ -901,6 +1103,27 @@ describe('projects via API', () => {
         expect(result.current.projectHistory).toEqual(['ACME', 'BETA']);
         expect(result.current.projectColors).toEqual({ ACME: 2 });
         expect(result.current.directories).toEqual({ ACME: 'C:\\Acme' });
+    });
+
+    // Régression C2 (review finale de branche) : la table Project côté backend n'est
+    // peuplée QUE par les routes couleur/dossier/ordre -- POST /api/tasks ne crée jamais de
+    // ligne Project. Un projet créé localement (en tapant un nouveau nom lors de l'ajout
+    // d'une tâche, via addToProjectHistory) n'a donc aucune ligne serveur, et le
+    // `set({ projectHistory: ... })` de fetchProjects (poll 10s de useApiSync) l'effaçait
+    // silencieusement de l'autocomplétion.
+    it('fetchProjects keeps a local-only project (not yet known to the server) in projectHistory', async () => {
+        useStore.setState({
+            tasks: [{ id: 't1', project: 'BRAND-NEW-PROJECT', deletedAt: null } as any],
+        });
+        vi.mocked(api.apiGet).mockResolvedValue([
+            { name: 'ACME', color: 2, directory: 'C:\\Acme', sortOrder: 0 },
+        ]);
+        const { result } = renderHook(() => useStore());
+
+        await act(async () => { await result.current.fetchProjects(); });
+
+        expect(result.current.projectHistory).toContain('BRAND-NEW-PROJECT');
+        expect(result.current.projectHistory).toContain('ACME');
     });
 
     it('setProjectColor calls PUT /api/projects/:name/color', async () => {

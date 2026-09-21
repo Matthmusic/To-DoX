@@ -9,6 +9,10 @@ interface ProjectsListPanelProps {
     onClose: () => void;
 }
 
+// Message affiché quand le renommage de projet est désactivé (voir plus bas) -- réutilisé
+// pour le tooltip du bouton et pour le texte accessible.
+const RENAME_DISABLED_MESSAGE = "Renommage de projet indisponible pour le moment — sera restauré dans une prochaine mise à jour.";
+
 // Gap Task 4 (bascule backend) : `save()` ci-dessous remplace `projectHistory` et
 // `directories` en bloc à partir d'un brouillon local (renommage/suppression/tri visuel),
 // pas via une mutation par projet. Il n'existe par ailleurs aucun drag-and-drop de
@@ -51,11 +55,11 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
         return filtered;
     }, [localHistory, search, sortDir]);
 
-    function startEditing(index: number) {
-        setEditingIndex(index);
-        setEditingValue(localHistory[index]);
-    }
-
+    // Renommage désactivé côté UI (voir bouton "Renommer" plus bas, RENAME_DISABLED_MESSAGE) :
+    // plus aucun appelant ne déclenche l'entrée en mode édition (editingIndex reste toujours
+    // `null`), donc saveEditing/cancelEditing ci-dessous ne sont plus jamais atteintes en
+    // pratique -- laissées en place pour rester le point de réactivation unique le jour où
+    // le renommage sera reconverti en appel réseau (voir renameProject dans useStore.ts).
     function saveEditing() {
         if (editingIndex === null) return;
 
@@ -203,10 +207,10 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                                     {taskCountByProject[project] || 0} tâche(s)
                                 </span>
                                 <button
-                                    onClick={() => startEditing(index)}
-                                    className="rounded-lg border border-cyan-400/40 bg-cyan-400/10 p-2 text-cyan-100 transition hover:bg-cyan-400/20"
-                                    title="Renommer"
-                                    aria-label="Renommer"
+                                    disabled
+                                    className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-500 opacity-50 cursor-not-allowed"
+                                    title={RENAME_DISABLED_MESSAGE}
+                                    aria-label={RENAME_DISABLED_MESSAGE}
                                 >
                                     <Pencil className="h-3.5 w-3.5" />
                                 </button>
@@ -224,7 +228,15 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                 ))}
             </div>
 
-            <div className="mt-4 flex justify-end gap-2">
+            {/* Gap Task 4 (bascule backend) : save() ci-dessus remplace projectHistory/directories
+                en bloc localement -- le poll 10s de fetchProjects (Task 10, useApiSync) peut donc
+                faire réapparaître l'état serveur par-dessus peu après. Avertissement visible plutôt
+                que silencieux, le temps d'une vraie conversion (voir commentaire en tête de fichier). */}
+            <p className="mt-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
+                ⚠️ Les modifications enregistrées ici peuvent ne pas persister — fonctionnalité en cours de finalisation.
+            </p>
+
+            <div className="mt-3 flex justify-end gap-2">
                 <button
                     onClick={onClose}
                     className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-[#1E3A8A]/60"
@@ -239,7 +251,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                 </button>
             </div>
             <p className="mt-3 text-[11px] text-slate-500">
-                Note : Renommer un projet mettra à jour toutes les tâches associées. Supprimer un projet le retire uniquement de l'autocomplétion.
+                Note : Supprimer un projet le retire uniquement de l'autocomplétion (les tâches associées ne sont pas supprimées).
             </p>
         </GlassModal>
     );
