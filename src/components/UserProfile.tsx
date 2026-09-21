@@ -11,7 +11,7 @@ function getUserInitials(name: string): string {
 }
 
 export function UserProfile() {
-  const { users, currentUser, setCurrentUser, setAuthToken } = useStore();
+  const { users, currentUser, localAuthUserId, setCurrentUser, setLocalAuthUserId, setAuthToken } = useStore();
   const { activeTheme } = useTheme();
   const primary = activeTheme.palette.primary;
 
@@ -29,9 +29,12 @@ export function UserProfile() {
       `Voulez-vous vraiment vous déconnecter ?\n\nVous devrez vous reconnecter au prochain lancement.`
     );
     if (confirmed) {
-      if (currentUser) await clearToken(currentUser);
+      // clearToken prend l'id LOCAL (localAuthUserId), pas currentUser (UUID backend) --
+      // saveToken() a écrit le token sous l'id local (voir LoginModal.tsx).
+      if (localAuthUserId) await clearToken(localAuthUserId);
       setAuthToken(null);
       setCurrentUser(null);
+      setLocalAuthUserId(null);
     }
   };
 

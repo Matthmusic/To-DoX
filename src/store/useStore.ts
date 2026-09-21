@@ -65,7 +65,13 @@ export interface StoreState {
     projectColors: Record<string, number>;
     users: User[];
     usersUpdatedAt: number;
-    currentUser: string | null; // ID de l'utilisateur actuellement connecté
+    currentUser: string | null; // ID de l'utilisateur actuellement connecté (UUID réel du backend)
+    // Id LOCAL (FIXED_USERS) utilisé pour choisir le profil au login -- c'est la clé sous
+    // laquelle saveToken/getToken/clearToken (src/services/api.ts) indexent le token JWT
+    // remembered, PAS currentUser (voir LoginModal.tsx). Sans ce champ, currentUser étant
+    // désormais l'UUID backend, aucun appelant hors LoginModal ne peut retrouver quel token
+    // local purger au logout/à l'expiration de session.
+    localAuthUserId: string | null;
     viewAsUser: string | null;  // Vue en tant que (filtre visuel, sans changer la session)
 
     // Session backend (JWT) — voir src/services/api.ts
@@ -95,6 +101,7 @@ export interface StoreState {
     fetchUsers: () => Promise<void>;
     createUser: (data: { email: string; name: string; password: string; role?: 'admin' | 'member' }) => Promise<void>;
     setCurrentUser: (userId: string | null) => void;
+    setLocalAuthUserId: (id: string | null) => void;
     setViewAsUser: (userId: string | null) => void;
     setAuthToken: (token: string | null) => void;
     setAuthStatus: (status: 'idle' | 'checking' | 'authenticated' | 'error') => void;
@@ -226,6 +233,7 @@ const useStore = create<StoreState>((set, get) => ({
     users: FIXED_USERS,
     usersUpdatedAt: 0,
     currentUser: null,
+    localAuthUserId: null,
     viewAsUser: null,
     authToken: null,
     authStatus: 'idle',
@@ -367,6 +375,7 @@ const useStore = create<StoreState>((set, get) => ({
         const outlookConfig = userId ? (state.outlookConfigs[userId] ?? DEFAULT_OUTLOOK) : DEFAULT_OUTLOOK;
         return { currentUser: userId, outlookConfig };
     }),
+    setLocalAuthUserId: (id) => set({ localAuthUserId: id }),
     setViewAsUser: (userId) => set({ viewAsUser: userId }),
     setAuthToken: (token) => set({ authToken: token, authStatus: token ? 'authenticated' : 'idle' }),
     setAuthStatus: (status) => set({ authStatus: status }),

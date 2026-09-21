@@ -444,7 +444,7 @@ export default function ToDoX() {
                 onOpenArchive={() => setShowArchivePanel(true)}
                 onOpenDirPanel={() => setShowDirPanel(true)}
                 onOpenProjectsList={() => setShowProjectsListPanel(true)}
-                isAdmin={currentUser === "matthieu"}
+                isAdmin={users.find(u => u.id === currentUser)?.role === 'admin'}
                 onOpenAdminProjects={() => setShowAdminProjectsPanel(true)}
                 onOpenTaskArchive={() => setShowTaskArchivePanel(true)}
                 onExport={handleExport}

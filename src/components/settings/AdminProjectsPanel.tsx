@@ -15,6 +15,7 @@ function normalizeProjectName(value?: string | null): string {
 export function AdminProjectsPanel({ onClose }: AdminProjectsPanelProps) {
     const {
         currentUser,
+        users,
         tasks,
         timeEntries,
         projectHistory,
@@ -28,7 +29,10 @@ export function AdminProjectsPanel({ onClose }: AdminProjectsPanelProps) {
     } = useStore();
 
     const [search, setSearch] = useState("");
-    const isAdmin = currentUser === "matthieu";
+    // currentUser porte désormais l'UUID réel du backend (plus l'id local FIXED_USERS
+    // "matthieu") -- l'accès admin se décide via le rôle renvoyé par le backend, pas un id
+    // codé en dur.
+    const isAdmin = users.find(u => u.id === currentUser)?.role === 'admin';
 
     const projects = useMemo(() => {
         const stats = new Map<string, {

@@ -13,7 +13,7 @@ function getUserInitials(name: string): string {
 }
 
 export function LoginModal() {
-  const { users, setCurrentUser, setAuthToken, setAuthError, authError } = useStore();
+  const { users, setCurrentUser, setLocalAuthUserId, setAuthToken, setAuthError, authError } = useStore();
   const { activeTheme } = useTheme();
   const primary   = activeTheme.palette.primary;
   const secondary = activeTheme.palette.secondary;
@@ -45,6 +45,7 @@ export function LoginModal() {
         localStorage.setItem('last_login_user_id', userId);
         setAuthToken(existingToken);
         setCurrentUser(backendUser.id);
+        setLocalAuthUserId(userId);
         return;
       } catch {
         await clearToken(userId);
@@ -71,6 +72,7 @@ export function LoginModal() {
       localStorage.setItem('last_login_user_id', pendingUserId);
       setAuthToken(token);
       setCurrentUser(backendUser.id);
+      setLocalAuthUserId(pendingUserId);
       setPendingUserId(null);
       setPassword('');
     } catch (e) {

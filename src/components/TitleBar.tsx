@@ -4,9 +4,20 @@ import logoSvg from '../assets/To Do X.svg';
 import { UserProfile } from './UserProfile';
 import { useTheme } from '../hooks/useTheme';
 import useStore from '../store/useStore';
-import { VIP_USERS } from '../constants';
+import { VIP_USERS, FIXED_USERS } from '../constants';
 import { getInitials } from '../utils';
 import citationsData from '../assets/citations_bureau_etudes_elec_btp_400.json';
+
+// Il n'existe aucune notion "VIP" côté backend -- c'est une pure commodité UI locale
+// (VIP_USERS liste des ids FIXED_USERS choisis à la main dans constants.ts). currentUser
+// porte désormais l'UUID réel du backend, plus jamais un id FIXED_USERS -- on ne peut donc
+// plus comparer VIP_USERS.includes(currentUser) directement. On dérive à la place les EMAILS
+// des users VIP (stables, indépendants de l'id local vs. l'UUID backend) une seule fois au
+// chargement du module, puis on matche le user courant par email (cf handlePickUser dans
+// LoginModal.tsx pour ce même genre de lookup local via FIXED_USERS).
+const VIP_EMAILS: Set<string> = new Set(
+  FIXED_USERS.filter(u => VIP_USERS.includes(u.id)).map(u => u.email)
+);
 
 /** Retourne la citation du jour (stable sur toute la journée, change à minuit) */
 function getDailyQuote(): { citation: string; categorie: string } {
@@ -27,7 +38,8 @@ export function TitleBar({ onTaskClick: _onTaskClick }: TitleBarProps) {
   const dailyQuote = getDailyQuote();
   const { activeTheme } = useTheme();
   const { users, currentUser, viewAsUser, appNotifications, setCurrentUser, setViewAsUser } = useStore();
-  const isCurrentUserVip = currentUser ? VIP_USERS.includes(currentUser) : false;
+  const currentUserEmail = users.find(u => u.id === currentUser)?.email;
+  const isCurrentUserVip = currentUserEmail ? VIP_EMAILS.has(currentUserEmail) : false;
   const visibleTabs = (() => {
     const base = isCurrentUserVip
       ? users.filter(u => u.id !== 'unassigned')

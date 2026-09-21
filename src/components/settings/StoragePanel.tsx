@@ -9,14 +9,17 @@ interface StoragePanelProps {
 }
 
 export function StoragePanel({ onClose }: StoragePanelProps) {
-    const { currentUser, setCurrentUser, setAuthToken } = useStore();
+    const { localAuthUserId, setCurrentUser, setLocalAuthUserId, setAuthToken } = useStore();
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
 
     async function handleLogout() {
-        if (currentUser) await clearToken(currentUser);
+        // clearToken prend l'id LOCAL (localAuthUserId), pas currentUser (UUID backend) --
+        // saveToken() a écrit le token sous l'id local (voir LoginModal.tsx).
+        if (localAuthUserId) await clearToken(localAuthUserId);
         setAuthToken(null);
         setCurrentUser(null);
+        setLocalAuthUserId(null);
         onClose();
     }
 

@@ -27,10 +27,15 @@ export function useApiSync() {
   useEffect(() => {
     setRequestErrorHandler(message => useStore.getState().setSaveError(message));
     setUnauthorizedHandler(() => {
-      const { currentUser } = useStore.getState();
-      if (currentUser) clearToken(currentUser).catch(() => {});
+      // clearToken doit être appelé avec l'id LOCAL (localAuthUserId), pas currentUser
+      // (l'UUID backend) : saveToken() indexe le token sous l'id local (voir
+      // LoginModal.tsx) -- clearToken(currentUser) purgerait une clé qui n'a jamais été
+      // utilisée pour sauvegarder quoi que ce soit.
+      const { localAuthUserId } = useStore.getState();
+      if (localAuthUserId) clearToken(localAuthUserId).catch(() => {});
       useStore.getState().setAuthToken(null);
       useStore.getState().setCurrentUser(null);
+      useStore.getState().setLocalAuthUserId(null);
     });
     return () => {
       setRequestErrorHandler(null);

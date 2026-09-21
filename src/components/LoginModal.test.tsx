@@ -17,7 +17,7 @@ const ALICE = { id: 'alice', name: 'Alice Dupont', email: 'alice@test.com' };
 
 describe('LoginModal', () => {
   beforeEach(() => {
-    useStore.setState({ users: [ALICE], currentUser: null, authToken: null, authStatus: 'idle', authError: null });
+    useStore.setState({ users: [ALICE], currentUser: null, localAuthUserId: null, authToken: null, authStatus: 'idle', authError: null });
     vi.mocked(api.getToken).mockResolvedValue(null);
     vi.mocked(api.login).mockReset();
     vi.mocked(api.apiGet).mockReset();
@@ -46,6 +46,10 @@ describe('LoginModal', () => {
     expect(useStore.getState().authToken).toBe('tok123');
     // saveToken reste indexé par l'id local -- c'est bien ce que le picker relit au lancement suivant.
     expect(api.saveToken).toHaveBeenCalledWith('alice', 'tok123');
+    // localAuthUserId doit porter l'id LOCAL (celui utilisé pour saveToken/clearToken),
+    // distinct de currentUser (l'UUID backend) -- c'est la seule info qui permet au logout
+    // de purger le bon token plus tard (voir handlePickUser/clearToken).
+    expect(useStore.getState().localAuthUserId).toBe('alice');
   });
 
   it('shows a French error message on wrong password and does not set currentUser', async () => {
@@ -72,6 +76,9 @@ describe('LoginModal', () => {
     expect(screen.queryByPlaceholderText('Mot de passe')).not.toBeInTheDocument();
     expect(api.login).not.toHaveBeenCalled();
     expect(api.apiGet).toHaveBeenCalledWith('/api/auth/me', 'existing-tok');
+    // Même exigence que le chemin mot de passe : localAuthUserId = id LOCAL, distinct de
+    // currentUser (UUID backend résolu via /api/auth/me).
+    expect(useStore.getState().localAuthUserId).toBe('alice');
   });
 
   it('falls back to the password prompt when the stored token is stale/invalid', async () => {

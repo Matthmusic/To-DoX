@@ -11,7 +11,11 @@ vi.mock('../../services/api', async (importOriginal) => {
 
 describe('StoragePanel', () => {
   beforeEach(() => {
-    useStore.setState({ currentUser: 'u1', authToken: 'tok', users: [{ id: 'u1', name: 'A', email: 'a@b.com' }] });
+    // currentUser (UUID backend) et localAuthUserId (id LOCAL FIXED_USERS, utilisé par
+    // saveToken/clearToken) sont délibérément DIFFÉRENTS ici -- c'est le blind spot exact
+    // qui laissait passer ce bug avant (clearToken(currentUser) au lieu de
+    // clearToken(localAuthUserId)).
+    useStore.setState({ currentUser: 'u1', localAuthUserId: 'local-u1', authToken: 'tok', users: [{ id: 'u1', name: 'A', email: 'a@b.com' }] });
   });
 
   it('shows the connected server and a logout button, no folder picker', () => {
@@ -29,7 +33,10 @@ describe('StoragePanel', () => {
     await waitFor(() => {
       expect(useStore.getState().currentUser).toBeNull();
     });
-    expect(api.clearToken).toHaveBeenCalledWith('u1');
+    // L'id LOCAL ('local-u1'), pas currentUser ('u1') -- clearToken doit purger la clé sous
+    // laquelle saveToken() a réellement écrit le token.
+    expect(api.clearToken).toHaveBeenCalledWith('local-u1');
     expect(useStore.getState().authToken).toBeNull();
+    expect(useStore.getState().localAuthUserId).toBeNull();
   });
 });

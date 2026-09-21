@@ -15,8 +15,12 @@ vi.mock('../utils/confirm', () => ({
 
 describe('UserProfile', () => {
   beforeEach(() => {
+    // currentUser (UUID backend) et localAuthUserId (id LOCAL FIXED_USERS, utilisé par
+    // saveToken/clearToken) sont délibérément DIFFÉRENTS ici -- même raison que
+    // StoragePanel.test.tsx.
     useStore.setState({
       currentUser: 'u1',
+      localAuthUserId: 'local-u1',
       authToken: 'tok',
       users: [{ id: 'u1', name: 'Alice Dupont', email: 'a@b.com' }],
     });
@@ -29,7 +33,9 @@ describe('UserProfile', () => {
     await waitFor(() => {
       expect(useStore.getState().currentUser).toBeNull();
     });
-    expect(api.clearToken).toHaveBeenCalledWith('u1');
+    // L'id LOCAL ('local-u1'), pas currentUser ('u1').
+    expect(api.clearToken).toHaveBeenCalledWith('local-u1');
     expect(useStore.getState().authToken).toBeNull();
+    expect(useStore.getState().localAuthUserId).toBeNull();
   });
 });
