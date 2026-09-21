@@ -1,5 +1,5 @@
-import type { CSSProperties } from "react";
-import { ClipboardList, ChevronDown, ChevronRight, CheckSquare } from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { ClipboardList, ChevronDown, ChevronRight, CheckSquare, LayoutTemplate } from "lucide-react";
 import type { Task } from "../../types";
 import useStore from "../../store/useStore";
 import { getInitials } from "../../utils";
@@ -22,8 +22,58 @@ export function TaskSubtasksFooter({
     isSubtasksExpanded,
     onToggleExpanded,
 }: TaskSubtasksFooterProps) {
-    const { toggleSubtask, users, currentUser } = useStore();
+    const { toggleSubtask, users, currentUser, templates, applyTemplateToTask } = useStore();
     const subtasks = task.subtasks || [];
+
+    // Bouton "Appliquer un template" -- existait déjà dans SubtaskList.tsx, mais TaskCard.tsx
+    // rend toujours SubtaskList en `hideHeader` (header fusionné ici pour éviter le doublon,
+    // voir TaskCard.tsx), ce qui rendait ce bouton définitivement inatteignable dans l'app
+    // réelle (trouvé en direct pendant le smoke test manuel de la Tâche 12). Reproduit ici la
+    // même logique dropdown + clic extérieur.
+    const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
+    const templateDropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!showTemplateDropdown) return;
+        function handleClickOutside(e: MouseEvent) {
+            if (templateDropdownRef.current?.contains(e.target as Node)) return;
+            setShowTemplateDropdown(false);
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [showTemplateDropdown]);
+
+    const templateButton = templates.length > 0 ? (
+        <div ref={templateDropdownRef} className="relative shrink-0" data-nodrag>
+            <button
+                onClick={(e) => { e.stopPropagation(); setShowTemplateDropdown(v => !v); }}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-violet-400 transition p-1 -m-1"
+                title="Appliquer un template"
+                aria-label="Appliquer un template"
+            >
+                <LayoutTemplate className="h-3.5 w-3.5" />
+            </button>
+            {showTemplateDropdown && (
+                <div className="absolute top-full mt-1 right-0 w-52 rounded-xl border border-white/10 bg-[#161b2e] shadow-2xl p-1.5 z-[99999]">
+                    <p className="text-[10px] text-slate-500 px-2 pb-1 font-semibold uppercase">Templates</p>
+                    {templates.map(tpl => (
+                        <button
+                            key={tpl.id}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                applyTemplateToTask(task.id, tpl.id);
+                                setShowTemplateDropdown(false);
+                            }}
+                            className="w-full text-left px-2 py-1.5 rounded-lg text-sm text-slate-200 hover:bg-white/5 transition"
+                        >
+                            <span className="font-medium block truncate">{tpl.name}</span>
+                            <span className="text-[10px] text-slate-500">{tpl.subtaskTitles.length} sous-tâche{tpl.subtaskTitles.length > 1 ? 's' : ''}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    ) : null;
 
     // Vert (100%) et rose (<30%) sont des couleurs sémantiques fixes (succès / alerte),
     // volontairement indépendantes du thème. L'état "en cours" (30-99%), lui, ne porte
@@ -46,28 +96,31 @@ export function TaskSubtasksFooter({
     // ── Vue étendue : header unifié (titre + compteur + progress inline + collapse) ──
     if (isSubtasksExpanded && totalSubtasks > 0) {
         return (
-            <button
-                onClick={(e) => { e.stopPropagation(); onToggleExpanded(); }}
-                className="w-full flex items-center gap-2 group mb-1"
-            >
-                <CheckSquare className={`h-4 w-4 shrink-0 ${progressPercentage === 100 ? "text-emerald-400" : "text-blue-400"}`} />
-                <span className={`text-sm font-semibold ${progressPercentage === 100 ? "text-emerald-400" : "text-slate-300"}`}>
-                    Sous-tâches
-                </span>
-                <span className={`text-xs tabular-nums ${progressTextColor}`} style={progressTextStyle}>
-                    {completedSubtasks}/{totalSubtasks}
-                </span>
-                <div className="flex-1 h-1 overflow-hidden rounded-full bg-white/5">
-                    <div
-                        className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
-                        style={{ width: `${progressPercentage}%`, ...progressAccentStyle }}
-                    />
-                </div>
-                <span className={`text-[10px] font-bold tabular-nums ${progressTextColor}`} style={progressTextStyle}>
-                    {progressPercentage}%
-                </span>
-                <ChevronDown className="h-3 w-3 text-slate-500 group-hover:text-slate-300 transition" />
-            </button>
+            <div className="w-full flex items-center gap-2 mb-1">
+                <button
+                    onClick={(e) => { e.stopPropagation(); onToggleExpanded(); }}
+                    className="flex-1 min-w-0 flex items-center gap-2 group"
+                >
+                    <CheckSquare className={`h-4 w-4 shrink-0 ${progressPercentage === 100 ? "text-emerald-400" : "text-blue-400"}`} />
+                    <span className={`text-sm font-semibold ${progressPercentage === 100 ? "text-emerald-400" : "text-slate-300"}`}>
+                        Sous-tâches
+                    </span>
+                    <span className={`text-xs tabular-nums ${progressTextColor}`} style={progressTextStyle}>
+                        {completedSubtasks}/{totalSubtasks}
+                    </span>
+                    <div className="flex-1 h-1 overflow-hidden rounded-full bg-white/5">
+                        <div
+                            className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
+                            style={{ width: `${progressPercentage}%`, ...progressAccentStyle }}
+                        />
+                    </div>
+                    <span className={`text-[10px] font-bold tabular-nums ${progressTextColor}`} style={progressTextStyle}>
+                        {progressPercentage}%
+                    </span>
+                    <ChevronDown className="h-3 w-3 text-slate-500 group-hover:text-slate-300 transition" />
+                </button>
+                {templateButton}
+            </div>
         );
     }
 
@@ -142,13 +195,16 @@ export function TaskSubtasksFooter({
             )}
 
             {totalSubtasks === 0 && (
-                <button
-                    onClick={(e) => { e.stopPropagation(); onToggleExpanded(); }}
-                    className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-indigo-400 transition mb-2"
-                >
-                    <ClipboardList className="h-3.5 w-3.5" />
-                    <span className="font-medium">+ Ajouter des sous-tâches</span>
-                </button>
+                <div className="flex items-center gap-2 mb-2">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onToggleExpanded(); }}
+                        className="flex-1 min-w-0 flex items-center gap-1.5 text-xs text-slate-300 hover:text-indigo-400 transition"
+                    >
+                        <ClipboardList className="h-3.5 w-3.5" />
+                        <span className="font-medium">+ Ajouter des sous-tâches</span>
+                    </button>
+                    {templateButton}
+                </div>
             )}
         </div>
     );
