@@ -10,7 +10,7 @@ import * as api from '../services/api';
 // construisent un ApiError réel pour simuler une erreur serveur.
 vi.mock('../services/api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../services/api')>();
-  return { ...actual, login: vi.fn(), getToken: vi.fn(), saveToken: vi.fn(), clearToken: vi.fn() };
+  return { ...actual, login: vi.fn(), getToken: vi.fn(), saveToken: vi.fn(), clearToken: vi.fn(), apiGet: vi.fn() };
 });
 
 const ALICE = { id: 'alice', name: 'Alice Dupont', email: 'alice@test.com' };
@@ -20,6 +20,7 @@ describe('LoginModal', () => {
     useStore.setState({ users: [ALICE], currentUser: null, authToken: null, authStatus: 'idle', authError: null });
     vi.mocked(api.getToken).mockResolvedValue(null);
     vi.mocked(api.login).mockReset();
+    vi.mocked(api.apiGet).mockReset();
   });
 
   it('shows a password prompt when clicking a user with no stored session', async () => {
@@ -31,7 +32,9 @@ describe('LoginModal', () => {
   });
 
   it('logs in and sets currentUser on correct password', async () => {
-    vi.mocked(api.login).mockResolvedValue({ token: 'tok123', user: { id: 'alice', email: 'alice@test.com', name: 'Alice Dupont', role: 'member' } });
+    // user.id renvoyé par login() est l'UUID réel du backend, distinct de l'id local
+    // ALICE.id ('alice') -- sans cette distinction le test ne prouve rien (cf bug root cause).
+    vi.mocked(api.login).mockResolvedValue({ token: 'tok123', user: { id: 'backend-uuid-xyz', email: 'alice@test.com', name: 'Alice Dupont', role: 'member' } });
     render(<LoginModal />);
 
     fireEvent.click(screen.getByText('Alice Dupont'));
@@ -39,8 +42,9 @@ describe('LoginModal', () => {
     fireEvent.change(screen.getByPlaceholderText('Mot de passe'), { target: { value: 'secret' } });
     fireEvent.click(screen.getByText('Se connecter'));
 
-    await waitFor(() => expect(useStore.getState().currentUser).toBe('alice'));
+    await waitFor(() => expect(useStore.getState().currentUser).toBe('backend-uuid-xyz'));
     expect(useStore.getState().authToken).toBe('tok123');
+    // saveToken reste indexé par l'id local -- c'est bien ce que le picker relit au lancement suivant.
     expect(api.saveToken).toHaveBeenCalledWith('alice', 'tok123');
   });
 
@@ -59,12 +63,27 @@ describe('LoginModal', () => {
 
   it('skips the password prompt and logs in instantly when a valid token is already stored', async () => {
     vi.mocked(api.getToken).mockResolvedValue('existing-tok');
+    vi.mocked(api.apiGet).mockResolvedValue({ user: { id: 'backend-uuid-xyz', email: 'alice@test.com', name: 'Alice Dupont', role: 'member' } });
     render(<LoginModal />);
 
     fireEvent.click(screen.getByText('Alice Dupont'));
 
-    await waitFor(() => expect(useStore.getState().currentUser).toBe('alice'));
+    await waitFor(() => expect(useStore.getState().currentUser).toBe('backend-uuid-xyz'));
     expect(screen.queryByPlaceholderText('Mot de passe')).not.toBeInTheDocument();
     expect(api.login).not.toHaveBeenCalled();
+    expect(api.apiGet).toHaveBeenCalledWith('/api/auth/me', 'existing-tok');
+  });
+
+  it('falls back to the password prompt when the stored token is stale/invalid', async () => {
+    vi.mocked(api.getToken).mockResolvedValue('stale-tok');
+    vi.mocked(api.apiGet).mockRejectedValue(new api.ApiError(401, 'Session expirée'));
+    render(<LoginModal />);
+
+    fireEvent.click(screen.getByText('Alice Dupont'));
+
+    await waitFor(() => expect(screen.getByPlaceholderText('Mot de passe')).toBeInTheDocument());
+    expect(useStore.getState().currentUser).toBeNull();
+    // L'id local, pas l'UUID backend : le token stocké est indexé par l'id local (cf saveToken).
+    expect(api.clearToken).toHaveBeenCalledWith('alice');
   });
 });

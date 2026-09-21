@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import useStore from "../store/useStore";
 import { useTheme } from "../hooks/useTheme";
 import { GlassModal } from "./ui/GlassModal";
-import { login, getToken, saveToken, ApiError } from "../services/api";
+import { login, getToken, saveToken, clearToken, apiGet, ApiError } from "../services/api";
 
 function getUserInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -36,10 +36,19 @@ export function LoginModal() {
     setAuthError(null);
     const existingToken = await getToken(userId);
     if (existingToken) {
-      localStorage.setItem('last_login_user_id', userId);
-      setAuthToken(existingToken);
-      setCurrentUser(userId);
-      return;
+      // Le token stocké est indexé par l'id local (FIXED_USERS), mais currentUser doit
+      // porter l'UUID réel du backend (cf handleSubmitPassword) -- on le résout via
+      // /api/auth/me. Si le token est périmé/révoqué, on le purge et on retombe sur le
+      // prompt mot de passe, comme pour un utilisateur sans session stockée.
+      try {
+        const { user: backendUser } = await apiGet<{ user: { id: string; email: string; name: string; role: string } }>('/api/auth/me', existingToken);
+        localStorage.setItem('last_login_user_id', userId);
+        setAuthToken(existingToken);
+        setCurrentUser(backendUser.id);
+        return;
+      } catch {
+        await clearToken(userId);
+      }
     }
     setPendingUserId(userId);
   }
@@ -53,11 +62,15 @@ export function LoginModal() {
     setSubmitting(true);
     setAuthError(null);
     try {
-      const { token } = await login(user.email, password);
+      // `user` (fermeture) est l'entrée locale FIXED_USERS ; `backendUser` est la réponse
+      // réelle du serveur -- son `.id` est l'UUID minté par le backend, distinct de l'id
+      // local. saveToken() reste indexé par l'id local (voir handlePickUser), mais
+      // currentUser doit porter l'UUID réel (cf root cause du bug).
+      const { token, user: backendUser } = await login(user.email, password);
       await saveToken(pendingUserId, token);
       localStorage.setItem('last_login_user_id', pendingUserId);
       setAuthToken(token);
-      setCurrentUser(pendingUserId);
+      setCurrentUser(backendUser.id);
       setPendingUserId(null);
       setPassword('');
     } catch (e) {
