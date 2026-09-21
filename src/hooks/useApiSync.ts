@@ -2,7 +2,11 @@ import { useEffect, useRef } from 'react';
 import useStore from '../store/useStore';
 import { setRequestErrorHandler, setUnauthorizedHandler, clearToken, ApiError } from '../services/api';
 
-const REFRESH_INTERVAL_MS = 10_000;
+// 4s (plutôt que les 10s d'origine) : resserré à la demande, suite au smoke test manuel de
+// la Tâche 12, pour réduire le délai perçu sur les notifications déclenchées par un autre
+// utilisateur (mention, validation de tâche...). Coût : ~2.5x plus de requêtes par client en
+// continu -- acceptable pour une dizaine d'utilisateurs internes (voir ledger SDD).
+const REFRESH_INTERVAL_MS = 4_000;
 
 function errorMessage(e: unknown): string {
   if (e instanceof ApiError) return e.message;
@@ -48,7 +52,7 @@ export function useApiSync() {
 
     // Avant ce fix (I4) : si l'un des 10 fetch* rejetait (backend down, token expiré...),
     // l'appel initial ne remettait jamais isLoadingData à false (utilisateur bloqué sur le
-    // spinner) et le timer 10s / le handler focus produisaient une rejection non gérée à
+    // spinner) et le timer / le handler focus produisaient une rejection non gérée à
     // chaque tick suivant, indéfiniment. `request()` (api.ts) a déjà reporté l'erreur via le
     // canal partagé ci-dessus pour toute requête individuelle -- on la reporte ici aussi
     // explicitement (plutôt que de l'avaler silencieusement) pour couvrir tout rejet qui ne
@@ -70,7 +74,7 @@ export function useApiSync() {
       try {
         await refreshAll();
       } finally {
-        // Uniquement pour l'appel INITIAL : le timer 10s / le focus ne doivent plus jamais
+        // Uniquement pour l'appel INITIAL : le timer / le focus ne doivent plus jamais
         // rebasculer isLoadingData après le premier chargement réussi.
         if (!cancelled) setIsLoadingData(false);
       }
