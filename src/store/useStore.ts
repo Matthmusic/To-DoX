@@ -299,14 +299,6 @@ const useStore = create<StoreState>((set, get) => ({
         // `set` ci-dessus dans les ~10s (poll de useApiSync). On complète donc la liste
         // serveur avec les projets distincts trouvés localement (tâches non supprimées) qui
         // n'y figurent pas encore — sans couleur ni dossier, comme un projet fraîchement créé.
-        // Bandage frontend-only (voir commentaire du fix dans le rapport final) : la table
-        // `Project` côté backend n'est peuplée QUE par les routes couleur/dossier/ordre —
-        // POST /api/tasks ne crée jamais de ligne `Project`. Un projet tout juste créé en
-        // tapant un nouveau nom lors de l'ajout d'une tâche (addToProjectHistory, purement
-        // local) n'a donc aucune ligne serveur et serait effacé de l'historique par le
-        // `set` ci-dessus dans les ~10s (poll de useApiSync). On complète donc la liste
-        // serveur avec les projets distincts trouvés localement (tâches non supprimées) qui
-        // n'y figurent pas encore — sans couleur ni dossier, comme un projet fraîchement créé.
         // "DIVERS" est le projet de repli d'addTask quand aucun nom n'est saisi (jamais un
         // vrai nom tapé par l'utilisateur) — addToProjectHistory l'exclut déjà pour cette
         // même raison, on l'exclut ici aussi pour rester cohérent.
