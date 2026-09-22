@@ -29,11 +29,21 @@ export function setUnauthorizedHandler(fn: (() => void) | null): void {
   onUnauthorized = fn;
 }
 
+interface RequestOptions {
+  // Certains appels authentifiés ont leur propre 401 "métier" qui ne signifie PAS
+  // "token expiré/révoqué" (ex: changePassword -- mauvais mot de passe ACTUEL, la session
+  // reste valide). Sans ce drapeau, le canal d'erreur partagé interpréterait ce 401 comme un
+  // token mort et déconnecterait l'utilisateur pour une simple faute de frappe. Voir
+  // changePassword() ci-dessous, seul appelant actuel.
+  suppressGlobalErrorHandling?: boolean;
+}
+
 async function request<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
-  token?: string
+  token?: string,
+  options?: RequestOptions
 ): Promise<T> {
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -51,7 +61,7 @@ async function request<T>(
     // authentifié (post-connexion) d'un appel non-authentifié (essentiellement login(), qui
     // n'envoie jamais de token) : login() a sa propre UI d'erreur dédiée (LoginModal), pas de
     // double report ici pour ce cas (voir aussi la branche 401 ci-dessous, même logique).
-    if (token) onRequestError?.('Erreur de connexion au serveur');
+    if (token && !options?.suppressGlobalErrorHandling) onRequestError?.('Erreur de connexion au serveur');
     throw e;
   }
 
@@ -64,7 +74,7 @@ async function request<T>(
       /* pas de corps JSON, on garde le message générique */
     }
 
-    if (token) {
+    if (token && !options?.suppressGlobalErrorHandling) {
       // 401 avec token fourni = token expiré/révoqué (login() lui-même n'envoie jamais de
       // token, donc un 401 sans token est un échec de connexion normal, géré par LoginModal,
       // pas ici) -- déclenche un retour propre à l'écran de connexion plutôt que de laisser
@@ -81,7 +91,7 @@ async function request<T>(
 }
 
 export const apiGet = <T>(path: string, token?: string) => request<T>('GET', path, undefined, token);
-export const apiPost = <T>(path: string, body: unknown, token?: string) => request<T>('POST', path, body, token);
+export const apiPost = <T>(path: string, body: unknown, token?: string, options?: RequestOptions) => request<T>('POST', path, body, token, options);
 export const apiPut = <T>(path: string, body: unknown, token?: string) => request<T>('PUT', path, body, token);
 export const apiPatch = <T>(path: string, body: unknown, token?: string) => request<T>('PATCH', path, body, token);
 export const apiDelete = (path: string, token?: string) => request<void>('DELETE', path, undefined, token);
@@ -97,6 +107,17 @@ export async function login(email: string, password: string): Promise<LoginResul
   } catch (e) {
     if (e instanceof ApiError && e.status === 401) {
       throw new ApiError(401, 'Email ou mot de passe incorrect');
+    }
+    throw e;
+  }
+}
+
+export async function changePassword(currentPassword: string, newPassword: string, token: string): Promise<void> {
+  try {
+    await apiPost<{ ok: true }>('/api/auth/change-password', { currentPassword, newPassword }, token, { suppressGlobalErrorHandling: true });
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) {
+      throw new ApiError(401, 'Mot de passe actuel incorrect');
     }
     throw e;
   }

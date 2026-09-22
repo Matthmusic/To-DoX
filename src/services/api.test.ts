@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { apiGet, apiPost, apiDelete, ApiError, login, setRequestErrorHandler, setUnauthorizedHandler } from './api';
+import { apiGet, apiPost, apiDelete, ApiError, login, changePassword, setRequestErrorHandler, setUnauthorizedHandler } from './api';
 
 describe('api client', () => {
   beforeEach(() => {
@@ -91,6 +91,28 @@ describe('api client', () => {
 
     await expect(login('a@b.com', 'wrong')).rejects.toMatchObject({ status: 401, message: 'Email ou mot de passe incorrect' });
   });
+
+  it('changePassword posts current+new password to /api/auth/change-password', async () => {
+    (fetch as any).mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) });
+
+    await changePassword('old-pass', 'new-password-123', 'tok123');
+
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/auth/change-password'),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ Authorization: 'Bearer tok123' }),
+        body: JSON.stringify({ currentPassword: 'old-pass', newPassword: 'new-password-123' }),
+      })
+    );
+  });
+
+  it('changePassword throws ApiError("Mot de passe actuel incorrect") on 401', async () => {
+    (fetch as any).mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'Mot de passe actuel incorrect' }) });
+
+    await expect(changePassword('wrong-old', 'new-password-123', 'tok123'))
+      .rejects.toMatchObject({ status: 401, message: 'Mot de passe actuel incorrect' });
+  });
 });
 
 // ── Canal d'erreur partagé (review finale de branche, fixes I3/I4/I4) ─────────────────
@@ -152,5 +174,18 @@ describe('shared error channel', () => {
     await expect(apiGet('/api/tasks', 'tok123')).rejects.toBeInstanceOf(ApiError);
 
     expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it('changePassword does NOT trigger the global unauthorized handler on a wrong-current-password 401 -- that would wrongly log the user out of a still-valid session for a simple typo', async () => {
+    (fetch as any).mockResolvedValue({ ok: false, status: 401, json: async () => ({ error: 'Mot de passe actuel incorrect' }) });
+    const onError = vi.fn();
+    const onUnauthorized = vi.fn();
+    setRequestErrorHandler(onError);
+    setUnauthorizedHandler(onUnauthorized);
+
+    await expect(changePassword('wrong-old', 'new-password-123', 'tok123')).rejects.toBeInstanceOf(ApiError);
+
+    expect(onUnauthorized).not.toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
   });
 });
