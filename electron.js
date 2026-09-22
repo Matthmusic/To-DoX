@@ -110,6 +110,11 @@ function createWindow() {
     backgroundColor: '#030513', // Fond dark mode par défaut
     frame: false, // Enlève la barre de titre native
     titleBarStyle: 'hidden',
+    // Évite un écran figé sur la couleur de fond (jamais rafraîchi ensuite) constaté sur
+    // certains postes : la fenêtre s'affichait avant que le premier vrai rendu composité
+    // n'arrive, et rien ne la redessinait après -- pattern officiellement recommandé par
+    // Electron pour ce symptôme (voir 'ready-to-show' plus bas).
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -118,6 +123,10 @@ function createWindow() {
     },
     icon: path.join(__dirname, 'src/assets/icon.png'),
     title: 'To-DoX - Gestion de tâches intelligente'
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
   });
 
   // Charger l'application
