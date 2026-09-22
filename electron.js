@@ -154,7 +154,9 @@ function createWindow() {
     });
 
     tryLoad();
-    mainWindow.webContents.openDevTools();
+    // Les DevTools ne s'ouvrent plus automatiquement (bruit constant : avertissements
+    // Autofill/CSP propres à Electron, sans rapport avec le code de l'app) -- toujours
+    // accessibles manuellement via F12 à la demande.
   } else {
     mainWindow.loadURL('app://./index.html');
   }
