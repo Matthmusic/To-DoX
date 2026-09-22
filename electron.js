@@ -131,7 +131,29 @@ function createWindow() {
 
   // Charger l'application
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    // Vite peut refuser la connexion un court instant après son propre message "ready"
+    // (ex: ré-optimisation des dépendances qui le fait redémarrer en interne juste après) --
+    // observé en direct : ERR_CONNECTION_REFUSED alors que le serveur venait tout juste
+    // d'annoncer être prêt. Plutôt que de fiabiliser l'attente côté script de lancement (qui
+    // ne peut pas connaître cette resynchronisation interne à Vite), on réessaie ici,
+    // seule source de vérité sur l'échec réel du chargement.
+    const DEV_URL = 'http://localhost:5173';
+    const MAX_LOAD_RETRIES = 10;
+    const RETRY_DELAY_MS = 500;
+    let loadAttempt = 0;
+
+    const tryLoad = () => { mainWindow.loadURL(DEV_URL); };
+
+    mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
+      // -102 = ERR_CONNECTION_REFUSED (voir net_error_list.h côté Chromium) -- seule erreur
+      // qu'on retente ; toute autre échec de chargement reste affiché tel quel.
+      if (errorCode !== -102 || loadAttempt >= MAX_LOAD_RETRIES) return;
+      loadAttempt++;
+      console.log(`[DEV] Échec de chargement (${errorDescription}), nouvel essai ${loadAttempt}/${MAX_LOAD_RETRIES} dans ${RETRY_DELAY_MS}ms...`);
+      setTimeout(tryLoad, RETRY_DELAY_MS);
+    });
+
+    tryLoad();
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadURL('app://./index.html');
