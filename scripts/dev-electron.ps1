@@ -44,9 +44,14 @@ try {
     Write-Host "Vite prêt. Lancement d'Electron (appel direct du binaire)..."
     $env:NODE_ENV = "development"
     $electronExe = Join-Path $root "node_modules\electron\dist\electron.exe"
-    & $electronExe $root
-    # Le code de sortie d'Electron devient celui de ce script (utile pour un CI/script appelant).
-    $electronExitCode = $LASTEXITCODE
+    # Start-Process -Wait, PAS `&` : `&` ne bloque pas de façon fiable pour une appli GUI
+    # (sous-système Windows, pas console) quand ce script est lui-même lancé avec une
+    # sortie standard redirigée -- exactement le cas ici puisque npm lance
+    # `powershell -File ...` via cmd.exe. Constaté en direct : `&` rendait la main
+    # immédiatement, ce qui déclenchait le `finally` ci-dessous et tuait Vite AVANT
+    # qu'Electron n'ait eu la moindre chance de charger la page.
+    $electronProcess = Start-Process -FilePath $electronExe -ArgumentList "`"$root`"" -Wait -PassThru
+    $electronExitCode = $electronProcess.ExitCode
 } finally {
     Write-Host "Arrêt de Vite..."
     Stop-ViteTree
