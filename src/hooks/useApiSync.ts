@@ -2,11 +2,17 @@ import { useEffect, useRef } from 'react';
 import useStore from '../store/useStore';
 import { setRequestErrorHandler, setUnauthorizedHandler, clearToken, ApiError } from '../services/api';
 
-// 4s (plutôt que les 10s d'origine) : resserré à la demande, suite au smoke test manuel de
-// la Tâche 12, pour réduire le délai perçu sur les notifications déclenchées par un autre
-// utilisateur (mention, validation de tâche...). Coût : ~2.5x plus de requêtes par client en
-// continu -- acceptable pour une dizaine d'utilisateurs internes (voir ledger SDD).
-const REFRESH_INTERVAL_MS = 4_000;
+// Remonté à 10s (depuis 4s) : à 4s, chaque cycle déclenche 10 `set()` séparés (un par
+// fetch*, résolus à des instants différents puisque ce sont 10 requêtes réseau
+// indépendantes) -- constaté en usage réel : ralentissement perceptible de toute
+// l'interface, même après avoir supprimé la duplication de l'effet de thème (24 copies
+// -> 1). Le vrai correctif (regrouper les 10 fetch* en UN SEUL `set()`) demanderait de
+// dupliquer la logique de post-traitement propre à chacun (fusion ganttDays/
+// convertedFromSubtask de fetchTasks, normalisation de fetchUsers, éclatement en 3 slices
+// de fetchProjects...) -- risqué à faire à la légère vu que cette même logique de fusion a
+// déjà causé un bug critique plus tôt dans ce chantier. En attendant ce vrai correctif,
+// revenir à un intervalle plus conservateur reste le levier le plus sûr.
+const REFRESH_INTERVAL_MS = 10_000;
 
 function errorMessage(e: unknown): string {
   if (e instanceof ApiError) return e.message;

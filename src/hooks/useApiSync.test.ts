@@ -34,12 +34,12 @@ describe('useApiSync', () => {
     expect(useStore.getState().fetchTasks).not.toHaveBeenCalled();
   });
 
-  it('re-fetches on the 4s refresh interval', async () => {
+  it('re-fetches on the 10s refresh interval', async () => {
     renderHook(() => useApiSync());
     await waitFor(() => expect(useStore.getState().isLoadingData).toBe(false));
     const callsBefore = (useStore.getState().fetchTasks as any).mock.calls.length;
 
-    vi.advanceTimersByTime(4_000);
+    vi.advanceTimersByTime(10_000);
     await vi.waitFor(() => expect((useStore.getState().fetchTasks as any).mock.calls.length).toBeGreaterThan(callsBefore));
   });
 
