@@ -8,11 +8,6 @@ const { execFileSync } = require('child_process');
 const { pathToFileURL } = require('url');
 const isDev = process.env.NODE_ENV === 'development';
 
-// Contourne un plantage partiel du rendu GPU observé sur ce poste (fenêtre qui s'ouvre mais
-// reste presque entièrement noire, seule une fine bande de contenu s'affiche en haut --
-// cohérent avec les erreurs "Gpu Cache Creation failed"/"Accès refusé" vues dans les logs).
-app.disableHardwareAcceleration();
-
 function toFileUrl(filePath) {
   return pathToFileURL(filePath).toString();
 }
