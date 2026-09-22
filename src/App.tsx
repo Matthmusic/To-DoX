@@ -5,14 +5,15 @@ import { TitleBar } from './components/TitleBar'
 import { LoginModal } from './components/LoginModal'
 import useStore from './store/useStore'
 import { useApiSync } from './hooks/useApiSync'
-import { useTheme } from './hooks/useTheme'
+import { useThemeEffects } from './hooks/useTheme'
 
 function App() {
   // IMPORTANT: Charger les données dès le début de l'app
   useApiSync();
 
-  // Appliquer le thème dès le chargement de l'app
-  useTheme();
+  // Appliquer le thème dès le chargement de l'app -- une seule fois ici (pas useTheme(),
+  // appelé dans ~24 composants pour ses valeurs : voir le commentaire de useThemeEffects).
+  useThemeEffects();
 
   const { currentUser, isLoadingData, saveError, setSaveError } = useStore()
 

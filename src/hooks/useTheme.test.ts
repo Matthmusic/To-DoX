@@ -4,9 +4,10 @@ import { useTheme } from './useTheme';
 import useStore from '../store/useStore';
 import { DEFAULT_THEME } from '../themes/presets';
 
-// Clé dédiée localStorage (réglage local au poste, non synchronisé via le backend —
-// voir CLAUDE.md, Common Pitfall #11).
-const THEME_KEY = 'theme_settings';
+// useTheme() lit les valeurs/setters du thème courant, sans effet de bord -- voir
+// useThemeEffects.test.ts pour le chargement/l'application DOM/la persistance
+// (extraits de ce hook pour n'être exécutés qu'une seule fois par app, pas une fois par
+// composant appelant useTheme(), ~24 dans le code actuel).
 const initial = useStore.getInitialState();
 
 beforeEach(() => {
@@ -18,61 +19,53 @@ afterEach(() => {
     vi.restoreAllMocks();
 });
 
-describe('useTheme — persistance locale (localStorage)', () => {
-    it('restores a theme already saved in localStorage on mount', async () => {
-        const saved = {
-            mode: 'light' as const,
-            activeThemeId: 'ocean-dark',
-            customThemes: [],
-            customAccentColor: '#ff0000',
-        };
-        localStorage.setItem(THEME_KEY, JSON.stringify(saved));
-
+describe('useTheme — valeurs et setters', () => {
+    it('returns the default theme and mode when the store has no override', () => {
         const { result } = renderHook(() => useTheme());
-        // Le chargement restaure le thème via un effet (setThemeSettings), ce qui
-        // déclenche un second rendu asynchrone.
-        await act(async () => {});
 
-        expect(useStore.getState().themeSettings).toEqual(saved);
-        expect(result.current.mode).toBe('light');
+        expect(result.current.mode).toBe(initial.themeSettings.mode);
+        expect(result.current.activeTheme.id).toBe(DEFAULT_THEME.id);
     });
 
-    it('falls back to the store default when localStorage data is corrupt', async () => {
-        localStorage.setItem(THEME_KEY, '{ not valid json');
+    it('setActiveTheme updates the store', () => {
+        const { result } = renderHook(() => useTheme());
+
+        act(() => { result.current.setActiveTheme('ocean-dark'); });
+
+        expect(useStore.getState().themeSettings.activeThemeId).toBe('ocean-dark');
+    });
+
+    it('setMode updates the store', () => {
+        const { result } = renderHook(() => useTheme());
+
+        act(() => { result.current.setMode('light'); });
+
+        expect(useStore.getState().themeSettings.mode).toBe('light');
+    });
+
+    it('addCustomTheme / removeCustomTheme round-trip through the store', () => {
+        const { result } = renderHook(() => useTheme());
+        const custom = { ...DEFAULT_THEME, id: 'my-custom', name: 'Custom' };
+
+        act(() => { result.current.addCustomTheme(custom); });
+        expect(useStore.getState().themeSettings.customThemes.map(t => t.id)).toContain('my-custom');
+
+        act(() => { result.current.removeCustomTheme('my-custom'); });
+        expect(useStore.getState().themeSettings.customThemes.map(t => t.id)).not.toContain('my-custom');
+    });
+
+    it('regression: calling useTheme() alone does NOT touch the DOM or localStorage -- that is useThemeEffects()\'s job now', async () => {
+        // C'est le coeur de la correction perf : avant l'extraction de useThemeEffects,
+        // chacun des ~24 composants appelant useTheme() ré-exécutait aussi l'effet
+        // d'application DOM + la persistance localStorage. Ce test fige que useTheme()
+        // seul (sans useThemeEffects()) ne fait plus aucune des deux.
+        const setPropertySpy = vi.spyOn(document.documentElement.style, 'setProperty');
+        const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
 
         renderHook(() => useTheme());
         await act(async () => {});
 
-        expect(useStore.getState().themeSettings.activeThemeId).toBe(DEFAULT_THEME.id);
-    });
-
-    it('persists a theme change to localStorage', async () => {
-        renderHook(() => useTheme());
-        await act(async () => {});
-
-        act(() => {
-            useStore.getState().updateThemeSettings({ mode: 'light' });
-        });
-
-        const stored = JSON.parse(localStorage.getItem(THEME_KEY)!);
-        expect(stored.mode).toBe('light');
-    });
-
-    it('does not overwrite a saved theme with the store default on initial mount', async () => {
-        const saved = {
-            mode: 'light' as const,
-            activeThemeId: 'ocean-dark',
-            customThemes: [],
-            customAccentColor: undefined,
-        };
-        localStorage.setItem(THEME_KEY, JSON.stringify(saved));
-
-        renderHook(() => useTheme());
-        await act(async () => {});
-
-        // La valeur en localStorage doit rester celle chargée, jamais la valeur par
-        // défaut du store écrite avant la restauration.
-        const stored = JSON.parse(localStorage.getItem(THEME_KEY)!);
-        expect(stored.activeThemeId).toBe('ocean-dark');
+        expect(setPropertySpy).not.toHaveBeenCalled();
+        expect(setItemSpy).not.toHaveBeenCalledWith('theme_settings', expect.anything());
     });
 });
