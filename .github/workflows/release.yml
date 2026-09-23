@@ -32,3 +32,4 @@ jobs:
         run: npm run electron:build:win -- --config.publish.channel=${{ env.CEA_RELEASE_CHANNEL == 'stable' && 'latest' || env.CEA_RELEASE_CHANNEL }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
