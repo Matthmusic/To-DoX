@@ -18,11 +18,17 @@ export interface StatusDef {
 }
 
 // Statuts des tâches
+// `color` alimente le dégradé de la pastille d'icône dans l'en-tête de colonne Kanban
+// (bg-gradient-to-br ${status.color}) -- resté vide jusqu'ici, ce qui rendait la pastille
+// transparente et l'icône blanche invisible dès que le fond derrière devenait clair (visible
+// uniquement par accident en thème sombre, où le fond de page sombre "faisait" le contraste).
+// Teintes alignées sur STATUS_COLOR/STATUS_BORDER (timeline.utils.ts) pour rester cohérent
+// avec le code couleur déjà utilisé côté Timeline/Gantt.
 export const STATUSES: StatusDef[] = [
-    { id: "todo",   label: "À faire",   Icon: ClipboardList, kanban: true  },
-    { id: "doing",  label: "En cours",  Icon: Loader2,       kanban: true  },
-    { id: "review", label: "À réviser", Icon: SearchCheck,   kanban: true  },
-    { id: "done",   label: "Terminé",   Icon: CheckCircle2,  kanban: false },
+    { id: "todo",   label: "À faire",   Icon: ClipboardList, kanban: true,  color: "from-blue-500 to-blue-600" },
+    { id: "doing",  label: "En cours",  Icon: Loader2,       kanban: true,  color: "from-cyan-500 to-cyan-600" },
+    { id: "review", label: "À réviser", Icon: SearchCheck,   kanban: true,  color: "from-amber-500 to-amber-600" },
+    { id: "done",   label: "Terminé",   Icon: CheckCircle2,  kanban: false, color: "from-emerald-500 to-emerald-600" },
 ];
 
 export interface PriorityDef {

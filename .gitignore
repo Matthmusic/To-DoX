@@ -50,3 +50,6 @@ nul
 playwright-report/
 test-results/
 .temp-excluded/
+
+# Claude Code isolated worktrees (local tool artifact, never project source)
+.claude/worktrees/

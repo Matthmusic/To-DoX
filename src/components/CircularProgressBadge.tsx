@@ -125,7 +125,7 @@ export function CircularProgressBadge({
                 className={`group relative flex shrink-0 items-center gap-2 rounded-xl border px-2.5 py-1.5 transition-all duration-300 ${colors.border} ${colors.bg} ${
                     isSelected
                         ? `${colors.ring} ring-2 brightness-125 ${colors.glow}`
-                        : "hover:brightness-110 ring-1 ring-white/5"
+                        : "hover:brightness-110 ring-1 ring-[rgba(var(--overlay-rgb),0.05)]"
                 }`}
                 title={`${cleanProjectName}: ${done}/${total} tâches (${percentage}%) — Clic droit pour options`}
                 aria-label={`${cleanProjectName}: ${done}/${total} tâches (${percentage}%) — Clic droit pour options`}
@@ -146,7 +146,7 @@ export function CircularProgressBadge({
                             stroke="currentColor"
                             strokeWidth="3"
                             fill="none"
-                            className="text-white/10"
+                            className="text-[rgba(var(--overlay-rgb),0.1)]"
                         />
                         {/* Progress circle */}
                         <circle
@@ -182,7 +182,7 @@ export function CircularProgressBadge({
 
                 {/* Project name */}
                 <div className="flex flex-col items-start justify-center min-w-0 max-w-[140px]">
-                    <span className={`text-[11px] font-semibold leading-tight transition-colors line-clamp-2 ${colors.text} group-hover:text-white`}>
+                    <span className={`text-[11px] font-semibold leading-tight transition-colors line-clamp-2 ${colors.text} group-hover:text-[rgb(var(--overlay-rgb))]`}>
                         {cleanProjectName}
                     </span>
                 </div>
@@ -204,17 +204,17 @@ export function CircularProgressBadge({
             {menuPos && createPortal(
                 <div
                     ref={menuRef}
-                    className="fixed z-[9999] rounded-xl border border-white/15 bg-[#1a1a2e]/95 backdrop-blur-md shadow-2xl p-2"
+                    className="fixed z-[9999] rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-theme-secondary backdrop-blur-md shadow-2xl p-2"
                     style={{ left: menuPos.x, top: menuPos.y + 6, transform: 'translateX(-50%)' }}
                     onContextMenu={e => e.preventDefault()}
                 >
-                    <p className="text-[10px] text-white/50 uppercase tracking-widest px-1 pb-1.5">Couleur du projet</p>
+                    <p className="text-[10px] text-[rgba(var(--overlay-rgb),0.5)] uppercase tracking-widest px-1 pb-1.5">Couleur du projet</p>
                     <div className="grid grid-cols-3 gap-1.5">
                         {COLOR_PREVIEWS.map((hex, idx) => (
                             <button
                                 key={idx}
                                 onClick={() => handlePickColor(idx)}
-                                className="w-8 h-8 rounded-lg transition-all hover:scale-110 hover:ring-2 ring-white/40"
+                                className="w-8 h-8 rounded-lg transition-all hover:scale-110 hover:ring-2 ring-[rgba(var(--overlay-rgb),0.4)]"
                                 style={{
                                     backgroundColor: hex + '33',
                                     border: `2px solid ${hex}66`,
@@ -230,7 +230,7 @@ export function CircularProgressBadge({
                     </div>
 
                     {(canRename || canArchiveFromMenu) && (
-                        <div className="my-2 h-px bg-white/10" />
+                        <div className="my-2 h-px bg-[rgba(var(--overlay-rgb),0.1)]" />
                     )}
 
                     {canRename && (
@@ -239,7 +239,7 @@ export function CircularProgressBadge({
                             disabled
                             title={RENAME_DISABLED_MESSAGE}
                             aria-label={RENAME_DISABLED_MESSAGE}
-                            className="w-full rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 opacity-50 cursor-not-allowed mb-1.5"
+                            className="w-full rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 opacity-50 cursor-not-allowed mb-1.5"
                         >
                             Renommer ce projet
                         </button>

@@ -53,7 +53,7 @@ export function CalendarContent({ value, onSelect, onClose, showCloseButton = fa
                 <div className="flex items-center gap-2">
                     <button
                         type="button"
-                        className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-slate-200 transition hover:bg-white/10"
+                        className="rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-2.5 text-slate-200 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                         onClick={() => setViewDate(new Date(monthMeta.year, monthMeta.month - 1, 1))}
                         title="Mois précédent"
                         aria-label="Mois précédent"
@@ -63,7 +63,7 @@ export function CalendarContent({ value, onSelect, onClose, showCloseButton = fa
                     <div className="text-sm font-semibold">{monthLabel}</div>
                     <button
                         type="button"
-                        className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-slate-200 transition hover:bg-white/10"
+                        className="rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-2.5 text-slate-200 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                         onClick={() => setViewDate(new Date(monthMeta.year, monthMeta.month + 1, 1))}
                         title="Mois suivant"
                         aria-label="Mois suivant"
@@ -74,7 +74,7 @@ export function CalendarContent({ value, onSelect, onClose, showCloseButton = fa
                 {showCloseButton && (
                     <button
                         type="button"
-                        className="rounded-lg border border-white/10 bg-white/5 p-2.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                        className="rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-2.5 text-slate-300 transition hover:bg-[rgba(var(--overlay-rgb),0.1)] hover:text-[rgb(var(--overlay-rgb))]"
                         onClick={onClose}
                         title="Fermer"
                         aria-label="Fermer"
@@ -103,7 +103,7 @@ export function CalendarContent({ value, onSelect, onClose, showCloseButton = fa
                             className={`h-8 rounded-xl border text-sm transition ${
                                 isSelected
                                     ? (selectedClassName ?? "border-cyan-300/60 bg-cyan-300/20 text-cyan-100")
-                                    : "border-white/10 bg-white/5 text-slate-100 hover:bg-white/10"
+                                    : "border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] text-slate-100 hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                             }`}
                             onClick={() => { onSelect(iso); onClose(); }}
                         >
@@ -116,7 +116,7 @@ export function CalendarContent({ value, onSelect, onClose, showCloseButton = fa
             <div className="mt-3 flex items-center justify-between">
                 <button
                     type="button"
-                    className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-200 transition hover:bg-white/10"
+                    className="rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1 text-xs text-slate-200 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                     onClick={() => { onSelect(toISODate(new Date())); onClose(); }}
                 >
                     Aujourd'hui
@@ -175,7 +175,7 @@ export function DatePickerDropdown({ isOpen, value, onSelect, onClose, align = '
 
     return createPortal(
         <div
-            className="fixed z-[100000] rounded-2xl border border-white/20 bg-[#161b2e] p-3 text-slate-100 shadow-2xl"
+            className="fixed z-[100000] rounded-2xl border border-[rgba(var(--overlay-rgb),0.2)] bg-theme-secondary p-3 text-slate-100 shadow-2xl"
             style={{ top: coords.top, left: coords.left, width: dropdownWidth }}
             onMouseDown={(e) => e.stopPropagation()}
         >
@@ -203,7 +203,7 @@ export function DatePickerModal({ isOpen, value, onSelect, onClose }: DatePicker
             className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
             onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div className="w-[360px] rounded-2xl border border-white/20 bg-white/5 p-4 text-slate-100 shadow-2xl backdrop-blur-xl">
+            <div className="w-[360px] rounded-2xl border border-[rgba(var(--overlay-rgb),0.2)] bg-[rgba(var(--overlay-rgb),0.05)] p-4 text-slate-100 shadow-2xl backdrop-blur-xl">
                 <CalendarContent value={value} onSelect={onSelect} onClose={onClose} showCloseButton />
             </div>
         </div>,

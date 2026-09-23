@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Archive, ChevronDown, ChevronRight } from "lucide-react";
 import useStore from "../../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import type { Task } from "../../types";
 import { GlassModal } from "../ui/GlassModal";
 import { confirmModal } from "../../utils/confirm";
@@ -11,7 +12,7 @@ interface ProjectArchivePanelProps {
 }
 
 export function ProjectArchivePanel({ onClose }: ProjectArchivePanelProps) {
-    const { tasks, unarchiveProject, unarchiveTask, deleteArchivedProject } = useStore();
+    const { tasks, unarchiveProject, unarchiveTask, deleteArchivedProject } = useStore(useShallow((s) => ({ tasks: s.tasks, unarchiveProject: s.unarchiveProject, unarchiveTask: s.unarchiveTask, deleteArchivedProject: s.deleteArchivedProject })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
     const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
@@ -64,7 +65,7 @@ export function ProjectArchivePanel({ onClose }: ProjectArchivePanelProps) {
                     return (
                         <div
                             key={p.project}
-                            className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                            className="rounded-2xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-4"
                         >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 min-w-0">
@@ -107,7 +108,7 @@ export function ProjectArchivePanel({ onClose }: ProjectArchivePanelProps) {
                                     </button>
                                 </div>
                             </div>
-                            <div className="mt-2 h-2 rounded-full bg-white/10 overflow-hidden">
+                            <div className="mt-2 h-2 rounded-full bg-[rgba(var(--overlay-rgb),0.1)] overflow-hidden">
                                 <div
                                     className="h-full rounded-full bg-gradient-to-r from-amber-300 via-orange-300 to-rose-400 transition-all"
                                     style={{ width: `${p.pct}%` }}
@@ -117,11 +118,11 @@ export function ProjectArchivePanel({ onClose }: ProjectArchivePanelProps) {
 
                             {/* Liste des tâches (déroulable) */}
                             {isExpanded && (
-                                <div className="mt-3 space-y-1 border-t border-white/10 pt-3">
+                                <div className="mt-3 space-y-1 border-t border-[rgba(var(--overlay-rgb),0.1)] pt-3">
                                     {p.taskList.map((task) => (
                                         <div
                                             key={task.id}
-                                            className="flex items-center justify-between gap-2 rounded-xl bg-white/5 px-3 py-2"
+                                            className="flex items-center justify-between gap-2 rounded-xl bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2"
                                         >
                                             <div className="min-w-0 flex-1">
                                                 <span className={`text-sm ${task.status === 'done' ? 'text-slate-400 line-through' : 'text-slate-200'}`}>

@@ -6,6 +6,7 @@
 import { Bell, BellOff, Clock, Moon, Volume2, VolumeX, AlertCircle, Music, Play, Power } from 'lucide-react';
 import { GlassModal } from '../ui/GlassModal';
 import useStore from '../../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useState, useEffect } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { NOTIFICATION_SOUNDS } from '../../constants';
@@ -17,7 +18,7 @@ interface NotificationsPanelProps {
 }
 
 export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
-  const { notificationSettings, updateNotificationSettings } = useStore();
+  const { notificationSettings, updateNotificationSettings } = useStore(useShallow((s) => ({ notificationSettings: s.notificationSettings, updateNotificationSettings: s.updateNotificationSettings })));
   const { activeTheme } = useTheme();
   const primaryColor = activeTheme.palette.primary;
   const [playingSound, setPlayingSound] = useState<string | null>(null);
@@ -76,7 +77,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
     >
       <div className="space-y-6">
           {/* Activation globale */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-theme-primary">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[rgba(var(--overlay-rgb),0.05)] border border-theme-primary">
             <div className="flex items-center gap-3">
               {notificationSettings.enabled ? (
                 <Bell className="w-6 h-6" style={{ color: primaryColor }} />
@@ -84,7 +85,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                 <BellOff className="w-6 h-6 text-slate-500" />
               )}
               <div>
-                <h3 className="text-lg font-bold text-white">Activer les notifications</h3>
+                <h3 className="text-lg font-bold text-theme-primary">Activer les notifications</h3>
                 <p className="text-sm text-theme-muted">Recevoir des alertes desktop pour les tâches</p>
               </div>
             </div>
@@ -105,7 +106,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
 
           {/* Types de notifications */}
           <div className="space-y-3">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <h3 className="text-lg font-bold text-theme-primary flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-amber-400" />
               Types d'alertes
             </h3>
@@ -131,7 +132,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
 
           {/* Fréquence de vérification */}
           <div className="space-y-3">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <h3 className="text-lg font-bold text-theme-primary flex items-center gap-2">
               <Clock className="w-5 h-5 text-purple-400" />
               Fréquence de vérification
             </h3>
@@ -145,10 +146,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                 value={notificationSettings.checkInterval}
                 onChange={(e) => handleIntervalChange(Number(e.target.value))}
                 disabled={!notificationSettings.enabled}
-                className="flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full"
-                style={{
-                  ['--tw-slider-thumb' as any]: primaryColor
-                }}
+                className="flex-1 h-2 bg-[rgba(var(--overlay-rgb),0.1)] rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full"
               />
               <style>{`
                 input[type="range"]::-webkit-slider-thumb {
@@ -170,7 +168,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
           {/* Heures calmes */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <h3 className="text-lg font-bold text-theme-primary flex items-center gap-2">
                 <Moon className="w-5 h-5 text-indigo-400" />
                 Mode "Ne pas déranger"
               </h3>
@@ -189,7 +187,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
             </div>
 
             {notificationSettings.quietHoursEnabled && (
-              <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-white/5 border border-theme-primary">
+              <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-[rgba(var(--overlay-rgb),0.05)] border border-theme-primary">
                 <div>
                   <label className="block text-sm font-semibold text-slate-300 mb-2">
                     Début
@@ -199,12 +197,9 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                     value={notificationSettings.quietHoursStart}
                     onChange={(e) => handleTimeChange('quietHoursStart', e.target.value)}
                     disabled={!notificationSettings.enabled}
-                    className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
-                    style={{
-                      ['--focus-color' as any]: primaryColor
-                    }}
+                    className="w-full px-3 py-2 rounded-lg bg-[rgba(var(--overlay-rgb),0.1)] border border-[rgba(var(--overlay-rgb),0.2)] text-theme-primary disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
                     onFocus={(e) => e.currentTarget.style.borderColor = primaryColor}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(var(--overlay-rgb),0.2)'}
                   />
                 </div>
                 <div>
@@ -216,12 +211,9 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                     value={notificationSettings.quietHoursEnd}
                     onChange={(e) => handleTimeChange('quietHoursEnd', e.target.value)}
                     disabled={!notificationSettings.enabled}
-                    className="w-full px-3 py-2 rounded-lg bg-white/10 border border-white/20 text-white disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
-                    style={{
-                      ['--focus-color' as any]: primaryColor
-                    }}
+                    className="w-full px-3 py-2 rounded-lg bg-[rgba(var(--overlay-rgb),0.1)] border border-[rgba(var(--overlay-rgb),0.2)] text-theme-primary disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none"
                     onFocus={(e) => e.currentTarget.style.borderColor = primaryColor}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(var(--overlay-rgb),0.2)'}
                   />
                 </div>
                 <p className="col-span-2 text-xs text-slate-500">
@@ -232,7 +224,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
           </div>
 
           {/* Son */}
-          <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-theme-primary">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[rgba(var(--overlay-rgb),0.05)] border border-theme-primary">
             <div className="flex items-center gap-3">
               {notificationSettings.sound ? (
                 <Volume2 className="w-5 h-5 text-emerald-400" />
@@ -240,7 +232,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                 <VolumeX className="w-5 h-5 text-slate-500" />
               )}
               <div>
-                <h3 className="text-base font-bold text-white">Son</h3>
+                <h3 className="text-base font-bold text-theme-primary">Son</h3>
                 <p className="text-sm text-theme-muted">Jouer un son avec les notifications</p>
               </div>
             </div>
@@ -261,7 +253,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
           {/* Sélection du son */}
           {notificationSettings.sound && (
             <div className="space-y-3">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <h3 className="text-lg font-bold text-theme-primary flex items-center gap-2">
                 <Music className="w-5 h-5 text-pink-400" />
                 Choisir le son de notification
               </h3>
@@ -272,8 +264,8 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                     key={sound.id}
                     className={`flex items-center justify-between p-3 rounded-lg border transition-all cursor-pointer ${
                       notificationSettings.soundFile === sound.file
-                        ? 'bg-white/10 border-theme-primary shadow-lg'
-                        : 'bg-white/5 border-slate-700 hover:border-slate-600'
+                        ? 'bg-[rgba(var(--overlay-rgb),0.1)] border-theme-primary shadow-lg'
+                        : 'bg-[rgba(var(--overlay-rgb),0.05)] border-slate-700 hover:border-slate-600'
                     }`}
                     onClick={() => handleSoundChange(sound.file)}
                   >
@@ -289,7 +281,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: primaryColor }} />
                         )}
                       </div>
-                      <span className="text-white font-medium">{sound.name}</span>
+                      <span className="text-theme-primary font-medium">{sound.name}</span>
                     </div>
                     <button
                       onClick={(e) => {
@@ -297,7 +289,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                         void handlePlaySound(sound.file);
                       }}
                       disabled={!notificationSettings.enabled || playingSound === sound.file}
-                      className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-slate-700 hover:border-theme-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2 rounded-lg bg-[rgba(var(--overlay-rgb),0.05)] hover:bg-[rgba(var(--overlay-rgb),0.1)] border border-slate-700 hover:border-theme-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Écouter un aperçu"
                       aria-label="Écouter un aperçu"
                     >
@@ -312,7 +304,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
           {/* Section démarrage Windows */}
           {window.electronAPI?.isElectron && openAtLogin !== null && (
             <div className="space-y-3 pt-4 border-t border-theme-primary">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <h3 className="text-lg font-bold text-theme-primary flex items-center gap-2">
                 <Power className="w-5 h-5 text-emerald-400" />
                 Démarrage système
               </h3>
@@ -346,9 +338,9 @@ function ToggleOption({ label, description, enabled, onToggle, disabled }: Toggl
   const primaryColor = activeTheme.palette.primary;
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-theme-primary">
+    <div className="flex items-center justify-between p-3 rounded-lg bg-[rgba(var(--overlay-rgb),0.05)] border border-theme-primary">
       <div className="flex-1">
-        <h4 className="text-sm font-bold text-white">{label}</h4>
+        <h4 className="text-sm font-bold text-theme-primary">{label}</h4>
         <p className="text-xs text-theme-muted">{description}</p>
       </div>
       <button

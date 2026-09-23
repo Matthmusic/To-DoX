@@ -1,7 +1,9 @@
-import { Palette } from 'lucide-react';
+import { Palette, PanelLeft, PanelRight } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { GlassModal } from '../ui/GlassModal';
 import type { Theme } from '../../types';
+import useStore from '../../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 
 interface ThemePanelProps {
   onClose: () => void;
@@ -14,6 +16,10 @@ export function ThemePanel({ onClose }: ThemePanelProps) {
     customThemes,
     setActiveTheme,
   } = useTheme();
+  const { notificationPanelSide, setNotificationPanelSide } = useStore(useShallow((s) => ({
+    notificationPanelSide: s.notificationPanelSide,
+    setNotificationPanelSide: s.setNotificationPanelSide,
+  })));
 
   const allThemes = [...presetThemes, ...customThemes];
   const darkThemes = allThemes.filter(t => t.mode === 'dark');
@@ -28,25 +34,7 @@ export function ThemePanel({ onClose }: ThemePanelProps) {
       size="xl"
     >
       <div className="space-y-8">
-          {/* Section Thèmes */}
-          <section>
-            <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
-              <Palette className="w-5 h-5 text-theme-primary" />
-              Thèmes
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {darkThemes.map((theme) => (
-                <ThemeCard
-                  key={theme.id}
-                  theme={theme}
-                  isActive={activeTheme.id === theme.id}
-                  onClick={() => setActiveTheme(theme.id)}
-                />
-              ))}
-            </div>
-          </section>
-
-          {/* Section Thèmes Clairs - Désactivée */}
+          {/* Section Thèmes Clairs -- avant les sombres (préférence utilisateur) */}
           {lightThemes.length > 0 && (
             <section>
               <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
@@ -65,6 +53,68 @@ export function ThemePanel({ onClose }: ThemePanelProps) {
               </div>
             </section>
           )}
+
+          {/* Section Thèmes (sombres) */}
+          <section>
+            <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
+              <Palette className="w-5 h-5 text-theme-primary" />
+              Thèmes
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {darkThemes.map((theme) => (
+                <ThemeCard
+                  key={theme.id}
+                  theme={theme}
+                  isActive={activeTheme.id === theme.id}
+                  onClick={() => setActiveTheme(theme.id)}
+                />
+              ))}
+            </div>
+          </section>
+
+          {/* Section Disposition */}
+          <section>
+            <h3 className="text-lg font-bold text-theme-primary mb-4 flex items-center gap-2">
+              <PanelLeft className="w-5 h-5 text-theme-primary" />
+              Disposition
+            </h3>
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-theme-primary bg-[rgba(var(--overlay-rgb),0.05)] px-4 py-3">
+              <div>
+                <div className="text-sm font-semibold text-theme-primary">Centre d'activité</div>
+                <div className="text-xs text-theme-secondary">Côté d'ancrage du panneau de notifications</div>
+              </div>
+              <div className="flex rounded-xl border border-theme-primary overflow-hidden shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setNotificationPanelSide('left')}
+                  aria-pressed={notificationPanelSide === 'left'}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors ${
+                    notificationPanelSide === 'left'
+                      ? 'bg-theme-primary/20 text-theme-primary'
+                      : 'text-theme-secondary hover:bg-[rgba(var(--overlay-rgb),0.08)]'
+                  }`}
+                  style={notificationPanelSide === 'left' ? { color: primaryColor } : {}}
+                >
+                  <PanelLeft className="w-3.5 h-3.5" />
+                  Gauche
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNotificationPanelSide('right')}
+                  aria-pressed={notificationPanelSide === 'right'}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border-l border-theme-primary transition-colors ${
+                    notificationPanelSide === 'right'
+                      ? 'bg-theme-primary/20 text-theme-primary'
+                      : 'text-theme-secondary hover:bg-[rgba(var(--overlay-rgb),0.08)]'
+                  }`}
+                  style={notificationPanelSide === 'right' ? { color: primaryColor } : {}}
+                >
+                  <PanelRight className="w-3.5 h-3.5" />
+                  Droite
+                </button>
+              </div>
+            </div>
+          </section>
 
       </div>
 
@@ -97,7 +147,7 @@ function ThemeCard({ theme, isActive, onClick }: ThemeCardProps) {
         relative p-4 rounded-xl border transition-all text-left
         ${isActive
           ? 'border-theme-accent bg-theme-primary/20 shadow-lg shadow-[var(--color-primary)]/20 ring-2 ring-[var(--border-accent)]'
-          : 'border-theme-primary bg-white/5 hover:bg-white/10 hover:border-theme-accent'
+          : 'border-theme-primary bg-[rgba(var(--overlay-rgb),0.05)] hover:bg-[rgba(var(--overlay-rgb),0.1)] hover:border-theme-accent'
         }
       `}
     >

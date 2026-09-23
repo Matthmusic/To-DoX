@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Archive } from "lucide-react";
 import useStore from "../../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import type { Task } from "../../types";
 import { classNames } from "../../utils";
 import { confirmModal } from "../../utils/confirm";
@@ -12,7 +13,7 @@ interface TaskArchivePanelProps {
 }
 
 export function TaskArchivePanel({ onClose }: TaskArchivePanelProps) {
-    const { tasks, unarchiveTask, removeTask } = useStore();
+    const { tasks, unarchiveTask, removeTask } = useStore(useShallow((s) => ({ tasks: s.tasks, unarchiveTask: s.unarchiveTask, removeTask: s.removeTask })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
 
@@ -34,13 +35,13 @@ export function TaskArchivePanel({ onClose }: TaskArchivePanelProps) {
                 {archivedTasks.map((task) => (
                     <div
                         key={task.id}
-                        className="rounded-2xl border border-white/10 bg-white/5 p-4"
+                        className="rounded-2xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-4"
                     >
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
                                 <h4 className="font-semibold text-slate-100">{task.title}</h4>
                                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                                    <span className="rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-200">
+                                    <span className="rounded-full border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.1)] px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-200">
                                         {task.project}
                                     </span>
                                     {task.priority && (

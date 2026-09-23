@@ -60,7 +60,7 @@ export function OutlookCalendarSection({
                     <div
                         key={toISO(day)}
                         style={{ width: colW, minWidth: colW }}
-                        className="border-r border-white/5 last:border-r-0"
+                        className="border-r border-[rgba(var(--overlay-rgb),0.05)] last:border-r-0"
                     />
                 ))}
             </div>
@@ -69,12 +69,12 @@ export function OutlookCalendarSection({
             {!outlookCollapsed && visibleOutlookEvents.map(ev => (
                 <div
                     key={ev.uid}
-                    className="flex border-b border-white/5 group"
+                    className="flex border-b border-[rgba(var(--overlay-rgb),0.05)] group"
                     style={{ backgroundColor: 'rgba(99,102,241,0.06)' }}
                 >
                     {/* Label left */}
                     <div
-                        className="sticky left-0 z-10 flex items-center gap-2 px-4 py-2 border-r border-white/5 overflow-hidden"
+                        className="sticky left-0 z-10 flex items-center gap-2 px-4 py-2 border-r border-[rgba(var(--overlay-rgb),0.05)] overflow-hidden"
                         style={{ width: SIDE_W, minWidth: SIDE_W, backgroundColor: 'rgba(99,102,241,0.08)' }}
                     >
                         <Lock className="h-3 w-3 text-indigo-400/60 shrink-0" />
@@ -107,7 +107,7 @@ export function OutlookCalendarSection({
                         return (
                             <div
                                 key={iso}
-                                className="relative border-r border-white/5 last:border-r-0"
+                                className="relative border-r border-[rgba(var(--overlay-rgb),0.05)] last:border-r-0"
                                 style={{ width: colW, minWidth: colW, height: 34 }}
                                 onMouseEnter={isInEvent ? e => onHoverEvent(ev, e.currentTarget.getBoundingClientRect()) : undefined}
                                 onMouseLeave={isInEvent ? onLeaveEvent : undefined}

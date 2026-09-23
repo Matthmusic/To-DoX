@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import jsPDF from "jspdf";
 import { Printer, FileDown, CheckCircle2, Loader2, FileText, History, Trash2, X } from "lucide-react";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { STATUSES } from "../constants";
 import { formatTimestampToDate, getCurrentWeekRange, getPreviousWeekRange, getCurrentMonthRange, getPreviousMonthRange } from "../utils";
 import type { Task, SubtaskProgress } from "../types";
@@ -15,7 +16,7 @@ interface WeeklyReportModalProps {
 const EXCLUDED_PROJECTS = ["DEV", "PERSO"];
 
 export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
-    const { tasks, currentUser, projectColors, saveReport, savedReports, deleteReport } = useStore();
+    const { tasks, currentUser, projectColors, saveReport, savedReports, deleteReport } = useStore(useShallow((s) => ({ tasks: s.tasks, currentUser: s.currentUser, projectColors: s.projectColors, saveReport: s.saveReport, savedReports: s.savedReports, deleteReport: s.deleteReport })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
     const secondaryColor = activeTheme.palette.secondary;
@@ -843,7 +844,7 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                         <div className="flex items-center gap-1.5 sm:gap-2">
                             <button
                                 onClick={() => setShowReport(false)}
-                                className="rounded-xl border border-white/20 bg-white/5 px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-100 transition-all hover:bg-white/10"
+                                className="rounded-xl border border-[rgba(var(--overlay-rgb),0.2)] bg-[rgba(var(--overlay-rgb),0.05)] px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-slate-100 transition-all hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                             >
                                 Retour
                             </button>
@@ -940,7 +941,7 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                     <button
                         onClick={onClose}
                         aria-label="Fermer"
-                        className="ml-auto flex items-center justify-center w-10 h-10 rounded-full border border-theme-primary bg-white/5 text-theme-muted transition-colors hover:text-theme-primary hover:bg-red-500/20 hover:border-red-500/50"
+                        className="ml-auto flex items-center justify-center w-10 h-10 rounded-full border border-theme-primary bg-[rgba(var(--overlay-rgb),0.05)] text-theme-muted transition-colors hover:text-theme-primary hover:bg-red-500/20 hover:border-red-500/50"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -981,12 +982,12 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                                         <div key={project} className="mb-3">
                                             <div className="text-xs font-semibold text-slate-300 mb-1">📁 {project}</div>
                                             {projectTasks.map(task => (
-                                                <label key={task.id} className="flex items-start gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors">
+                                                <label key={task.id} className="flex items-start gap-2 p-2 rounded-lg bg-[rgba(var(--overlay-rgb),0.05)] hover:bg-[rgba(var(--overlay-rgb),0.1)] cursor-pointer transition-colors">
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedTasks[task.id] || false}
                                                         onChange={() => toggleTask(task.id)}
-                                                        className="mt-0.5 rounded border-white/20"
+                                                        className="mt-0.5 rounded border-[rgba(var(--overlay-rgb),0.2)]"
                                                     />
                                                     <div className="flex-1 text-xs text-slate-200">
                                                         <div className="font-medium">{task.title}</div>
@@ -1028,12 +1029,12 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                                             {projectTasks.map(task => {
                                                 const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
                                                 return (
-                                                    <label key={task.id} className="flex items-start gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors">
+                                                    <label key={task.id} className="flex items-start gap-2 p-2 rounded-lg bg-[rgba(var(--overlay-rgb),0.05)] hover:bg-[rgba(var(--overlay-rgb),0.1)] cursor-pointer transition-colors">
                                                         <input
                                                             type="checkbox"
                                                             checked={selectedTasks[task.id] || false}
                                                             onChange={() => toggleTask(task.id)}
-                                                            className="mt-0.5 rounded border-white/20"
+                                                            className="mt-0.5 rounded border-[rgba(var(--overlay-rgb),0.2)]"
                                                         />
                                                         <div className="flex-1 text-xs text-slate-200">
                                                             <div className="font-medium">{task.title}</div>
@@ -1088,12 +1089,12 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                                         <div key={project} className="mb-3">
                                             <div className="text-xs font-semibold text-slate-300 mb-1">📁 {project}</div>
                                             {projectTasks.map(task => (
-                                                <label key={task.id} className="flex items-start gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors">
+                                                <label key={task.id} className="flex items-start gap-2 p-2 rounded-lg bg-[rgba(var(--overlay-rgb),0.05)] hover:bg-[rgba(var(--overlay-rgb),0.1)] cursor-pointer transition-colors">
                                                     <input
                                                         type="checkbox"
                                                         checked={selectedTasks[task.id] || false}
                                                         onChange={() => toggleTask(task.id)}
-                                                        className="mt-0.5 rounded border-white/20"
+                                                        className="mt-0.5 rounded border-[rgba(var(--overlay-rgb),0.2)]"
                                                     />
                                                     <div className="flex-1 text-xs text-slate-200">
                                                         <div className="font-medium">{task.title}</div>
@@ -1135,12 +1136,12 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                                             {projectTasks.map(task => {
                                                 const statusLabel = STATUSES.find(s => s.id === task.status)?.label || task.status;
                                                 return (
-                                                    <label key={task.id} className="flex items-start gap-2 p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer transition-colors">
+                                                    <label key={task.id} className="flex items-start gap-2 p-2 rounded-lg bg-[rgba(var(--overlay-rgb),0.05)] hover:bg-[rgba(var(--overlay-rgb),0.1)] cursor-pointer transition-colors">
                                                         <input
                                                             type="checkbox"
                                                             checked={selectedTasks[task.id] || false}
                                                             onChange={() => toggleTask(task.id)}
-                                                            className="mt-0.5 rounded border-white/20"
+                                                            className="mt-0.5 rounded border-[rgba(var(--overlay-rgb),0.2)]"
                                                         />
                                                         <div className="flex-1 text-xs text-slate-200">
                                                             <div className="font-medium">{task.title}</div>
@@ -1174,7 +1175,7 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
                             </span>
                             <button
                                 onClick={() => setShowHistory(!showHistory)}
-                                className="flex items-center gap-1 rounded-xl border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-slate-300 transition hover:bg-white/10"
+                                className="flex items-center gap-1 rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-1.5 text-xs text-slate-300 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                             >
                                 <History className="w-3 h-3" />
                                 Historique ({savedReports.length})
@@ -1207,11 +1208,11 @@ export function WeeklyReportModal({ onClose }: WeeklyReportModalProps) {
 
                     {/* Historique des CRs */}
                     {showHistory && (
-                        <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3 max-h-48 overflow-y-auto">
+                        <div className="mt-4 rounded-2xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-3 max-h-48 overflow-y-auto">
                             <h5 className="text-xs font-semibold text-slate-300 mb-2">CRs sauvegardés</h5>
                             {savedReports.length === 0 && <p className="text-xs text-slate-500 italic">Aucun CR sauvegardé — exportez un PDF pour en créer un.</p>}
                             {savedReports.map(report => (
-                                <div key={report.id} className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
+                                <div key={report.id} className="flex items-center justify-between py-1.5 border-b border-[rgba(var(--overlay-rgb),0.05)] last:border-0">
                                     <div>
                                         <div className="text-xs text-slate-200">{report.periodLabel}</div>
                                         <div className="text-xs text-slate-500">{formatTimestampToDate(report.generatedAt)} · {report.taskCount} tâches</div>

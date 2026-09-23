@@ -4,6 +4,7 @@ import { UpdateNotification } from './components/UpdateNotification'
 import { TitleBar } from './components/TitleBar'
 import { LoginModal } from './components/LoginModal'
 import useStore from './store/useStore'
+import { useShallow } from 'zustand/react/shallow';
 import { useApiSync } from './hooks/useApiSync'
 import { useThemeEffects } from './hooks/useTheme'
 
@@ -15,9 +16,7 @@ function App() {
   // appelé dans ~24 composants pour ses valeurs : voir le commentaire de useThemeEffects).
   useThemeEffects();
 
-  const { currentUser, isLoadingData, saveError, setSaveError } = useStore()
-
-  // CRITIQUE: Toujours afficher le LoginModal si aucun utilisateur connecté
+  const { currentUser, isLoadingData, saveError, setSaveError } = useStore(useShallow((s) => ({ currentUser: s.currentUser, isLoadingData: s.isLoadingData, saveError: s.saveError, setSaveError: s.setSaveError })));// CRITIQUE: Toujours afficher le LoginModal si aucun utilisateur connecté
   // Peu importe si les données sont en cours de chargement
   const showLogin = !currentUser
 

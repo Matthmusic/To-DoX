@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Pencil, Trash2, ArrowUpAZ, ArrowDownAZ, Search, X, List } from "lucide-react";
 import useStore from "../../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { GlassModal } from "../ui/GlassModal";
 import { alertModal, confirmModal } from "../../utils/confirm";
 import { useTheme } from "../../hooks/useTheme";
@@ -23,7 +24,7 @@ const RENAME_DISABLED_MESSAGE = "Renommage de projet indisponible pour le moment
 // d'émettre un appel par ligne modifiée -- une vraie refonte, pas un simple remplacement
 // d'appel. Laissé local-only pour l'instant.
 export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
-    const { projectHistory, setProjectHistory, tasks, directories, setDirectories, renameProject } = useStore();
+    const { projectHistory, setProjectHistory, tasks, directories, setDirectories, renameProject } = useStore(useShallow((s) => ({ projectHistory: s.projectHistory, setProjectHistory: s.setProjectHistory, tasks: s.tasks, directories: s.directories, setDirectories: s.setDirectories, renameProject: s.renameProject })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
     const [localHistory, setLocalHistory] = useState<string[]>(() => [...projectHistory]);
@@ -140,7 +141,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Rechercher un projet..."
-                        className="w-full rounded-xl border border-white/10 bg-white/5 pl-8 pr-8 py-1.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-white/20 focus:bg-white/10"
+                        className="w-full rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] pl-8 pr-8 py-1.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-[rgba(var(--overlay-rgb),0.2)] focus:bg-[rgba(var(--overlay-rgb),0.1)]"
                     />
                     {search && (
                         <button
@@ -158,7 +159,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                     className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition ${
                         sortDir
                             ? 'border-cyan-400/40 bg-cyan-400/10 text-cyan-200'
-                            : 'border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
+                            : 'border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] text-slate-400 hover:bg-[rgba(var(--overlay-rgb),0.1)]'
                     }`}
                 >
                     {sortDir === 'desc' ? <ArrowDownAZ className="h-4 w-4" /> : <ArrowUpAZ className="h-4 w-4" />}
@@ -173,7 +174,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                     </div>
                 )}
                 {displayList.map(({ name: project, index }) => (
-                    <div key={index} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 p-2">
+                    <div key={index} className="flex items-center gap-2 rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-2">
                         {editingIndex === index ? (
                             <>
                                 <input
@@ -184,7 +185,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                                         if (e.key === "Enter") saveEditing();
                                         if (e.key === "Escape") cancelEditing();
                                     }}
-                                    className="flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-1 text-sm text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
+                                    className="flex-1 rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-1 text-sm text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] uppercase"
                                     autoFocus
                                 />
                                 <button
@@ -195,7 +196,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                                 </button>
                                 <button
                                     onClick={cancelEditing}
-                                    className="rounded-lg border border-white/20 bg-white/5 px-2 py-1 text-xs text-slate-300 transition hover:bg-white/10"
+                                    className="rounded-lg border border-[rgba(var(--overlay-rgb),0.2)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1 text-xs text-slate-300 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                                 >
                                     Annuler
                                 </button>
@@ -208,7 +209,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
                                 </span>
                                 <button
                                     disabled
-                                    className="rounded-lg border border-white/10 bg-white/5 p-2 text-slate-500 opacity-50 cursor-not-allowed"
+                                    className="rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-2 text-slate-500 opacity-50 cursor-not-allowed"
                                     title={RENAME_DISABLED_MESSAGE}
                                     aria-label={RENAME_DISABLED_MESSAGE}
                                 >
@@ -239,7 +240,7 @@ export function ProjectsListPanel({ onClose }: ProjectsListPanelProps) {
             <div className="mt-3 flex justify-end gap-2">
                 <button
                     onClick={onClose}
-                    className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-[#1E3A8A]/60"
+                    className="rounded-2xl border border-[rgba(var(--overlay-rgb),0.2)] px-4 py-2 text-slate-200 transition hover:bg-[rgba(var(--color-primary-rgb),0.6)]"
                 >
                     Annuler
                 </button>

@@ -43,7 +43,7 @@ export function TaskCardActions({
     if (isCompact) {
         return (
             <button
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-[rgba(var(--overlay-rgb),0.1)] hover:text-[rgb(var(--overlay-rgb))]"
                 aria-label="Plus d'actions"
                 onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
             >
@@ -93,7 +93,7 @@ export function TaskCardActions({
                 onClick={(e) => { e.stopPropagation(); onToggleFavorite(e); }}
                 className={`rounded-lg p-1.5 transition ${task.favorite
                     ? "text-amber-400 hover:bg-amber-400/20"
-                    : "text-slate-400 hover:bg-white/10 hover:text-amber-400"
+                    : "text-slate-400 hover:bg-[rgba(var(--overlay-rgb),0.1)] hover:text-amber-400"
                 }`}
                 title={task.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                 aria-label={task.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
@@ -116,7 +116,7 @@ export function TaskCardActions({
             {commentCount > 0 && (
                 <button
                     onClick={(e) => { e.stopPropagation(); onExpandSubtasks(); }}
-                    className={`flex items-center gap-0.5 rounded-lg p-1.5 transition hover:bg-white/10 ${hasMention ? "animate-pulse text-amber-400 hover:text-amber-300" : "text-slate-400 hover:text-white"}`}
+                    className={`flex items-center gap-0.5 rounded-lg p-1.5 transition hover:bg-[rgba(var(--overlay-rgb),0.1)] ${hasMention ? "animate-pulse text-amber-400 hover:text-amber-300" : "text-slate-400 hover:text-[rgb(var(--overlay-rgb))]"}`}
                     title={hasMention ? `Vous êtes mentionné(e) — ${commentCount} commentaire(s)` : `${commentCount} commentaire(s)`}
                     aria-label={hasMention ? `Vous êtes mentionné(e) — ${commentCount} commentaire(s)` : `${commentCount} commentaire(s)`}
                 >
@@ -126,7 +126,7 @@ export function TaskCardActions({
             )}
             {/* ── Plus ── */}
             <button
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-[rgba(var(--overlay-rgb),0.1)] hover:text-[rgb(var(--overlay-rgb))]"
                 aria-label="Plus d'actions"
                 onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
             >

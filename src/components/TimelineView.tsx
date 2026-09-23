@@ -1,13 +1,14 @@
 import { useMemo, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Calendar, X, Monitor, ExternalLink } from 'lucide-react';
+import { Calendar, X, ExternalLink } from 'lucide-react';
 import type { Task, GanttDay, User, OutlookEvent } from '../types';
 import useStore from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import { PROJECT_HEX_COLORS } from '../constants';
 import { useTheme } from '../hooks/useTheme';
 import { TaskCard } from './TaskCard';
 import {
-    STATUS_COLOR, STATUS_BORDER, SIDE_W, MIN_COL_W, MONTH_SHORT, DAY_SHORT,
+    STATUS_COLOR, STATUS_BORDER, STATUS_LABEL, SIDE_W, MIN_COL_W, MONTH_SHORT, DAY_SHORT,
     toISO, getMondayOf, formatShortDate, addDaysIso, getUserColor, getUserInitials, getWeekNumber,
     MONTH_FR, PRIORITY_COLOR,
     type ViewMode, type FlatRow, type ActiveCell, type DragState,
@@ -36,7 +37,7 @@ interface TimelineViewProps {
  *   échéance) jusqu'à la dernière échéance des tâches du projet.
  */
 export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, selectedUserId, onRefreshOutlook, readOnly = false }: TimelineViewProps) {
-    const { projectColors, updateTask, users, outlookConfig, outlookEvents } = useStore();
+    const { projectColors, updateTask, users, outlookConfig, outlookEvents, notificationPanelSide } = useStore(useShallow((s) => ({ projectColors: s.projectColors, updateTask: s.updateTask, users: s.users, outlookConfig: s.outlookConfig, outlookEvents: s.outlookEvents, notificationPanelSide: s.notificationPanelSide })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
 
@@ -381,28 +382,67 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
     // ── Render ────────────────────────────────────────────────────────────
     return (
         <>
-        {/* ── MOBILE : vue non disponible ── */}
-        <div className="md:hidden flex-1 flex flex-col items-center justify-center gap-4 p-6 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-                <Monitor className="h-8 w-8 text-white/30" />
+        {/* ── MOBILE : liste planning (même regroupement/tri par projet que le Gantt desktop,
+             une grille de colonnes-jours n'a pas de sens en dessous de 768px -- adaptation en
+             liste plutôt qu'un renvoi vers une autre vue) ── */}
+        <div className="md:hidden flex-1 flex flex-col overflow-hidden">
+            <div className="shrink-0 px-4 py-3 border-b border-[rgba(var(--overlay-rgb),0.1)]">
+                <h2 className="text-sm font-bold text-theme-primary">Planning</h2>
+                <p className="text-xs text-theme-secondary">{formatShortDate(rangeStart)} – {formatShortDate(rangeEnd)}</p>
             </div>
-            <div>
-                <p className="text-base font-bold text-white/60">Vue Gantt</p>
-                <p className="mt-1 text-sm text-white/30">
-                    Cette vue nécessite un écran plus large.<br />
-                    Utilisez le Kanban ou le Dashboard sur mobile.
-                </p>
-            </div>
-            <div
-                className="mt-1 rounded-xl border px-3 py-1.5 text-xs font-semibold text-white/50"
-                style={{ borderColor: `${primaryColor}30`, backgroundColor: `${primaryColor}08` }}
-            >
-                ≥ 768px requis
+            <div className="flex-1 overflow-y-auto p-3 space-y-1">
+                {flatRows.length === 0 ? (
+                    <p className="text-sm text-slate-500 italic text-center py-8">Aucune tâche planifiée</p>
+                ) : flatRows.map((row) => {
+                    if (row.type === 'project') {
+                        return (
+                            <div key={`m-proj-${row.project}`} className="flex items-center gap-2 px-1 pt-4 pb-2 first:pt-0">
+                                <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: row.color }} />
+                                <h3 className="text-xs font-bold uppercase tracking-wide text-theme-secondary truncate">{row.project}</h3>
+                                <span className="ml-auto text-xs text-theme-muted">{row.count}</span>
+                            </div>
+                        );
+                    }
+                    const task = row.task;
+                    const assignees = task.assignedTo.map(uid => users.find(u => u.id === uid)).filter((u): u is User => !!u);
+                    return (
+                        <button
+                            key={`m-task-${task.id}`}
+                            type="button"
+                            onClick={(e) => onTaskClick(task, e.clientX, e.clientY)}
+                            className="w-full flex items-center gap-2.5 rounded-xl border border-[rgba(var(--overlay-rgb),0.08)] bg-[rgba(var(--overlay-rgb),0.03)] px-3 py-3 text-left transition hover:bg-[rgba(var(--overlay-rgb),0.07)]"
+                            title={STATUS_LABEL[task.status]}
+                        >
+                            <span
+                                className="h-2.5 w-2.5 rounded-full shrink-0"
+                                style={{ backgroundColor: PRIORITY_COLOR[task.priority] }}
+                                aria-hidden="true"
+                            />
+                            <span className="flex-1 min-w-0 truncate text-sm text-theme-primary">{task.title}</span>
+                            {task.due && (
+                                <span className="shrink-0 text-xs text-theme-secondary">{formatShortDate(task.due)}</span>
+                            )}
+                            {assignees.length > 0 && (
+                                <div className="flex -space-x-1.5 shrink-0">
+                                    {assignees.slice(0, 3).map(u => (
+                                        <span
+                                            key={u.id}
+                                            className="h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white ring-2 ring-theme-secondary"
+                                            style={{ backgroundColor: getUserColor(u.id) }}
+                                        >
+                                            {getUserInitials(u)}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </button>
+                    );
+                })}
             </div>
         </div>
 
         {/* ── DESKTOP GANTT (≥ md) ── */}
-        <div className="hidden md:flex flex-col h-full gap-3 p-4 md:pr-24 overflow-hidden">
+        <div className={`hidden md:flex flex-col h-full gap-3 p-4 overflow-hidden ${notificationPanelSide === 'left' ? 'md:pl-24' : 'md:pr-24'}`}>
 
             {/* ── Toolbar ─────────────────────────────────────────────── */}
             <GanttToolbar
@@ -422,7 +462,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
             />
 
             {/* ── Grid ────────────────────────────────────────────────── */}
-            <div ref={gridContainerRef} className="flex-1 overflow-auto rounded-2xl border border-white/10 bg-theme-secondary"
+            <div ref={gridContainerRef} className="flex-1 overflow-auto rounded-2xl border border-[rgba(var(--overlay-rgb),0.1)] bg-theme-secondary"
                 onClick={e => { if (e.target === e.currentTarget) setSelectedCells(new Set()); }}>
                 <div style={{ minWidth: `${SIDE_W + colW * days.length}px` }} className="relative">
 
@@ -430,16 +470,16 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                     {mondayIndices.map(i => (
                         <div key={i} className="absolute top-0 bottom-0 pointer-events-none z-[1]"
                             style={{ left: SIDE_W + i * colW }}>
-                            <div className="absolute top-0 bottom-0 left-0 w-[1px] bg-white/25" />
-                            <div className="absolute top-0 bottom-0 left-[3px] w-[1px] bg-white/10" />
+                            <div className="absolute top-0 bottom-0 left-0 w-[1px] bg-[rgba(var(--overlay-rgb),0.25)]" />
+                            <div className="absolute top-0 bottom-0 left-[3px] w-[1px] bg-[rgba(var(--overlay-rgb),0.1)]" />
                         </div>
                     ))}
 
                     {/* ── Header row ── */}
-                    <div className="flex sticky top-0 z-20 border-b border-white/10"
+                    <div className="flex sticky top-0 z-20 border-b border-[rgba(var(--overlay-rgb),0.1)]"
                         style={{ backgroundColor: 'var(--bg-secondary)' }}>
-                        <div className="sticky left-0 z-30 px-4 py-2 border-r border-white/10
-                            text-[10px] font-bold text-white/25 uppercase tracking-widest flex items-end"
+                        <div className="sticky left-0 z-30 px-4 py-2 border-r border-[rgba(var(--overlay-rgb),0.1)]
+                            text-[10px] font-bold text-[rgba(var(--overlay-rgb),0.25)] uppercase tracking-widest flex items-end"
                             style={{ width: SIDE_W, minWidth: SIDE_W, backgroundColor: 'var(--bg-secondary)' }}>
                             Projet / Tâche
                         </div>
@@ -451,10 +491,10 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                             const isSat     = day.getDay() === 6;
                             return (
                                 <div key={iso}
-                                    className={`relative flex flex-col items-center justify-end border-r border-white/5 last:border-r-0
+                                    className={`relative flex flex-col items-center justify-end border-r border-[rgba(var(--overlay-rgb),0.05)] last:border-r-0
                                         ${isToday   ? 'bg-cyan-500/20'  : ''}
                                         ${isWeekend ? 'bg-black/[0.22]' : ''}
-                                        ${isSat ? 'border-r border-r-white/10' : ''}`}
+                                        ${isSat ? 'border-r border-r-[rgba(var(--overlay-rgb),0.1)]' : ''}`}
                                     style={{ width: colW, minWidth: colW, paddingBottom: '8px', paddingTop: '10px' }}>
 
                                     {/* Today top accent bar */}
@@ -465,15 +505,15 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                     {/* Double barre séparateur de semaine (lundi) */}
                                     {isMonday && day.getDate() !== 1 && (
                                         <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
-                                            <div className="absolute inset-y-0 left-0 w-[1px] bg-white/35" />
-                                            <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/12" />
+                                            <div className="absolute inset-y-0 left-0 w-[1px] bg-[rgba(var(--overlay-rgb),0.35)]" />
+                                            <div className="absolute inset-y-0 left-[3px] w-[1px] bg-[rgba(var(--overlay-rgb),0.12)]" />
                                         </div>
                                     )}
                                     {/* Double trait début de mois */}
                                     {day.getDate() === 1 && (
                                         <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
-                                            <div className="absolute inset-y-0 left-0 w-[1px] bg-white/40" />
-                                            <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/20" />
+                                            <div className="absolute inset-y-0 left-0 w-[1px] bg-[rgba(var(--overlay-rgb),0.4)]" />
+                                            <div className="absolute inset-y-0 left-[3px] w-[1px] bg-[rgba(var(--overlay-rgb),0.2)]" />
                                         </div>
                                     )}
 
@@ -483,8 +523,8 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                             <span style={{
                                                 fontSize: '9px', fontWeight: 800,
                                                 letterSpacing: '0.06em', textTransform: 'uppercase',
-                                                color: isToday ? 'rgba(34,211,238,0.85)' : 'rgba(255,255,255,0.45)',
-                                                background: isToday ? 'rgba(34,211,238,0.10)' : 'rgba(255,255,255,0.06)',
+                                                color: isToday ? 'rgba(34,211,238,0.85)' : 'rgba(var(--overlay-rgb),0.45)',
+                                                background: isToday ? 'rgba(34,211,238,0.10)' : 'rgba(var(--overlay-rgb),0.06)',
                                                 borderRadius: '3px',
                                                 padding: '1px 4px',
                                             }}>
@@ -495,14 +535,14 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
 
                                     {/* Month label on 1st */}
                                     {day.getDate() === 1 && (
-                                        <span className="text-[8px] font-bold uppercase tracking-wider text-white/45 leading-none mb-1">
+                                        <span className="text-[8px] font-bold uppercase tracking-wider text-[rgba(var(--overlay-rgb),0.45)] leading-none mb-1">
                                             {MONTH_SHORT[day.getMonth()]}
                                         </span>
                                     )}
 
                                     {/* Day name */}
                                     <span className={`text-[9px] font-bold uppercase tracking-wider leading-none mb-1
-                                        ${isToday ? 'text-cyan-400' : isWeekend ? 'text-white/20' : 'text-white/35'}`}>
+                                        ${isToday ? 'text-cyan-400' : isWeekend ? 'text-[rgba(var(--overlay-rgb),0.2)]' : 'text-[rgba(var(--overlay-rgb),0.35)]'}`}>
                                         {DAY_SHORT[day.getDay()]}
                                     </span>
 
@@ -516,7 +556,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                     ) : (
                                         <span className={`font-bold leading-none
                                             ${compact ? 'text-xs' : 'text-sm'}
-                                            ${isWeekend ? 'text-white/25' : 'text-white/70'}`}>
+                                            ${isWeekend ? 'text-[rgba(var(--overlay-rgb),0.25)]' : 'text-[rgba(var(--overlay-rgb),0.7)]'}`}>
                                             {day.getDate()}
                                         </span>
                                     )}
@@ -575,7 +615,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
 
                     {/* ── Empty state ── */}
                     {flatRows.length === 0 && (
-                        <div className="flex items-center justify-center h-40 text-white/25 text-sm">
+                        <div className="flex items-center justify-center h-40 text-[rgba(var(--overlay-rgb),0.25)] text-sm">
                             Aucune tâche à afficher
                         </div>
                     )}
@@ -587,10 +627,10 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                         if (row.type === 'project') {
                             return (
                                 <div key={`proj-${row.project}`}
-                                    className="group flex border-b border-white/10 transition-colors"
+                                    className="group flex border-b border-[rgba(var(--overlay-rgb),0.1)] transition-colors"
                                     style={{ backgroundColor: `${row.color}18` }}>
 
-                                    <div className="sticky left-0 z-10 px-4 py-2.5 border-r border-white/10 flex items-center gap-2 overflow-hidden"
+                                    <div className="sticky left-0 z-10 px-4 py-2.5 border-r border-[rgba(var(--overlay-rgb),0.1)] flex items-center gap-2 overflow-hidden"
                                         style={{ width: SIDE_W, minWidth: SIDE_W, backgroundColor: `${row.color}30`, borderLeft: `3px solid ${row.color}` }}>
                                         {/* Glow hover dynamique couleur projet */}
                                         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none blur-xl rounded-xl"
@@ -617,22 +657,22 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                         const isMondayCol  = days[colIdx]?.getDay() === 1;
                                         return (
                                             <div key={iso}
-                                                className={`relative border-r border-white/5 last:border-r-0 flex items-center
+                                                className={`relative border-r border-[rgba(var(--overlay-rgb),0.05)] last:border-r-0 flex items-center
                                                 ${isToday ? 'bg-cyan-500/10' : ''}`}
                                                 style={{ width: colW, minWidth: colW, height: '42px' }}>
 
                                                 {/* Double barre séparateur de semaine (lundi) */}
                                                 {isMondayCol && !isMonthStart && (
                                                     <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
-                                                        <div className="absolute inset-y-0 left-0 w-[1px] bg-white/18" />
-                                                        <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/8" />
+                                                        <div className="absolute inset-y-0 left-0 w-[1px] bg-[rgba(var(--overlay-rgb),0.18)]" />
+                                                        <div className="absolute inset-y-0 left-[3px] w-[1px] bg-[rgba(var(--overlay-rgb),0.08)]" />
                                                     </div>
                                                 )}
                                                 {/* Double trait début de mois */}
                                                 {isMonthStart && (
                                                     <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
-                                                        <div className="absolute inset-y-0 left-0 w-[1px] bg-white/30" />
-                                                        <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/15" />
+                                                        <div className="absolute inset-y-0 left-0 w-[1px] bg-[rgba(var(--overlay-rgb),0.3)]" />
+                                                        <div className="absolute inset-y-0 left-[3px] w-[1px] bg-[rgba(var(--overlay-rgb),0.15)]" />
                                                     </div>
                                                 )}
 
@@ -681,27 +721,27 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
 
                         return (
                             <div key={task.id}
-                                className={`flex border-b ${isLast ? 'border-white/10' : 'border-white/[0.05]'} transition-colors`}
-                                style={isEven ? { backgroundColor: 'rgba(255,255,255,0.025)' } : {}}>
+                                className={`flex border-b ${isLast ? 'border-[rgba(var(--overlay-rgb),0.1)]' : 'border-[rgba(var(--overlay-rgb),0.05)]'} transition-colors`}
+                                style={isEven ? { backgroundColor: 'rgba(var(--overlay-rgb),0.025)' } : {}}>
 
                                 {/* Task label — click opens task modal */}
                                 <div
-                                    className="sticky left-0 z-10 px-4 py-2 border-r border-white/10
+                                    className="sticky left-0 z-10 px-4 py-2 border-r border-[rgba(var(--overlay-rgb),0.1)]
                                         flex items-center gap-2 cursor-pointer group/label
-                                        hover:bg-white/[0.04] transition-colors"
+                                        hover:bg-[rgba(var(--overlay-rgb),0.04)] transition-colors"
                                     style={{ width: SIDE_W, minWidth: SIDE_W, backgroundColor: 'var(--bg-secondary)' }}
                                     onClick={() => setSelectedTask(task)}
                                     onContextMenu={readOnly ? undefined : e => { e.preventDefault(); onTaskClick(task, e.clientX, e.clientY); }}
                                 >
                                     <div className="flex items-center gap-1.5 flex-shrink-0 ml-4">
-                                        <span className="text-white/15 text-xs">└</span>
+                                        <span className="text-[rgba(var(--overlay-rgb),0.15)] text-xs">└</span>
                                         <span className="h-2 w-2 rounded-full flex-shrink-0"
                                             style={{ backgroundColor: PRIORITY_COLOR[task.priority] }} />
                                     </div>
 
                                     <span className={`text-xs font-medium leading-snug truncate flex-1
-                                        ${task.status === 'done' ? 'line-through text-white/35' : 'text-white/80'}
-                                        group-hover/label:text-white/95 transition-colors`}
+                                        ${task.status === 'done' ? 'line-through text-[rgba(var(--overlay-rgb),0.35)]' : 'text-[rgba(var(--overlay-rgb),0.8)]'}
+                                        group-hover/label:text-[rgba(var(--overlay-rgb),0.95)] transition-colors`}
                                         title={task.title}>
                                         {task.title}
                                     </span>
@@ -715,7 +755,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                             </span>
                                             {assigneeUsers.slice(0, 2).map(u => (
                                                 <div key={u.id}
-                                                    className="h-3.5 w-3.5 rounded-full flex items-center justify-center text-[6px] font-bold text-white"
+                                                    className="h-3.5 w-3.5 rounded-full flex items-center justify-center text-[6px] font-bold text-theme-primary"
                                                     style={{ backgroundColor: getUserColor(u.id) }}
                                                     title={u.name}>
                                                     {getUserInitials(u)}
@@ -738,7 +778,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                         </span>
                                     )}
                                     {!task.due && (
-                                        <span className="text-[9px] text-white/20 flex-shrink-0">—</span>
+                                        <span className="text-[9px] text-[rgba(var(--overlay-rgb),0.2)] flex-shrink-0">—</span>
                                     )}
                                 </div>
 
@@ -783,10 +823,10 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                     return (
                                         <div
                                             key={iso}
-                                            className={`group/gcell relative border-r border-white/5 last:border-r-0 min-h-[48px] select-none
+                                            className={`group/gcell relative border-r border-[rgba(var(--overlay-rgb),0.05)] last:border-r-0 min-h-[48px] select-none
                                                 ${isToday   ? 'bg-cyan-500/10'  : ''}
                                                 ${isWeekend ? 'bg-black/[0.18]' : ''}
-                                                ${isSelected ? 'ring-1 ring-inset ring-white/20' : ''}`}
+                                                ${isSelected ? 'ring-1 ring-inset ring-[rgba(var(--overlay-rgb),0.2)]' : ''}`}
                                             style={{
                                                 width: colW, minWidth: colW,
                                                 cursor: readOnly ? 'default' : dragVisual?.taskId === task.id ? 'crosshair' : 'pointer',
@@ -804,15 +844,15 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                             {/* Double barre séparateur de semaine (lundi) */}
                                             {days[colIdx]?.getDay() === 1 && days[colIdx]?.getDate() !== 1 && (
                                                 <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
-                                                    <div className="absolute inset-y-0 left-0 w-[1px] bg-white/18" />
-                                                    <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/8" />
+                                                    <div className="absolute inset-y-0 left-0 w-[1px] bg-[rgba(var(--overlay-rgb),0.18)]" />
+                                                    <div className="absolute inset-y-0 left-[3px] w-[1px] bg-[rgba(var(--overlay-rgb),0.08)]" />
                                                 </div>
                                             )}
                                             {/* Double trait début de mois */}
                                             {days[colIdx]?.getDate() === 1 && (
                                                 <div className="absolute inset-y-0 left-0 pointer-events-none z-10">
-                                                    <div className="absolute inset-y-0 left-0 w-[1px] bg-white/30" />
-                                                    <div className="absolute inset-y-0 left-[3px] w-[1px] bg-white/15" />
+                                                    <div className="absolute inset-y-0 left-0 w-[1px] bg-[rgba(var(--overlay-rgb),0.3)]" />
+                                                    <div className="absolute inset-y-0 left-[3px] w-[1px] bg-[rgba(var(--overlay-rgb),0.15)]" />
                                                 </div>
                                             )}
 
@@ -875,7 +915,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                                     {assignedUsers.slice(0, 3).map((user, i) => (
                                                         <div
                                                             key={user.id}
-                                                            className="h-5 w-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white ring-1 ring-black/40"
+                                                            className="h-5 w-5 rounded-full flex items-center justify-center text-[8px] font-bold text-theme-primary ring-1 ring-black/40"
                                                             style={{
                                                                 backgroundColor: getUserColor(user.id),
                                                                 marginLeft: i === 0 ? 0 : '-5px',
@@ -887,7 +927,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                                     ))}
                                                     {assignedUsers.length > 3 && (
                                                         <div
-                                                            className="h-5 w-5 rounded-full flex items-center justify-center text-[7px] font-bold text-white ring-1 ring-black/40 bg-white/25"
+                                                            className="h-5 w-5 rounded-full flex items-center justify-center text-[7px] font-bold text-theme-primary ring-1 ring-black/40 bg-[rgba(var(--overlay-rgb),0.25)]"
                                                             style={{ marginLeft: '-5px' }}>
                                                             +{assignedUsers.length - 3}
                                                         </div>
@@ -918,7 +958,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                                 const done  = task.subtasks!.filter(s => s.completed).length;
                                                 return (
                                                     <div className="absolute bottom-1 left-0 right-0 flex justify-center pointer-events-none">
-                                                        <span className={`text-[8px] font-bold leading-none ${done === total ? 'text-emerald-400/80' : 'text-white/40'}`}>
+                                                        <span className={`text-[8px] font-bold leading-none ${done === total ? 'text-emerald-400/80' : 'text-[rgba(var(--overlay-rgb),0.4)]'}`}>
                                                             {done}/{total}
                                                         </span>
                                                     </div>
@@ -980,7 +1020,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                                         </span>
                                     )}
                                 </div>
-                                <p className="text-sm font-semibold text-white leading-snug">{ev.title}</p>
+                                <p className="text-sm font-semibold text-theme-primary leading-snug">{ev.title}</p>
                             </div>
                             {/* Body */}
                             <div className="px-3 py-2 space-y-1.5">
@@ -1036,7 +1076,7 @@ export function TimelineView({ filteredTasks, onTaskClick, icsExportPath, select
                 >
                     <button
                         onClick={() => setSelectedTask(null)}
-                        className="absolute -top-3 -right-1 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
+                        className="absolute -top-3 -right-1 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-[rgba(var(--overlay-rgb),0.1)] hover:bg-[rgba(var(--overlay-rgb),0.2)] text-[rgba(var(--overlay-rgb),0.6)] hover:text-[rgb(var(--overlay-rgb))] transition-colors"
                     >
                         <X className="h-4 w-4" />
                     </button>

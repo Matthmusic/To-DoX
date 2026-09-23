@@ -17,11 +17,11 @@ function parseMarkdown(text: string): string {
     // Italique (*text*)
     .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
     // Code inline (`code`)
-    .replace(/`(.+?)`/g, '<code class="bg-white/10 px-1 rounded text-xs">$1</code>')
+    .replace(/`(.+?)`/g, '<code class="bg-[rgba(255,255,255,0.1)] px-1 rounded text-xs">$1</code>')
     // Listes (- item ou * item)
-    .replace(/^[\-\*] (.+)$/gm, '<li class="ml-4">• $1</li>')
+    .replace(/^[-*] (.+)$/gm, '<li class="ml-4">• $1</li>')
     // Liens [text](url)
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" class="underline hover:text-white/90">$1</a>')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" class="underline hover:text-[rgba(255,255,255,0.9)]">$1</a>')
     // Paragraphes (double saut de ligne)
     .replace(/\n\n/g, '<br/><br/>');
 }
@@ -80,7 +80,7 @@ export function UpdateNotification() {
           </div>
           <button
             onClick={() => setDismissed(true)}
-            className="text-white/80 hover:text-white transition-colors"
+            className="text-[rgba(255,255,255,0.8)] hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -103,7 +103,7 @@ export function UpdateNotification() {
           <Download className="w-6 h-6 flex-shrink-0 mt-0.5 animate-pulse" />
           <div className="flex-1">
             <h3 className="font-semibold mb-1">Téléchargement en cours...</h3>
-            <div className="bg-white/20 rounded-full h-2 mb-2">
+            <div className="bg-[rgba(255,255,255,0.2)] rounded-full h-2 mb-2">
               <div
                 className="bg-white rounded-full h-2 transition-all duration-300"
                 style={{ width: `${downloadProgress}%` }}
@@ -141,7 +141,7 @@ export function UpdateNotification() {
               <div className="mb-3">
                 <button
                   onClick={() => setChangelogExpanded(!changelogExpanded)}
-                  className="flex items-center gap-2 text-sm text-white/90 hover:text-white transition-colors mb-2"
+                  className="flex items-center gap-2 text-sm text-[rgba(255,255,255,0.9)] hover:text-white transition-colors mb-2"
                 >
                   {changelogExpanded ? (
                     <ChevronUp className="w-4 h-4" />
@@ -155,7 +155,7 @@ export function UpdateNotification() {
 
                 {changelogExpanded && (
                   <div
-                    className="text-xs bg-white/10 rounded-md p-3 max-h-48 overflow-y-auto text-white/90 leading-relaxed"
+                    className="text-xs bg-[rgba(255,255,255,0.1)] rounded-md p-3 max-h-48 overflow-y-auto text-[rgba(255,255,255,0.9)] leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: parseMarkdown(updateAvailable.releaseNotes || '') }}
                   />
                 )}
@@ -178,7 +178,7 @@ export function UpdateNotification() {
               {/* Lien vers toutes les releases GitHub */}
               <button
                 onClick={() => window.electronAPI?.openExternalUrl('https://github.com/Matthmusic/To-DoX/releases')}
-                className="flex items-center gap-1 text-white/80 hover:text-white px-3 py-2 rounded-md text-xs transition-colors"
+                className="flex items-center gap-1 text-[rgba(255,255,255,0.8)] hover:text-white px-3 py-2 rounded-md text-xs transition-colors"
                 title="Voir toutes les versions sur GitHub"
                 aria-label="Voir toutes les versions sur GitHub"
               >
@@ -189,7 +189,7 @@ export function UpdateNotification() {
           </div>
           <button
             onClick={() => setDismissed(true)}
-            className="text-white/80 hover:text-white transition-colors"
+            className="text-[rgba(255,255,255,0.8)] hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -216,7 +216,7 @@ export function UpdateNotification() {
           </div>
           <button
             onClick={() => setDismissed(true)}
-            className="text-white/80 hover:text-white transition-colors"
+            className="text-[rgba(255,255,255,0.8)] hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -230,7 +230,7 @@ export function UpdateNotification() {
     <button
       onClick={checkForUpdates}
       disabled={checking}
-      className="fixed bottom-4 right-4 z-40 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+      className="fixed bottom-4 right-4 z-40 border border-theme-primary bg-theme-secondary text-theme-primary px-4 py-2 rounded-lg shadow-lg hover:bg-[rgba(var(--overlay-rgb),0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       title="Vérifier les mises à jour"
       aria-label="Vérifier les mises à jour"
     >

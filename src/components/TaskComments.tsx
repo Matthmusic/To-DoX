@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { Send, Trash2, MessageSquare, AtSign } from 'lucide-react';
 import useStore from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from '../hooks/useTheme';
 
 interface TaskCommentsProps {
@@ -64,7 +65,7 @@ function renderText(text: string, userNames: string[], primary: string, currentU
 }
 
 export function TaskComments({ taskId }: TaskCommentsProps) {
-    const { comments, addComment, deleteComment, users, currentUser, highlightedCommentId, setHighlightedCommentId } = useStore();
+    const { comments, addComment, deleteComment, users, currentUser, highlightedCommentId, setHighlightedCommentId } = useStore(useShallow((s) => ({ comments: s.comments, addComment: s.addComment, deleteComment: s.deleteComment, users: s.users, currentUser: s.currentUser, highlightedCommentId: s.highlightedCommentId, setHighlightedCommentId: s.setHighlightedCommentId })));
     const { activeTheme } = useTheme();
     const primary = activeTheme.palette.primary;
 
@@ -219,12 +220,12 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                                 {/* Bulle */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-baseline gap-2 mb-0.5">
-                                        <span className="text-[10px] font-bold text-white/70">{name}</span>
-                                        <span className="text-[9px] text-white/30">{formatDate(comment.createdAt)}</span>
+                                        <span className="text-[10px] font-bold text-[rgba(var(--overlay-rgb),0.7)]">{name}</span>
+                                        <span className="text-[9px] text-[rgba(var(--overlay-rgb),0.3)]">{formatDate(comment.createdAt)}</span>
                                         {isOwn && (
                                             <button
                                                 onClick={() => deleteComment(taskId, comment.id)}
-                                                className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-white/25 hover:text-rose-400"
+                                                className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity text-[rgba(var(--overlay-rgb),0.25)] hover:text-rose-400"
                                                 title="Supprimer"
                                                 aria-label="Supprimer"
                                             >
@@ -233,10 +234,10 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                                         )}
                                     </div>
                                     <p
-                                        className="text-[11px] text-white/80 leading-snug break-words rounded-lg px-2.5 py-1.5 border"
+                                        className="text-[11px] text-[rgba(var(--overlay-rgb),0.8)] leading-snug break-words rounded-lg px-2.5 py-1.5 border"
                                         style={mentionsMe
                                             ? { backgroundColor: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.35)', borderLeft: '3px solid #f59e0b' }
-                                            : { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.05)' }
+                                            : { backgroundColor: 'rgba(var(--overlay-rgb),0.05)', borderColor: 'rgba(var(--overlay-rgb),0.05)' }
                                         }
                                     >
                                         {renderText(comment.text, userNames, primary, currentUserName)}
@@ -259,24 +260,24 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                             onKeyDown={handleKeyDown}
                             placeholder="Ajouter un commentaire… Tapez @ pour mentionner"
                             rows={2}
-                            className="w-full resize-none text-[11px] text-white/80 placeholder:text-white/25 bg-white/5 border border-white/10 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-white/25 transition-colors"
+                            className="w-full resize-none text-[11px] text-[rgba(var(--overlay-rgb),0.8)] placeholder:text-[rgba(var(--overlay-rgb),0.25)] bg-[rgba(var(--overlay-rgb),0.05)] border border-[rgba(var(--overlay-rgb),0.1)] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[rgba(var(--overlay-rgb),0.25)] transition-colors"
                         />
 
                         {/* Dropdown @mention */}
                         {mentionQuery !== null && filteredUsers.length > 0 && (
                             <div
                                 ref={dropdownRef}
-                                className="absolute bottom-full left-0 mb-1 z-50 min-w-40 rounded-xl border border-white/10 bg-[#1a1f35] shadow-2xl overflow-hidden"
+                                className="absolute bottom-full left-0 mb-1 z-50 min-w-40 rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-theme-secondary shadow-2xl overflow-hidden"
                             >
-                                <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-white/5">
+                                <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-[rgba(var(--overlay-rgb),0.05)]">
                                     <AtSign className="h-3 w-3" style={{ color: primary }} />
-                                    <span className="text-[9px] font-bold uppercase tracking-wider text-white/40">Mentionner</span>
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-[rgba(var(--overlay-rgb),0.4)]">Mentionner</span>
                                 </div>
                                 {filteredUsers.map((u, i) => (
                                     <button
                                         key={u.id}
                                         onMouseDown={e => { e.preventDefault(); insertMention(u.name); }}
-                                        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left hover:bg-white/5 transition-colors"
+                                        className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left hover:bg-[rgba(var(--overlay-rgb),0.05)] transition-colors"
                                     >
                                         <div
                                             className="h-5 w-5 rounded-full flex items-center justify-center text-[8px] font-black border flex-shrink-0"
@@ -284,9 +285,9 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                                         >
                                             {getInitials(u.name)}
                                         </div>
-                                        <span className="text-[11px] font-semibold text-white/80">{u.name}</span>
+                                        <span className="text-[11px] font-semibold text-[rgba(var(--overlay-rgb),0.8)]">{u.name}</span>
                                         {i === 0 && (
-                                            <span className="ml-auto text-[8px] text-white/25">Tab</span>
+                                            <span className="ml-auto text-[8px] text-[rgba(var(--overlay-rgb),0.25)]">Tab</span>
                                         )}
                                     </button>
                                 ))}
@@ -308,7 +309,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                     </button>
                 </div>
             ) : (
-                <p className="text-[10px] text-white/25 italic">Connectez-vous pour commenter</p>
+                <p className="text-[10px] text-[rgba(var(--overlay-rgb),0.25)] italic">Connectez-vous pour commenter</p>
             )}
         </div>
     );

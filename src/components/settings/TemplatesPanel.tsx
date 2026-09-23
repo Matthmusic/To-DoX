@@ -1,6 +1,7 @@
 import { useState, type KeyboardEvent } from 'react';
 import { LayoutTemplate, Trash2, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import useStore from '../../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from '../../hooks/useTheme';
 import { GlassModal } from '../ui/GlassModal';
 
@@ -9,7 +10,7 @@ interface TemplatesPanelProps {
 }
 
 export function TemplatesPanel({ onClose }: TemplatesPanelProps) {
-    const { templates, addTemplate, deleteTemplate } = useStore();
+    const { templates, addTemplate, deleteTemplate } = useStore(useShallow((s) => ({ templates: s.templates, addTemplate: s.addTemplate, deleteTemplate: s.deleteTemplate })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
 
@@ -65,7 +66,7 @@ export function TemplatesPanel({ onClose }: TemplatesPanelProps) {
                         ) : (
                             <div className="space-y-2">
                                 {templates.map(tpl => (
-                                    <div key={tpl.id} className="rounded-xl border border-white/10 bg-white/5">
+                                    <div key={tpl.id} className="rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)]">
                                         <div className="flex items-center justify-between px-4 py-3">
                                             <button
                                                 onClick={() => setExpandedId(expandedId === tpl.id ? null : tpl.id)}
@@ -75,7 +76,7 @@ export function TemplatesPanel({ onClose }: TemplatesPanelProps) {
                                                     ? <ChevronDown className="h-4 w-4 text-slate-400" />
                                                     : <ChevronRight className="h-4 w-4 text-slate-400" />
                                                 }
-                                                <span className="font-medium text-white">{tpl.name}</span>
+                                                <span className="font-medium text-theme-primary">{tpl.name}</span>
                                                 <span className="text-xs text-slate-500">
                                                     {tpl.subtaskTitles.length} sous-tâche{tpl.subtaskTitles.length > 1 ? 's' : ''}
                                                 </span>
@@ -106,7 +107,7 @@ export function TemplatesPanel({ onClose }: TemplatesPanelProps) {
                     </section>
 
                     {/* Formulaire de création */}
-                    <section className="border-t border-white/10 pt-6">
+                    <section className="border-t border-[rgba(var(--overlay-rgb),0.1)] pt-6">
                         <h3 className="text-sm font-bold text-slate-400 uppercase mb-3 flex items-center gap-2">
                             <Plus className="h-4 w-4" />
                             Nouveau template
@@ -120,7 +121,7 @@ export function TemplatesPanel({ onClose }: TemplatesPanelProps) {
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
                                     placeholder="Ex: Revue de code, Déploiement..."
-                                    className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-400/50 focus:bg-white/10 transition"
+                                    className="w-full rounded-xl bg-[rgba(var(--overlay-rgb),0.05)] border border-[rgba(var(--overlay-rgb),0.1)] px-3 py-2 text-sm text-theme-primary placeholder-slate-500 focus:outline-none focus:border-violet-400/50 focus:bg-[rgba(var(--overlay-rgb),0.1)] transition"
                                 />
                             </div>
 
@@ -134,13 +135,15 @@ export function TemplatesPanel({ onClose }: TemplatesPanelProps) {
                                         onChange={e => setNewSubtaskInput(e.target.value)}
                                         onKeyDown={handleSubtaskKeyDown}
                                         placeholder="Titre de la sous-tâche..."
-                                        className="flex-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-400/50 focus:bg-white/10 transition"
+                                        className="flex-1 rounded-xl bg-[rgba(var(--overlay-rgb),0.05)] border border-[rgba(var(--overlay-rgb),0.1)] px-3 py-2 text-sm text-theme-primary placeholder-slate-500 focus:outline-none focus:border-violet-400/50 focus:bg-[rgba(var(--overlay-rgb),0.1)] transition"
                                     />
                                     <button
                                         type="button"
                                         onClick={handleAddSubtask}
                                         disabled={!newSubtaskInput.trim()}
                                         className="px-3 py-2 rounded-xl bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                        title="Ajouter la sous-tâche"
+                                        aria-label="Ajouter la sous-tâche"
                                     >
                                         <Plus className="h-4 w-4" />
                                     </button>

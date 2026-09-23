@@ -6,6 +6,13 @@ import type { Theme, ThemeMode } from '../types';
 
 const THEME_STORAGE_KEY = 'theme_settings';
 
+/** "#RRGGBB" -> "R, G, B" (pour injection dans rgba(var(--x), alpha)). null si le format ne matche pas. */
+function hexToRgbTriplet(hex: string): string | null {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) return null;
+  return [m[1], m[2], m[3]].map((h) => parseInt(h, 16)).join(', ');
+}
+
 /**
  * Applique le thème (variables CSS + forçage du recalcul du gradient). Utilitaire pur,
  * partagé par `useThemeEffects` (seul appelant des effets qui en dépendent).
@@ -19,11 +26,25 @@ function applyTheme(theme: Theme, customAccent?: string) {
   // Ajouter classe de transition
   body.classList.add('theme-transitioning');
 
+  // Marqueur pour les surcharges CSS de src/index.css (voir la section "Surcharges thème
+  // clair") -- de nombreux encadrés colorés (info/succès/erreur/avertissement) utilisent
+  // des teintes claires (text-rose-100, text-blue-200...) pensées pour un fond sombre ;
+  // illisibles telles quelles sur fond clair, corrigées via ce sélecteur plutôt qu'en
+  // retouchant chaque occurrence une par une (200+ dans le code).
+  root.classList.toggle('theme-light', theme.mode === 'light');
+
   // Override de la couleur primaire si accent custom défini
   const primary = customAccent || palette.primary;
+  const primaryRgb = hexToRgbTriplet(primary) ?? '255, 255, 255';
 
   // Définir les variables CSS sur :root
   root.style.setProperty('--color-primary', primary);
+  // Triplet RGB de l'accent -- pour les endroits qui ont besoin d'une opacité variable de
+  // la couleur d'accent (ex. surbrillance de sélection dans les listes d'autocomplétion,
+  // ex-#1E3A8A codé en dur, indépendant du thème -- voir /impeccable audit) via
+  // bg-[rgba(var(--color-primary-rgb),0.6)] ; bg-[var(--color-primary)]/60 ne marche pas,
+  // Tailwind ne peut pas décomposer l'opacité d'une valeur var() à la compilation.
+  root.style.setProperty('--color-primary-rgb', primaryRgb);
   root.style.setProperty('--color-secondary', palette.secondary);
 
   root.style.setProperty('--bg-primary', palette.bgPrimary);
@@ -40,6 +61,23 @@ function applyTheme(theme: Theme, customAccent?: string) {
   root.style.setProperty('--gradient-from', palette.gradientFrom);
   root.style.setProperty('--gradient-via', palette.gradientVia);
   root.style.setProperty('--gradient-to', palette.gradientTo);
+
+  // Triplet RGB (sans "rgb()") pour les surcouches translucides ("verre dépoli" des
+  // boutons/cartes/bordures, ex. l'ancien bg-white à 5% d'opacité) -- utilisé via
+  // bg-[rgba(var(--overlay-rgb),0.05)] pour que cet effet reste blanc en thème sombre
+  // et devienne un voile sombre cohérent en thème clair, au lieu d'un blanc figé qui
+  // deviendrait invisible (ou pire, un halo clair parasite) sur un fond clair.
+  root.style.setProperty('--overlay-rgb', theme.mode === 'dark' ? '255, 255, 255' : '15, 23, 42');
+
+  // Paire d'ombres pour l'effet néomorphique des colonnes Kanban (double ombre
+  // claire/sombre qui donne un relief doux par rapport au fond, sans bordure). L'ombre
+  // "claire" vient de la couleur d'accent du thème en sombre (une lueur discrète plutôt
+  // qu'un blanc plat) et du blanc pur en clair (où elle doit être visible = opacité
+  // élevée) ; l'ombre "sombre" est un noir profond en sombre, un gris ardoise doux en
+  // clair (un gris neutre paraîtrait sale sur un fond déjà très clair). Opacités
+  // distinctes par thème, d'où des rgba() complets plutôt que de simples triplets RGB.
+  root.style.setProperty('--neu-shadow-light', theme.mode === 'dark' ? `rgba(${primaryRgb}, 0.12)` : 'rgba(255, 255, 255, 0.85)');
+  root.style.setProperty('--neu-shadow-dark', theme.mode === 'dark' ? 'rgba(0, 0, 0, 0.45)' : 'rgba(100, 116, 139, 0.2)');
 
   // FORCER LE RECALCUL DU GRADIENT (fix: gradients ne se recalculent pas auto avec CSS vars)
   // On applique le gradient directement avec les valeurs de la palette

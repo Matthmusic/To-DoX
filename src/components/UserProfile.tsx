@@ -1,5 +1,6 @@
 import { LogOut } from "lucide-react";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { confirmModal } from "../utils/confirm";
 import { useTheme } from "../hooks/useTheme";
 import { clearToken } from "../services/api";
@@ -11,7 +12,7 @@ function getUserInitials(name: string): string {
 }
 
 export function UserProfile() {
-  const { users, currentUser, localAuthUserId, setCurrentUser, setLocalAuthUserId, setAuthToken } = useStore();
+  const { users, currentUser, localAuthUserId, setCurrentUser, setLocalAuthUserId, setAuthToken } = useStore(useShallow((s) => ({ users: s.users, currentUser: s.currentUser, localAuthUserId: s.localAuthUserId, setCurrentUser: s.setCurrentUser, setLocalAuthUserId: s.setLocalAuthUserId, setAuthToken: s.setAuthToken })));
   const { activeTheme } = useTheme();
   const primary = activeTheme.palette.primary;
 

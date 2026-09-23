@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { GlassModal } from '../ui/GlassModal';
 import useStore from '../../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from '../../hooks/useTheme';
 
 interface OutlookPanelProps {
@@ -25,7 +26,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
         <button
             onClick={onChange}
             className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
-            style={{ backgroundColor: checked ? activeTheme.palette.primary : 'rgba(255,255,255,0.2)' }}
+            style={{ backgroundColor: checked ? activeTheme.palette.primary : 'rgba(var(--overlay-rgb),0.2)' }}
             role="switch"
             aria-checked={checked}
         >
@@ -39,15 +40,15 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
 function SectionTitle({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-400 my-1">
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px bg-[rgba(var(--overlay-rgb),0.1)]" />
             {children}
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px bg-[rgba(var(--overlay-rgb),0.1)]" />
         </div>
     );
 }
 
 export function OutlookPanel({ onClose, onSyncNow, icsExportPath, icsServerUrl }: OutlookPanelProps) {
-    const { outlookConfig, setOutlookConfig, outlookEvents } = useStore();
+    const { outlookConfig, setOutlookConfig, outlookEvents } = useStore(useShallow((s) => ({ outlookConfig: s.outlookConfig, setOutlookConfig: s.setOutlookConfig, outlookEvents: s.outlookEvents })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
 
@@ -136,11 +137,11 @@ export function OutlookPanel({ onClose, onSyncNow, icsExportPath, icsServerUrl }
             <div className="space-y-5">
 
                 {/* Activation globale */}
-                <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-theme-primary">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-[rgba(var(--overlay-rgb),0.05)] border border-theme-primary">
                     <div className="flex items-center gap-3">
                         <Power className="w-5 h-5 text-indigo-400" />
                         <div>
-                            <div className="font-semibold text-white">Activer la synchronisation</div>
+                            <div className="font-semibold text-theme-primary">Activer la synchronisation</div>
                             <div className="text-xs text-slate-400">Importe les événements Outlook dans la Timeline</div>
                         </div>
                     </div>
@@ -153,7 +154,7 @@ export function OutlookPanel({ onClose, onSyncNow, icsExportPath, icsServerUrl }
                 {/* ── IMPORT Outlook → To-DoX ── */}
                 <SectionTitle><Link className="w-3.5 h-3.5" /> Importer depuis Outlook</SectionTitle>
 
-                <div className="space-y-3 rounded-xl bg-white/5 border border-white/10 p-4">
+                <div className="space-y-3 rounded-xl bg-[rgba(var(--overlay-rgb),0.05)] border border-[rgba(var(--overlay-rgb),0.1)] p-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
                             URL ICS publiée
@@ -165,7 +166,7 @@ export function OutlookPanel({ onClose, onSyncNow, icsExportPath, icsServerUrl }
                                 onChange={e => { setUrlInput(e.target.value); setUrlError(''); }}
                                 onBlur={handleUrlSave}
                                 placeholder="https://outlook.office365.com/owa/calendar/..."
-                                className="flex-1 rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-indigo-400 focus:bg-white/15 transition"
+                                className="flex-1 rounded-lg bg-[rgba(var(--overlay-rgb),0.1)] border border-[rgba(var(--overlay-rgb),0.2)] px-3 py-2 text-sm text-theme-primary placeholder-slate-500 outline-none focus:border-indigo-400 focus:bg-[rgba(var(--overlay-rgb),0.15)] transition"
                             />
                         </div>
                         {urlError && (
@@ -213,7 +214,7 @@ export function OutlookPanel({ onClose, onSyncNow, icsExportPath, icsServerUrl }
                 {/* ── EXPORT To-DoX → Outlook ── */}
                 <SectionTitle><Upload className="w-3.5 h-3.5" /> Exporter vers Outlook</SectionTitle>
 
-                <div className="space-y-3 rounded-xl bg-white/5 border border-white/10 p-4">
+                <div className="space-y-3 rounded-xl bg-[rgba(var(--overlay-rgb),0.05)] border border-[rgba(var(--overlay-rgb),0.1)] p-4">
                     {!isElectron && (
                         <div className="flex gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-300">
                             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -225,7 +226,7 @@ export function OutlookPanel({ onClose, onSyncNow, icsExportPath, icsServerUrl }
                         <div className="flex items-center gap-3">
                             <Upload className="w-5 h-5 text-indigo-400" />
                             <div>
-                                <div className="font-semibold text-white text-sm">Exporter les tâches avec échéances</div>
+                                <div className="font-semibold text-theme-primary text-sm">Exporter les tâches avec échéances</div>
                                 <div className="text-xs text-slate-400">
                                     Génère <code className="font-mono text-indigo-300">todox-tasks.ics</code> à côté de vos données
                                 </div>
@@ -274,12 +275,12 @@ export function OutlookPanel({ onClose, onSyncNow, icsExportPath, icsServerUrl }
                         <div className="space-y-2">
                             <div className="text-xs text-slate-400 font-medium">Fichier généré :</div>
                             <div className="flex items-center gap-2">
-                                <code className="flex-1 rounded-lg bg-black/30 border border-white/10 px-3 py-2 text-xs font-mono text-slate-300 truncate">
+                                <code className="flex-1 rounded-lg bg-black/30 border border-[rgba(var(--overlay-rgb),0.1)] px-3 py-2 text-xs font-mono text-slate-300 truncate">
                                     {icsExportPath}
                                 </code>
                                 <button
                                     onClick={handleCopyPath}
-                                    className="shrink-0 flex items-center gap-1.5 rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-xs text-slate-300 hover:bg-white/15 transition"
+                                    className="shrink-0 flex items-center gap-1.5 rounded-lg bg-[rgba(var(--overlay-rgb),0.1)] border border-[rgba(var(--overlay-rgb),0.2)] px-3 py-2 text-xs text-slate-300 hover:bg-[rgba(var(--overlay-rgb),0.15)] transition"
                                     title="Copier le chemin Windows"
                                     aria-label="Copier le chemin Windows"
                                 >

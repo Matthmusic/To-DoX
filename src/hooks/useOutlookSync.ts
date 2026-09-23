@@ -115,7 +115,6 @@ export function useOutlookSync() {
             window.electronAPI?.outlook.stopHttpServer().catch(() => {});
             if (isMounted.current) setIcsServerUrl(null);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [outlookConfig.exportEnabled, icsExportPath]);
 
     return { fetchOutlookEvents, icsExportPath, icsViewPath, icsServerUrl };

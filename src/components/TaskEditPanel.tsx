@@ -5,16 +5,15 @@ import { Autocomplete } from "./Autocomplete";
 import { ProjectAutocomplete } from "./ProjectAutocomplete";
 import { DatePickerDropdown } from "./DatePickerModal";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import type { Task, TaskData, RecurrenceType } from "../types";
 import { confirmModal, alertModal } from "../utils/confirm";
-import { formatDateFull } from "../utils";
-import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw, Calendar, ExternalLink, Link2, Link2Off } from "lucide-react";
+import { formatDateFull, devLog } from "../utils";
+import { Repeat, BookmarkPlus, CheckCircle2, RotateCcw, Calendar, Link2, Link2Off } from "lucide-react";
 import { LinkedTextContent } from "./LinkedTextContent";
 import {
-    getPathDisplayName,
     hasSupportedLinkDropPayload,
     insertDroppedText,
-    parseFilePaths,
     resolveDroppedLinkFromDataTransfer,
 } from "../utils/taskLinks";
 
@@ -29,7 +28,7 @@ interface TaskEditPanelProps {
  * Panneau d'édition pour clic droit sur une tâche
  */
 export function TaskEditPanel({ task: initialTask, position, onClose, centered = false }: TaskEditPanelProps) {
-    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate, setReviewers, setTaskParent, currentUser } = useStore();
+    const { updateTask, removeTask, archiveTask, users, projectHistory, tasks, addTemplate, setReviewers, setTaskParent, currentUser } = useStore(useShallow((s) => ({ updateTask: s.updateTask, removeTask: s.removeTask, archiveTask: s.archiveTask, users: s.users, projectHistory: s.projectHistory, tasks: s.tasks, addTemplate: s.addTemplate, setReviewers: s.setReviewers, setTaskParent: s.setTaskParent, currentUser: s.currentUser })));
     const sortedUsers = [...users].sort((a, b) => {
         if (a.id === currentUser) return -1;
         if (b.id === currentUser) return 1;
@@ -97,7 +96,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
             const s = notesStateRef.current;
             s.setNotesDropTarget(false);
             s.setNotesEditDropTarget(false);
-            console.log('[NATIVE DROP panel notes]', e.dataTransfer?.files?.length, e.dataTransfer?.files?.[0]?.name);
+            devLog('[NATIVE DROP panel notes]', e.dataTransfer?.files?.length, e.dataTransfer?.files?.[0]?.name);
             if (!e.dataTransfer) return;
             let start: number | undefined;
             let end: number | undefined;
@@ -117,7 +116,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
         };
         el.addEventListener('drop', nativeDrop);
         return () => el.removeEventListener('drop', nativeDrop);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         function closeOnClick(e: MouseEvent) {
@@ -161,13 +160,25 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
         }
         top = Math.max(topPadding, top);
 
+        // Filet de sécurité final : un panneau avec beaucoup de champs peut rester plus
+        // haut que l'écran même une fois retourné vers le haut et clampé sous le header
+        // (petite fenêtre, header sur 2 lignes...). Sans ce clamp, le bas du panneau
+        // dépassait de la fenêtre -- signalé en conditions réelles comme débordant sous
+        // le bureau Windows, cachant la barre des tâches et rendant le panneau
+        // impossible à fermer normalement. Le contenu reste consultable via le scroll
+        // interne (overflow-y-auto + max-h-*) ; mieux vaut chevaucher un peu le header
+        // que sortir de l'écran.
+        if (top + menuHeight + padding > window.innerHeight) {
+            top = Math.max(padding, window.innerHeight - menuHeight - padding);
+        }
+
         setAdjustedPosition({ top, left });
     }, [position.x, position.y]);
 
     const panel = (
         <div
             ref={menuRef}
-            className="fixed z-[99999] w-[calc(100vw-1rem)] sm:w-[32rem] max-h-[85vh] sm:max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-white/20 bg-white/5 p-3 text-slate-100 shadow-2xl backdrop-blur-xl"
+            className="fixed z-[99999] w-[calc(100vw-1rem)] sm:w-[32rem] max-h-[85vh] sm:max-h-[calc(100vh-32px)] overflow-y-auto rounded-2xl border border-[rgba(var(--overlay-rgb),0.2)] bg-theme-secondary text-slate-100 shadow-2xl backdrop-blur-xl p-3"
             style={
                 centered
                     ? {
@@ -190,7 +201,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                     onChange={(val) => onUpdate(task.id, { status: val })}
                     options={STATUSES}
                     placeholder="Statut"
-                    className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                    className="w-full rounded-2xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                     getValue={(s) => s.id}
                     getLabel={(s) => s.label}
                 />
@@ -202,7 +213,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                     onChange={(e) => setLocalTitle(e.target.value)}
                     onBlur={() => localTitle !== task.title && onUpdate(task.id, { title: localTitle })}
                     onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLElement).blur()}
-                    className="rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 uppercase focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                    className="rounded-2xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1 text-slate-100 uppercase focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 />
 
                 <label className="mt-2 text-xs text-slate-400">Projet</label>
@@ -218,7 +229,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                     }}
                     projectHistory={projectHistory}
                     placeholder="Projet"
-                    className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] uppercase"
+                    className="w-full rounded-2xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] uppercase"
                 />
 
                 <label className="mt-2 text-xs text-slate-400">Échéance</label>
@@ -227,7 +238,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                         ref={dueDateButtonRef}
                         type="button"
                         onClick={() => setShowDateDropdown(v => !v)}
-                        className="flex w-full items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-slate-100 transition hover:bg-white/10"
+                        className="flex w-full items-center gap-2 rounded-2xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1.5 text-sm text-slate-100 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                     >
                         <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
                         <span>{task.due ? formatDateFull(task.due) : 'Aucune date'}</span>
@@ -247,7 +258,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                     onChange={(val) => onUpdate(task.id, { priority: val })}
                     options={PRIORITIES}
                     placeholder="Priorité"
-                    className="w-full rounded-2xl border border-white/15 bg-white/5 px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                    className="w-full rounded-2xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1 text-left text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                     getValue={(p) => p.id}
                     getLabel={(p) => p.label}
                 />
@@ -264,9 +275,9 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                 />
 
                 <label className="mt-2 text-xs text-slate-400">Assigné à (sélection multiple)</label>
-                <div className="w-full rounded-2xl border border-white/15 bg-white/5 p-2 space-y-1 max-h-32 overflow-y-auto">
+                <div className="w-full rounded-2xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] p-2 space-y-1 max-h-32 overflow-y-auto">
                     {sortedUsers.map(user => (
-                        <label key={user.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 cursor-pointer transition">
+                        <label key={user.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[rgba(var(--overlay-rgb),0.05)] cursor-pointer transition">
                             <input
                                 type="checkbox"
                                 checked={task.assignedTo.includes(user.id)}
@@ -286,7 +297,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                 <label className="mt-2 text-xs text-violet-400">Réviseurs</label>
                 <div className="w-full rounded-2xl border border-violet-400/20 bg-violet-400/5 p-2 space-y-1 max-h-32 overflow-y-auto">
                     {sortedUsers.map(user => (
-                        <label key={user.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 cursor-pointer transition">
+                        <label key={user.id} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-[rgba(var(--overlay-rgb),0.05)] cursor-pointer transition">
                             <input
                                 type="checkbox"
                                 checked={(task.reviewers || []).includes(user.id)}
@@ -344,12 +355,12 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                             ).slice(0, 8);
                             if (candidates.length === 0) return null;
                             return (
-                                <div className="absolute z-50 mt-1 w-full rounded-xl border border-white/10 bg-slate-800 shadow-xl overflow-hidden">
+                                <div className="absolute z-50 mt-1 w-full rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-slate-800 shadow-xl overflow-hidden">
                                     {candidates.map(t => (
                                         <button
                                             key={t.id}
                                             onClick={() => { setTaskParent(task.id, t.id); setParentSearch(""); }}
-                                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/10 transition"
+                                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-200 hover:bg-[rgba(var(--overlay-rgb),0.1)] transition"
                                         >
                                             <Link2 className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
                                             <span className="truncate">{t.title}</span>
@@ -366,7 +377,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                 {(task.reviewValidatedBy || task.reviewRejectedBy) && (
                     <>
                         <label className="mt-2 text-xs text-slate-400">Historique révision</label>
-                        <div className="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2">
+                        <div className="rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-3 space-y-2">
                             {task.reviewValidatedBy && (
                                 <div className="flex items-center gap-2 text-xs text-emerald-400">
                                     <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
@@ -411,7 +422,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                             setNotesEditDropTarget(true);
                         }}
                         onDragLeave={() => setNotesEditDropTarget(false)}
-                        className={`rounded-2xl border px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] transition ${notesEditDropTarget ? 'border-blue-400/60 bg-blue-400/10' : 'border-white/15 bg-white/5'}`}
+                        className={`rounded-2xl border px-2 py-1 text-slate-100 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition ${notesEditDropTarget ? 'border-blue-400/60 bg-blue-400/10' : 'border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)]'}`}
                         rows={3}
                         autoFocus
                     />
@@ -424,36 +435,13 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                             setNotesDropTarget(true);
                         }}
                         onDragLeave={() => setNotesDropTarget(false)}
-                        className={`min-h-[60px] cursor-text rounded-2xl border px-2 py-1 text-sm transition ${notesDropTarget ? 'border-blue-400/60 bg-blue-400/10' : 'border-white/15 bg-white/5'}`}
+                        className={`min-h-[60px] cursor-text rounded-2xl border px-2 py-1 text-sm transition ${notesDropTarget ? 'border-blue-400/60 bg-blue-400/10' : 'border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)]'}`}
                         title="Cliquer pour éditer · Déposer un fichier pour insérer son chemin"
                         aria-label="Cliquer pour éditer · Déposer un fichier pour insérer son chemin"
                     >
                         {localNotes ? (
                             <span className="whitespace-pre-wrap leading-relaxed">
                                 <LinkedTextContent text={localNotes} />
-                                {false && parseFilePaths(localNotes).map((part, idx) =>
-                                    part.type === 'path' ? (
-                                        <button
-                                            key={idx}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (window.electronAPI?.openFolder) window.electronAPI.openFolder(part.content);
-                                            }}
-                                            onContextMenu={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                navigator.clipboard.writeText(part.content);
-                                            }}
-                                            className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
-                                            title={part.content}
-                                        >
-                                            <ExternalLink className="h-3 w-3" />
-                                            {getPathDisplayName(part.content)}
-                                        </button>
-                                    ) : (
-                                        <span key={idx} className="text-slate-300">{part.content}</span>
-                                    )
-                                )}
                             </span>
                         ) : (
                             <span className="text-slate-500 italic">Ajouter une note ou un fichier/dossier...</span>
@@ -476,7 +464,7 @@ export function TaskEditPanel({ task: initialTask, position, onClose, centered =
                             className={`rounded-xl px-3 py-1 text-xs transition border ${
                                 (task.recurrence?.type ?? null) === type
                                     ? 'border-blue-400/60 bg-blue-400/20 text-blue-200'
-                                    : 'border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
+                                    : 'border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] text-slate-400 hover:bg-[rgba(var(--overlay-rgb),0.1)]'
                             }`}
                         >
                             {type === null ? 'Aucune' : type === 'daily' ? 'Quotidien' : type === 'weekly' ? 'Hebdo' : 'Mensuel'}

@@ -4,6 +4,7 @@ import logoSvg from '../assets/To Do X.svg';
 import { UserProfile } from './UserProfile';
 import { useTheme } from '../hooks/useTheme';
 import useStore from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import { VIP_USERS, FIXED_USERS } from '../constants';
 import { getInitials } from '../utils';
 import citationsData from '../assets/citations_bureau_etudes_elec_btp_400.json';
@@ -28,16 +29,12 @@ function getDailyQuote(): { citation: string; categorie: string } {
     return citationsData.citations[idx];
 }
 
-interface TitleBarProps {
-    onTaskClick?: (taskId: string) => void;
-}
-
-export function TitleBar({ onTaskClick: _onTaskClick }: TitleBarProps) {
+export function TitleBar() {
   const [isMaximized, setIsMaximized] = useState(false);
   const [showFullQuote, setShowFullQuote] = useState(false);
   const dailyQuote = getDailyQuote();
   const { activeTheme } = useTheme();
-  const { users, currentUser, viewAsUser, appNotifications, setCurrentUser, setViewAsUser } = useStore();
+  const { users, currentUser, viewAsUser, appNotifications, setCurrentUser, setViewAsUser } = useStore(useShallow((s) => ({ users: s.users, currentUser: s.currentUser, viewAsUser: s.viewAsUser, appNotifications: s.appNotifications, setCurrentUser: s.setCurrentUser, setViewAsUser: s.setViewAsUser })));
   const currentUserEmail = users.find(u => u.id === currentUser)?.email;
   const isCurrentUserVip = currentUserEmail ? VIP_EMAILS.has(currentUserEmail) : false;
   const visibleTabs = (() => {
@@ -178,7 +175,7 @@ useEffect(() => {
           <span
             className="text-[11px] italic whitespace-nowrap transition-colors"
             style={{
-              color: 'rgba(255,255,255,0.88)',
+              color: activeTheme.palette.textPrimary,
               textShadow: '0 1px 8px rgba(0,0,0,0.45)',
             }}
           >
@@ -204,7 +201,7 @@ useEffect(() => {
             >
               <p
                 className="text-[12px] italic leading-relaxed"
-                style={{ color: 'rgba(255,255,255,0.75)' }}
+                style={{ color: activeTheme.palette.textSecondary }}
               >
                 « {dailyQuote.citation} »
               </p>

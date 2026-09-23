@@ -3,6 +3,7 @@ import type { Task } from "../../types";
 import { businessDayDelta } from "../../utils";
 import { PriorityBadge } from "./PriorityBadge";
 import useStore from "../../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 
 interface ChildTaskTreeProps {
     parentTask: Task;
@@ -20,7 +21,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 
 /** Arborescence des tâches enfantes d'une tâche parente */
 export function ChildTaskTree({ parentTask, allTasks, onOpenTask }: ChildTaskTreeProps) {
-    const { setTaskParent } = useStore();
+    const { setTaskParent } = useStore(useShallow((s) => ({ setTaskParent: s.setTaskParent })));
 
     const children = allTasks
         .filter(t => t.parentTaskId === parentTask.id && !t.archived && !t.deletedAt)
@@ -29,7 +30,7 @@ export function ChildTaskTree({ parentTask, allTasks, onOpenTask }: ChildTaskTre
     if (children.length === 0) return null;
 
     return (
-        <div className="mt-2 space-y-1 border-t border-white/10 pt-2">
+        <div className="mt-2 space-y-1 border-t border-[rgba(var(--overlay-rgb),0.1)] pt-2">
             <div className="flex items-center gap-1.5 mb-1.5">
                 <Link2Off className="h-3 w-3 text-indigo-400" />
                 <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">
@@ -51,7 +52,7 @@ export function ChildTaskTree({ parentTask, allTasks, onOpenTask }: ChildTaskTre
                 return (
                     <div
                         key={child.id}
-                        className="flex items-center gap-1.5 rounded-lg bg-white/5 px-2 py-1 hover:bg-white/10 transition cursor-pointer group"
+                        className="flex items-center gap-1.5 rounded-lg bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1 hover:bg-[rgba(var(--overlay-rgb),0.1)] transition cursor-pointer group"
                         onClick={(e) => { e.stopPropagation(); onOpenTask(child, e.clientX, e.clientY); }}
                         title={`Ouvrir : ${child.title}`}
                         aria-label={`Ouvrir : ${child.title}`}

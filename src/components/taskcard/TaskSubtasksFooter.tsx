@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ClipboardList, ChevronDown, ChevronRight, CheckSquare, LayoutTemplate } from "lucide-react";
 import type { Task } from "../../types";
 import useStore from "../../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { getInitials } from "../../utils";
 import { LinkedTextContent } from "../LinkedTextContent";
 
@@ -22,7 +23,7 @@ export function TaskSubtasksFooter({
     isSubtasksExpanded,
     onToggleExpanded,
 }: TaskSubtasksFooterProps) {
-    const { toggleSubtask, users, currentUser, templates, applyTemplateToTask } = useStore();
+    const { toggleSubtask, users, currentUser, templates, applyTemplateToTask } = useStore(useShallow((s) => ({ toggleSubtask: s.toggleSubtask, users: s.users, currentUser: s.currentUser, templates: s.templates, applyTemplateToTask: s.applyTemplateToTask })));
     const subtasks = task.subtasks || [];
 
     // Bouton "Appliquer un template" -- existait déjà dans SubtaskList.tsx, mais TaskCard.tsx
@@ -54,7 +55,7 @@ export function TaskSubtasksFooter({
                 <LayoutTemplate className="h-3.5 w-3.5" />
             </button>
             {showTemplateDropdown && (
-                <div className="absolute top-full mt-1 right-0 w-52 rounded-xl border border-white/10 bg-[#161b2e] shadow-2xl p-1.5 z-[99999]">
+                <div className="absolute top-full mt-1 right-0 w-52 rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-theme-secondary shadow-2xl p-1.5 z-[99999]">
                     <p className="text-[10px] text-slate-500 px-2 pb-1 font-semibold uppercase">Templates</p>
                     {templates.map(tpl => (
                         <button
@@ -64,7 +65,7 @@ export function TaskSubtasksFooter({
                                 applyTemplateToTask(task.id, tpl.id);
                                 setShowTemplateDropdown(false);
                             }}
-                            className="w-full text-left px-2 py-1.5 rounded-lg text-sm text-slate-200 hover:bg-white/5 transition"
+                            className="w-full text-left px-2 py-1.5 rounded-lg text-sm text-slate-200 hover:bg-[rgba(var(--overlay-rgb),0.05)] transition"
                         >
                             <span className="font-medium block truncate">{tpl.name}</span>
                             <span className="text-[10px] text-slate-500">{tpl.subtaskTitles.length} sous-tâche{tpl.subtaskTitles.length > 1 ? 's' : ''}</span>
@@ -108,7 +109,7 @@ export function TaskSubtasksFooter({
                     <span className={`text-xs tabular-nums ${progressTextColor}`} style={progressTextStyle}>
                         {completedSubtasks}/{totalSubtasks}
                     </span>
-                    <div className="flex-1 h-1 overflow-hidden rounded-full bg-white/5">
+                    <div className="flex-1 h-1 overflow-hidden rounded-full bg-[rgba(var(--overlay-rgb),0.05)]">
                         <div
                             className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
                             style={{ width: `${progressPercentage}%`, ...progressAccentStyle }}
@@ -138,7 +139,7 @@ export function TaskSubtasksFooter({
                             <ClipboardList className="h-3.5 w-3.5 shrink-0" />
                             <span className="text-xs font-medium">{completedSubtasks}/{totalSubtasks}</span>
                         </div>
-                        <div className="flex-1 h-1 overflow-hidden rounded-full bg-white/5">
+                        <div className="flex-1 h-1 overflow-hidden rounded-full bg-[rgba(var(--overlay-rgb),0.05)]">
                             <div
                                 className={`h-full rounded-full transition-all duration-500 ${progressColor}`}
                                 style={{ width: `${progressPercentage}%`, ...progressAccentStyle }}
@@ -156,12 +157,12 @@ export function TaskSubtasksFooter({
                             <div
                                 key={st.id}
                                 onClick={(e) => { e.stopPropagation(); toggleSubtask(task.id, st.id); }}
-                                className="flex items-center gap-1.5 text-left w-full rounded px-1 py-0.5 hover:bg-white/5 transition group cursor-pointer"
+                                className="flex items-center gap-1.5 text-left w-full rounded px-1 py-0.5 hover:bg-[rgba(var(--overlay-rgb),0.05)] transition group cursor-pointer"
                             >
                                 <span className={`shrink-0 h-3.5 w-3.5 rounded border flex items-center justify-center transition ${
                                     st.completed
                                         ? "bg-emerald-500/30 border-emerald-500/60"
-                                        : "border-white/20 group-hover:border-white/40"
+                                        : "border-[rgba(var(--overlay-rgb),0.2)] group-hover:border-[rgba(var(--overlay-rgb),0.4)]"
                                 }`}>
                                     {st.completed && (
                                         <svg className="h-2.5 w-2.5 text-emerald-400" viewBox="0 0 10 10" fill="none">

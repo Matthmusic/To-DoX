@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ShieldAlert, Trash2 } from "lucide-react";
 import useStore from "../../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { GlassModal } from "../ui/GlassModal";
 import { alertModal, confirmModal } from "../../utils/confirm";
 
@@ -13,20 +14,7 @@ function normalizeProjectName(value?: string | null): string {
 }
 
 export function AdminProjectsPanel({ onClose }: AdminProjectsPanelProps) {
-    const {
-        currentUser,
-        users,
-        tasks,
-        timeEntries,
-        projectHistory,
-        directories,
-        projectColors,
-        setTasks,
-        setTimeEntries,
-        setProjectHistory,
-        setDirectories,
-        setProjectColors,
-    } = useStore();
+    const { currentUser, users, tasks, timeEntries, projectHistory, directories, projectColors, setTasks, setTimeEntries, setProjectHistory, setDirectories, setProjectColors } = useStore(useShallow((s) => ({ currentUser: s.currentUser, users: s.users, tasks: s.tasks, timeEntries: s.timeEntries, projectHistory: s.projectHistory, directories: s.directories, projectColors: s.projectColors, setTasks: s.setTasks, setTimeEntries: s.setTimeEntries, setProjectHistory: s.setProjectHistory, setDirectories: s.setDirectories, setProjectColors: s.setProjectColors })));
 
     const [search, setSearch] = useState("");
     // currentUser porte désormais l'UUID réel du backend (plus l'id local FIXED_USERS
@@ -143,7 +131,7 @@ export function AdminProjectsPanel({ onClose }: AdminProjectsPanelProps) {
                 <div className="mt-6 flex justify-end">
                     <button
                         onClick={onClose}
-                        className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-[#1E3A8A]/60"
+                        className="rounded-2xl border border-[rgba(var(--overlay-rgb),0.2)] px-4 py-2 text-slate-200 transition hover:bg-[rgba(var(--color-primary-rgb),0.6)]"
                     >
                         Fermer
                     </button>
@@ -170,19 +158,19 @@ export function AdminProjectsPanel({ onClose }: AdminProjectsPanelProps) {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Rechercher un projet..."
-                    className="w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                    className="w-full rounded-2xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                 />
             </div>
 
             <div className="mt-4 max-h-[50vh] space-y-2 overflow-auto pr-1">
                 {filteredProjects.length === 0 && (
-                    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-slate-400">
+                    <div className="rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-3 text-sm text-slate-400">
                         Aucun projet trouvé.
                     </div>
                 )}
 
                 {filteredProjects.map((p) => (
-                    <div key={p.name} className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <div key={p.name} className="rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2">
                         <div className="flex items-center gap-2">
                             <span className="flex-1 truncate text-sm font-semibold text-slate-100" title={p.name}>
                                 {p.name}
@@ -210,7 +198,7 @@ export function AdminProjectsPanel({ onClose }: AdminProjectsPanelProps) {
             <div className="mt-5 flex justify-end">
                 <button
                     onClick={onClose}
-                    className="rounded-2xl border border-white/20 px-4 py-2 text-slate-200 transition hover:bg-[#1E3A8A]/60"
+                    className="rounded-2xl border border-[rgba(var(--overlay-rgb),0.2)] px-4 py-2 text-slate-200 transition hover:bg-[rgba(var(--color-primary-rgb),0.6)]"
                 >
                     Fermer
                 </button>

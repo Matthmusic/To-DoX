@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { AlertTriangle, Clock, CheckCircle2, Users, FolderKanban, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import useStore from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from '../hooks/useTheme';
 import { getProjectColor } from '../utils';
 
@@ -38,7 +39,7 @@ type MobileTab = 'projets' | 'equipe' | 'timeline';
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function DashboardView() {
-    const { tasks, users, projectColors, currentUser } = useStore();
+    const { tasks, users, projectColors, currentUser, notificationPanelSide } = useStore(useShallow((s) => ({ tasks: s.tasks, users: s.users, projectColors: s.projectColors, currentUser: s.currentUser, notificationPanelSide: s.notificationPanelSide })));
     const { activeTheme } = useTheme();
     const primary = activeTheme.palette.primary;
 
@@ -184,7 +185,7 @@ export function DashboardView() {
                             {/* En-tête cliquable */}
                             <button
                                 onClick={() => setExpandedUser(isExpanded ? null : user.id)}
-                                className="w-full flex items-center gap-2.5 py-2 hover:bg-white/[0.03] transition-colors group rounded-lg"
+                                className="w-full flex items-center gap-2.5 py-2 hover:bg-[rgba(var(--overlay-rgb),0.03)] transition-colors group rounded-lg"
                             >
                                 <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                                     style={{ backgroundColor: `${color}25`, color, border: `1.5px solid ${color}44` }}>
@@ -195,12 +196,12 @@ export function DashboardView() {
                                     {doingTasks.length}
                                     {todoCount > 0 && <span className="text-theme-muted opacity-50"> +{todoCount}</span>}
                                 </span>
-                                <span className="text-[10px] text-white/0 group-hover:text-white/65 transition-colors w-3 flex-shrink-0">
+                                <span className="text-[10px] text-[rgba(var(--overlay-rgb),0)] group-hover:text-[rgba(var(--overlay-rgb),0.65)] transition-colors w-3 flex-shrink-0">
                                     {isExpanded ? '▲' : '▼'}
                                 </span>
                             </button>
                             {/* Barre de charge */}
-                            <div className="h-1 rounded-full bg-white/5 overflow-hidden ml-10 mb-1.5">
+                            <div className="h-1 rounded-full bg-[rgba(var(--overlay-rgb),0.05)] overflow-hidden ml-10 mb-1.5">
                                 <div className="h-full rounded-full transition-all duration-700"
                                     style={{ width: `${loadPct}%`, backgroundColor: loadColor }} />
                             </div>
@@ -228,7 +229,7 @@ export function DashboardView() {
                                 })}
                                 {!isExpanded && todoCount > 0 && (
                                     <button onClick={() => setExpandedUser(user.id)}
-                                        className="text-[11px] text-white/50 pl-2 hover:text-white/85 transition-colors">
+                                        className="text-[11px] text-[rgba(var(--overlay-rgb),0.5)] pl-2 hover:text-[rgba(var(--overlay-rgb),0.85)] transition-colors">
                                         +{todoCount} à faire
                                     </button>
                                 )}
@@ -251,15 +252,15 @@ export function DashboardView() {
 
                 return (
                     <div key={iso}
-                        className={`rounded-lg px-2.5 py-2 ${isToday ? 'ring-1 ring-white/10' : ''}`}
+                        className={`rounded-lg px-2.5 py-2 ${isToday ? 'ring-1 ring-[rgba(var(--overlay-rgb),0.1)]' : ''}`}
                         style={isToday ? { backgroundColor: `${primary}12` } : {}}>
                         <div className="flex items-center gap-2 mb-1.5">
-                            <span className={`text-xs tabular-nums flex-shrink-0 ${isToday ? 'font-semibold' : 'text-white/60'}`}
+                            <span className={`text-xs tabular-nums flex-shrink-0 ${isToday ? 'font-semibold' : 'text-[rgba(var(--overlay-rgb),0.6)]'}`}
                                 style={isToday ? { color: primary } : {}}>
                                 {label}
                             </span>
                             {dayTasks.length > 0 && (
-                                <span className="text-[11px] tabular-nums text-white/45 ml-auto">
+                                <span className="text-[11px] tabular-nums text-[rgba(var(--overlay-rgb),0.45)] ml-auto">
                                     {dayTasks.length}
                                 </span>
                             )}
@@ -284,14 +285,14 @@ export function DashboardView() {
                                             if (isExpanded) next.delete(iso); else next.add(iso);
                                             return next;
                                         })}
-                                        className="text-[11px] text-white/50 pl-1 hover:text-white/85 transition-colors"
+                                        className="text-[11px] text-[rgba(var(--overlay-rgb),0.5)] pl-1 hover:text-[rgba(var(--overlay-rgb),0.85)] transition-colors"
                                     >
                                         {isExpanded ? '▲ Réduire' : `+${hiddenCount} autres`}
                                     </button>
                                 )}
                             </div>
                         ) : (
-                            <div className="h-px bg-white/[0.04]" />
+                            <div className="h-px bg-[rgba(var(--overlay-rgb),0.04)]" />
                         )}
                     </div>
                 );
@@ -311,10 +312,10 @@ export function DashboardView() {
                     const activeTsk = (counts.doing ?? 0) + (counts.review ?? 0);
 
                     return (
-                        <div key={project} className="border-b border-white/[0.04]">
+                        <div key={project} className="border-b border-[rgba(var(--overlay-rgb),0.04)]">
                             <button
                                 onClick={() => setExpandedProject(isExpanded ? null : project)}
-                                className="w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-3 hover:bg-white/[0.04] transition-colors group text-left"
+                                className="w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-4 py-3 hover:bg-[rgba(var(--overlay-rgb),0.04)] transition-colors group text-left"
                             >
                                 {/* Liseré couleur */}
                                 <div className={`w-1 h-9 rounded-full flex-shrink-0 ${pc.bg}`} style={{ opacity: 0.9 }} />
@@ -332,8 +333,8 @@ export function DashboardView() {
                                                     {activeTsk} act.
                                                 </span>
                                             )}
-                                            <span className="text-xs tabular-nums text-white/60">{donePct}%</span>
-                                            <span className={`text-xs tabular-nums flex-shrink-0 ${hasOverdue ? 'text-red-400 font-semibold' : 'text-white/55'}`}>
+                                            <span className="text-xs tabular-nums text-[rgba(var(--overlay-rgb),0.6)]">{donePct}%</span>
+                                            <span className={`text-xs tabular-nums flex-shrink-0 ${hasOverdue ? 'text-red-400 font-semibold' : 'text-[rgba(var(--overlay-rgb),0.55)]'}`}>
                                                 {nextDue ? fmtDate(nextDue) : '—'}
                                             </span>
                                             {/* Avatars membres */}
@@ -351,7 +352,7 @@ export function DashboardView() {
                                                     ) : null;
                                                 })}
                                                 {members.length > 3 && (
-                                                    <div className="h-5 w-5 rounded-full bg-white/10 flex items-center justify-center text-[9px] text-theme-muted">
+                                                    <div className="h-5 w-5 rounded-full bg-[rgba(var(--overlay-rgb),0.1)] flex items-center justify-center text-[9px] text-theme-muted">
                                                         +{members.length - 3}
                                                     </div>
                                                 )}
@@ -359,7 +360,7 @@ export function DashboardView() {
                                         </div>
                                     </div>
                                     {/* Ligne 2 : barre de statuts avec compteurs incrustés */}
-                                    <div className="flex h-7 rounded-md overflow-hidden gap-px bg-white/5">
+                                    <div className="flex h-7 rounded-md overflow-hidden gap-px bg-[rgba(var(--overlay-rgb),0.05)]">
                                         {(['todo', 'doing', 'review', 'done'] as const).map(s => {
                                             const w = total > 0 ? (counts[s] / total) * 100 : 0;
                                             const c = counts[s] ?? 0;
@@ -368,11 +369,11 @@ export function DashboardView() {
                                                     className="flex items-center justify-center gap-1 min-w-0 overflow-hidden px-1"
                                                     style={{ width: `${w}%`, backgroundColor: STATUS_COLOR[s] + '55' }}
                                                     title={`${STATUS_LABEL[s]}: ${c}`}>
-                                                    <span className="text-[10px] font-medium text-white/70 leading-none truncate hidden sm:block"
+                                                    <span className="text-[10px] font-medium text-[rgba(var(--overlay-rgb),0.7)] leading-none truncate hidden sm:block"
                                                         style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
                                                         {STATUS_LABEL[s]}
                                                     </span>
-                                                    <span className="text-sm font-bold tabular-nums text-white leading-none flex-shrink-0"
+                                                    <span className="text-sm font-bold tabular-nums text-theme-primary leading-none flex-shrink-0"
                                                         style={{ textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
                                                         {c}
                                                     </span>
@@ -382,7 +383,7 @@ export function DashboardView() {
                                     </div>
                                 </div>
 
-                                <span className="text-xs text-white/0 group-hover:text-white/65 transition-colors w-3 flex-shrink-0">
+                                <span className="text-xs text-[rgba(var(--overlay-rgb),0)] group-hover:text-[rgba(var(--overlay-rgb),0.65)] transition-colors w-3 flex-shrink-0">
                                     {isExpanded ? '▲' : '▼'}
                                 </span>
                             </button>
@@ -397,11 +398,11 @@ export function DashboardView() {
                                             const isLate = t.due && t.due < todayStr;
                                             return (
                                                 <button key={t.id} onClick={() => openTask(t.id)}
-                                                    className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-white/5 transition-colors text-left group/t">
+                                                    className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-[rgba(var(--overlay-rgb),0.05)] transition-colors text-left group/t">
                                                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_COLOR[t.status] }} />
-                                                                                    <span className="text-sm text-white/85 truncate flex-1">{t.title}</span>
+                                                                                    <span className="text-sm text-[rgba(var(--overlay-rgb),0.85)] truncate flex-1">{t.title}</span>
                                                     {t.due && (
-                                                        <span className={`text-xs tabular-nums flex-shrink-0 ${isLate ? 'text-red-400 font-medium' : 'text-white/50'}`}>
+                                                        <span className={`text-xs tabular-nums flex-shrink-0 ${isLate ? 'text-red-400 font-medium' : 'text-[rgba(var(--overlay-rgb),0.5)]'}`}>
                                                             {isLate && '⚠ '}{fmtDate(t.due)}
                                                         </span>
                                                     )}
@@ -429,7 +430,7 @@ export function DashboardView() {
     );
 
     return (
-        <div className="flex-1 flex flex-col overflow-hidden md:pr-24">
+        <div className={`flex-1 flex flex-col overflow-hidden ${notificationPanelSide === 'left' ? 'md:pl-24' : 'md:pr-24'}`}>
             <style>{`
                 @keyframes slideUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
                 .su { animation: slideUp 0.25s ease both; }
@@ -438,7 +439,7 @@ export function DashboardView() {
             <div className="flex-1 flex flex-col overflow-hidden w-full max-w-[2400px] mx-auto">
 
             {/* ── Bandeau KPIs + filtres ── */}
-            <div className="su flex-shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-white/[0.07] flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5">
+            <div className="su flex-shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 border-b border-[rgba(var(--overlay-rgb),0.07)] flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5">
                 {/* KPIs */}
                 <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto flex-shrink-0">
                     {kpis.overdue > 0 && (
@@ -473,7 +474,7 @@ export function DashboardView() {
                         className="px-2.5 py-1 rounded-md text-xs font-medium transition-all"
                         style={filterUser === 'all'
                             ? { backgroundColor: `${primary}30`, color: primary }
-                            : { color: 'rgba(255,255,255,0.6)' }}
+                            : { color: 'rgba(var(--overlay-rgb),0.6)' }}
                     >
                         Tous
                     </button>
@@ -487,7 +488,7 @@ export function DashboardView() {
                                 className="px-2.5 py-1 rounded-md text-xs font-medium transition-all"
                                 style={active
                                     ? { backgroundColor: `${color}30`, color }
-                                    : { color: 'rgba(255,255,255,0.6)' }}
+                                    : { color: 'rgba(var(--overlay-rgb),0.6)' }}
                             >
                                 {u.id === currentUser ? 'Moi' : u.name.split(' ')[0]}
                             </button>
@@ -565,7 +566,7 @@ export function DashboardView() {
             )}
 
             {/* ── Onglets mobile (< lg) ── */}
-            <div className="lg:hidden flex-shrink-0 flex border-b border-white/[0.07]">
+            <div className="lg:hidden flex-shrink-0 flex border-b border-[rgba(var(--overlay-rgb),0.07)]">
                 {([
                     { id: 'projets' as MobileTab, label: 'Projets', icon: FolderKanban, count: projectsData.length },
                     { id: 'equipe' as MobileTab, label: 'Équipe', icon: Users, count: workloadData.length },
@@ -577,7 +578,7 @@ export function DashboardView() {
                             key={tab.id}
                             onClick={() => setMobileTab(tab.id)}
                             className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-all relative"
-                            style={isActive ? { color: primary } : { color: 'rgba(255,255,255,0.6)' }}
+                            style={isActive ? { color: primary } : { color: 'rgba(var(--overlay-rgb),0.6)' }}
                         >
                             <tab.icon className="h-3.5 w-3.5" />
                             <span className="hidden sm:inline">{tab.label}</span>
@@ -598,25 +599,25 @@ export function DashboardView() {
 
                 {/* ── COL GAUCHE : Équipe (desktop uniquement) ── */}
                 <div
-                    className="su hidden lg:flex flex-col border-r border-white/[0.07] flex-shrink-0 transition-all duration-300 overflow-hidden"
+                    className="su hidden lg:flex flex-col border-r border-[rgba(var(--overlay-rgb),0.07)] flex-shrink-0 transition-all duration-300 overflow-hidden"
                     style={{ animationDelay: '0.06s', width: equipeCollapsed ? '32px' : 'clamp(180px, 20%, 520px)' }}
                 >
                     {equipeCollapsed ? (
                         <button
                             onClick={toggleEquipe}
-                            className="flex-1 flex flex-col items-center justify-center gap-2 py-4 hover:bg-white/5 transition-colors group"
+                            className="flex-1 flex flex-col items-center justify-center gap-2 py-4 hover:bg-[rgba(var(--overlay-rgb),0.05)] transition-colors group"
                             title="Afficher Équipe"
                             aria-label="Afficher Équipe"
                         >
-                            <Users className="h-3.5 w-3.5 text-white/40 group-hover:text-white/75" />
-                            <ChevronRight className="h-3 w-3 text-white/40 group-hover:text-white/75" />
+                            <Users className="h-3.5 w-3.5 text-[rgba(var(--overlay-rgb),0.4)] group-hover:text-[rgba(var(--overlay-rgb),0.75)]" />
+                            <ChevronRight className="h-3 w-3 text-[rgba(var(--overlay-rgb),0.4)] group-hover:text-[rgba(var(--overlay-rgb),0.75)]" />
                         </button>
                     ) : (
                         <div className="flex flex-col overflow-y-auto w-full h-full">
                             <div className="px-3 pt-3 pb-2 flex items-center justify-between">
-                                <p className="text-xs font-semibold uppercase tracking-widest text-white/65">Équipe</p>
-                                <button onClick={toggleEquipe} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Réduire" aria-label="Réduire">
-                                    <ChevronLeft className="h-3.5 w-3.5 text-white/45" />
+                                <p className="text-xs font-semibold uppercase tracking-widest text-[rgba(var(--overlay-rgb),0.65)]">Équipe</p>
+                                <button onClick={toggleEquipe} className="p-0.5 rounded hover:bg-[rgba(var(--overlay-rgb),0.1)] transition-colors" title="Réduire" aria-label="Réduire">
+                                    <ChevronLeft className="h-3.5 w-3.5 text-[rgba(var(--overlay-rgb),0.45)]" />
                                 </button>
                             </div>
                             <EquipePanel />
@@ -644,14 +645,14 @@ export function DashboardView() {
                     {/* Projets : toujours visible sur desktop, visible sur mobile si onglet actif */}
                     <div className={mobileTab !== 'projets' ? 'hidden lg:block' : undefined}>
                         <div className="px-3 sm:px-4 pt-3 pb-1 flex items-center gap-2">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-white/65">
+                            <p className="text-xs font-semibold uppercase tracking-widest text-[rgba(var(--overlay-rgb),0.65)]">
                                 Projets <span className="tabular-nums opacity-50">({projectsData.length})</span>
                             </p>
                             <div className="flex items-center gap-2 ml-auto">
                                 {(['todo', 'doing', 'review', 'done'] as const).map(s => (
                                     <div key={s} className="flex items-center gap-1">
                                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: STATUS_COLOR[s] }} />
-                                        <span className="text-xs text-white/55 hidden xl:block">{STATUS_LABEL[s]}</span>
+                                        <span className="text-xs text-[rgba(var(--overlay-rgb),0.55)] hidden xl:block">{STATUS_LABEL[s]}</span>
                                     </div>
                                 ))}
                             </div>
@@ -662,25 +663,25 @@ export function DashboardView() {
 
                 {/* ── COL DROITE : Timeline (desktop uniquement) ── */}
                 <div
-                    className="su hidden xl:flex flex-col border-l border-white/[0.07] flex-shrink-0 transition-all duration-300 overflow-hidden"
+                    className="su hidden xl:flex flex-col border-l border-[rgba(var(--overlay-rgb),0.07)] flex-shrink-0 transition-all duration-300 overflow-hidden"
                     style={{ animationDelay: '0.14s', width: timelineCollapsed ? '32px' : 'clamp(180px, 20%, 520px)' }}
                 >
                     {timelineCollapsed ? (
                         <button
                             onClick={toggleTimeline}
-                            className="flex-1 flex flex-col items-center justify-center gap-2 py-4 hover:bg-white/5 transition-colors group"
+                            className="flex-1 flex flex-col items-center justify-center gap-2 py-4 hover:bg-[rgba(var(--overlay-rgb),0.05)] transition-colors group"
                             title="Afficher 14 jours"
                             aria-label="Afficher 14 jours"
                         >
-                            <CalendarDays className="h-3.5 w-3.5 text-white/40 group-hover:text-white/75" />
-                            <ChevronLeft className="h-3 w-3 text-white/40 group-hover:text-white/75" />
+                            <CalendarDays className="h-3.5 w-3.5 text-[rgba(var(--overlay-rgb),0.4)] group-hover:text-[rgba(var(--overlay-rgb),0.75)]" />
+                            <ChevronLeft className="h-3 w-3 text-[rgba(var(--overlay-rgb),0.4)] group-hover:text-[rgba(var(--overlay-rgb),0.75)]" />
                         </button>
                     ) : (
                         <div className="flex flex-col overflow-y-auto w-full h-full">
                             <div className="px-3 pt-3 pb-2 flex items-center justify-between">
-                                <p className="text-xs font-semibold uppercase tracking-widest text-white/65">14 jours</p>
-                                <button onClick={toggleTimeline} className="p-0.5 rounded hover:bg-white/10 transition-colors" title="Réduire" aria-label="Réduire">
-                                    <ChevronRight className="h-3.5 w-3.5 text-white/45" />
+                                <p className="text-xs font-semibold uppercase tracking-widest text-[rgba(var(--overlay-rgb),0.65)]">14 jours</p>
+                                <button onClick={toggleTimeline} className="p-0.5 rounded hover:bg-[rgba(var(--overlay-rgb),0.1)] transition-colors" title="Réduire" aria-label="Réduire">
+                                    <ChevronRight className="h-3.5 w-3.5 text-[rgba(var(--overlay-rgb),0.45)]" />
                                 </button>
                             </div>
                             <TimelinePanel />

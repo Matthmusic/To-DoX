@@ -66,21 +66,21 @@ export function GanttCellPopover({
             {/* Popover */}
             <div
                 ref={panelRef}
-                className="fixed z-50 rounded-xl border border-white/15 shadow-2xl overflow-hidden"
+                className="fixed z-50 rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] shadow-2xl overflow-hidden"
                 style={{ left, top, width: POPOVER_W, backgroundColor: 'var(--bg-secondary)' }}
                 onMouseDown={e => e.stopPropagation()}
                 onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }}
             >
                 {/* Header */}
-                <div className="px-3 pt-2.5 pb-2 border-b border-white/10">
-                    <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">
+                <div className="px-3 pt-2.5 pb-2 border-b border-[rgba(var(--overlay-rgb),0.1)]">
+                    <p className="text-[10px] font-bold text-[rgba(var(--overlay-rgb),0.4)] uppercase tracking-wider">
                         {formatShortDate(activeCell.date)}
                     </p>
-                    <p className="text-xs font-semibold text-white/70 truncate mt-0.5">
+                    <p className="text-xs font-semibold text-[rgba(var(--overlay-rgb),0.7)] truncate mt-0.5">
                         {task.title}
                     </p>
                     {assigneeIds.length > 0 && (
-                        <p className="text-[10px] text-white/35 mt-0.5">
+                        <p className="text-[10px] text-[rgba(var(--overlay-rgb),0.35)] mt-0.5">
                             {assigneeIds.length} assigné{assigneeIds.length > 1 ? 's' : ''}
                         </p>
                     )}
@@ -93,16 +93,16 @@ export function GanttCellPopover({
                         onClick={() => { onSetGanttUsers(activeCell.taskId, activeCell.date, []); onClose(); }}
                         className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left w-full ${
                             isPlanned && assigneeIds.length === 0
-                                ? 'bg-white/10 text-white/90'
-                                : 'text-white/50 hover:bg-white/[0.06] hover:text-white/80'
+                                ? 'bg-[rgba(var(--overlay-rgb),0.1)] text-[rgba(var(--overlay-rgb),0.9)]'
+                                : 'text-[rgba(var(--overlay-rgb),0.5)] hover:bg-[rgba(var(--overlay-rgb),0.06)] hover:text-[rgba(var(--overlay-rgb),0.8)]'
                         }`}
                     >
-                        <div className="h-5 w-5 rounded-full border border-white/20 flex items-center justify-center flex-shrink-0">
-                            <span className="text-[8px] text-white/30">—</span>
+                        <div className="h-5 w-5 rounded-full border border-[rgba(var(--overlay-rgb),0.2)] flex items-center justify-center flex-shrink-0">
+                            <span className="text-[8px] text-[rgba(var(--overlay-rgb),0.3)]">—</span>
                         </div>
                         <span className="truncate flex-1">Aucun assigné</span>
                         {isPlanned && assigneeIds.length === 0 && (
-                            <span className="text-white/40 text-[10px]">✓</span>
+                            <span className="text-[rgba(var(--overlay-rgb),0.4)] text-[10px]">✓</span>
                         )}
                     </button>
 
@@ -115,8 +115,8 @@ export function GanttCellPopover({
                                 onClick={() => toggleUser(user.id)}
                                 className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors text-left w-full ${
                                     isSelected
-                                        ? 'bg-white/10 text-white/90'
-                                        : 'text-white/50 hover:bg-white/[0.06] hover:text-white/80'
+                                        ? 'bg-[rgba(var(--overlay-rgb),0.1)] text-[rgba(var(--overlay-rgb),0.9)]'
+                                        : 'text-[rgba(var(--overlay-rgb),0.5)] hover:bg-[rgba(var(--overlay-rgb),0.06)] hover:text-[rgba(var(--overlay-rgb),0.8)]'
                                 }`}
                             >
                                 <div
@@ -129,8 +129,8 @@ export function GanttCellPopover({
                                 {/* Checkbox visuel */}
                                 <div className={`h-4 w-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors ${
                                     isSelected
-                                        ? 'border-transparent bg-white/30'
-                                        : 'border-white/20 bg-transparent'
+                                        ? 'border-transparent bg-[rgba(var(--overlay-rgb),0.3)]'
+                                        : 'border-[rgba(var(--overlay-rgb),0.2)] bg-transparent'
                                 }`}>
                                     {isSelected && (
                                         <svg viewBox="0 0 10 10" className="h-2.5 w-2.5" fill="none" stroke="white" strokeWidth="2">
@@ -145,7 +145,7 @@ export function GanttCellPopover({
 
                 {/* Remove */}
                 {isPlanned && (
-                    <div className="px-1.5 pb-1.5 pt-1 border-t border-white/10">
+                    <div className="px-1.5 pb-1.5 pt-1 border-t border-[rgba(var(--overlay-rgb),0.1)]">
                         <button
                             onClick={() => { onRemoveGanttDay(activeCell.taskId, activeCell.date); onClose(); }}
                             className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-colors w-full"

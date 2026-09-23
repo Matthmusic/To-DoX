@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
-import { TaskCard, getCardMode, type CardMode } from "./TaskCard";
+import { TaskCard } from "./TaskCard";
+import { getCardMode, type CardMode } from "./taskcard/cardMode";
 import { getProjectColor } from "../utils";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import type { Task } from "../types";
 import type { DropIndicator } from "../hooks/useDragAndDrop";
 
@@ -29,12 +31,10 @@ interface ProjectCardProps {
 
 export function ProjectCard({
     project,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     status: _status,
     tasks,
     isCollapsed,
     onToggleCollapse,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onDragStartProject: _onDragStartProject,
     onDragStartTask,
     onClickTask,
@@ -47,7 +47,7 @@ export function ProjectCard({
     dropIndicator,
     nestTarget,
 }: ProjectCardProps) {
-    const { projectColors } = useStore();
+    const { projectColors } = useStore(useShallow((s) => ({ projectColors: s.projectColors })));
     const projectColor = getProjectColor(project, projectColors);
 
     const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
@@ -117,7 +117,7 @@ export function ProjectCard({
         return (
             <React.Fragment key={task.id}>
                 {card}
-                <div className="ml-4 border-l-2 border-white/10 pl-3">
+                <div className="ml-4 border-l-2 border-[rgba(var(--overlay-rgb),0.1)] pl-3">
                     {children.map(child => renderTaskNode(child, depth + 1, isFolded ? 'compact' : undefined))}
                 </div>
             </React.Fragment>
@@ -126,7 +126,7 @@ export function ProjectCard({
 
     return (
         <div
-            className={`mb-4 overflow-hidden rounded-2xl bg-[#0b1124]/80 shadow-sm ring-1 ring-white/5 transition-all ${isCollapsed ? "opacity-75 hover:opacity-100" : ""
+            className={`mb-4 overflow-hidden rounded-2xl bg-theme-tertiary shadow-sm ring-1 ring-[rgba(var(--overlay-rgb),0.05)] transition-all ${isCollapsed ? "opacity-75 hover:opacity-100" : ""
                 }`}
         >
             <div
@@ -154,7 +154,7 @@ export function ProjectCard({
                         top: Math.min(ctxMenu.y, window.innerHeight - 60),
                         left: Math.min(ctxMenu.x, window.innerWidth - 220),
                     }}
-                    className="fixed z-[99999] min-w-[210px] rounded-lg border border-white/10 bg-slate-800 py-1 shadow-xl"
+                    className="fixed z-[99999] min-w-[210px] rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-slate-800 py-1 shadow-xl"
                     onMouseDown={(e) => e.stopPropagation()}
                 >
                     <button
@@ -163,7 +163,7 @@ export function ProjectCard({
                             setCtxMenu(null);
                             onContextMenuProject?.(project);
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                     >
                         <Plus className="h-4 w-4 text-slate-400" />
                         Nouvelle tâche dans ce projet

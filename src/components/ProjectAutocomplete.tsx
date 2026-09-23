@@ -156,19 +156,20 @@ export function ProjectAutocomplete({ value, onChange, onBlur, projectHistory = 
                 createPortal(
                     <div
                         ref={dropdownRef}
-                        className="fixed z-[99999] max-h-[36rem] overflow-auto rounded-b-2xl border border-white/20 bg-white/5 backdrop-blur-xl shadow-2xl"
+                        className="fixed z-[99999] max-h-[36rem] overflow-auto rounded-b-2xl border border-[rgba(var(--overlay-rgb),0.2)] bg-theme-secondary backdrop-blur-xl shadow-2xl"
                         style={{
                             top: dropdownPosition.top,
                             left: dropdownPosition.left,
                             width: dropdownPosition.width,
                         }}
+                        onMouseDown={(e) => e.stopPropagation()}
                     >
                         {filteredSuggestions.map((suggestion, suggestionIndex) => (
                             <div
                                 key={suggestion}
                                 className={classNames(
                                     "cursor-pointer px-3 py-2 text-sm text-slate-100 transition",
-                                    suggestionIndex === focusedSuggestionIndex ? "bg-[#1E3A8A]" : "hover:bg-[#1E3A8A]/60"
+                                    suggestionIndex === focusedSuggestionIndex ? "bg-[var(--color-primary)]" : "hover:bg-[rgba(var(--color-primary-rgb),0.6)]"
                                 )}
                                 onMouseDown={(event) => {
                                     event.preventDefault();

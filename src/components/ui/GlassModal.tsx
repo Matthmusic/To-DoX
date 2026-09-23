@@ -153,7 +153,7 @@ export function GlassModal({
                         onClick={onClose}
                         whileHover={{ scale: 1.1, rotate: 90 }}
                         whileTap={{ scale: 0.9 }}
-                        className="ml-auto flex items-center justify-center w-10 h-10 rounded-full border border-theme-primary bg-white/5 text-theme-muted hover:text-theme-primary hover:bg-red-500/20 hover:border-red-500/50 transition-colors"
+                        className="ml-auto flex items-center justify-center w-10 h-10 rounded-full border border-theme-primary bg-[rgba(var(--overlay-rgb),0.05)] text-theme-muted hover:text-theme-primary hover:bg-red-500/20 hover:border-red-500/50 transition-colors"
                       >
                         <X className="w-5 h-5" />
                       </motion.button>
@@ -211,7 +211,7 @@ export function GlassPanel({ children, className = '', glow = 'cyan' }: GlassPan
       `}
     >
       {/* Gradient subtil */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[rgba(var(--overlay-rgb),0.05)] via-transparent to-transparent pointer-events-none" />
 
       {/* Content */}
       <div className="relative">

@@ -55,7 +55,7 @@ export function GanttToolbar({
         <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
 
             {/* Sélecteur de vue — sliding pill */}
-            <div className="relative flex p-[3px] rounded-xl bg-white/5 border border-white/[0.12]" style={{ width: MODES.length * BTN_W + 6 }}>
+            <div className="relative flex p-[3px] rounded-xl bg-[rgba(var(--overlay-rgb),0.05)] border border-[rgba(var(--overlay-rgb),0.12)]" style={{ width: MODES.length * BTN_W + 6 }}>
                 <div
                     className="absolute top-[3px] bottom-[3px] left-[3px] rounded-lg pointer-events-none transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
                     style={{
@@ -70,7 +70,7 @@ export function GanttToolbar({
                         key={m.key}
                         onClick={() => switchView(m.key)}
                         className={`relative z-10 flex items-center justify-center py-[7px] text-xs font-semibold transition-colors duration-150 ${
-                            viewMode === m.key ? '' : 'text-white/35 hover:text-white/55'
+                            viewMode === m.key ? '' : 'text-[rgba(var(--overlay-rgb),0.35)] hover:text-[rgba(var(--overlay-rgb),0.55)]'
                         }`}
                         style={{ width: BTN_W, color: viewMode === m.key ? primaryColor : undefined }}
                     >
@@ -80,21 +80,21 @@ export function GanttToolbar({
             </div>
 
             {/* Pod de navigation unifié */}
-            <div className="flex items-center rounded-xl bg-white/5 border border-white/[0.12] divide-x divide-white/[0.08]">
+            <div className="flex items-center rounded-xl bg-[rgba(var(--overlay-rgb),0.05)] border border-[rgba(var(--overlay-rgb),0.12)] divide-x divide-[rgba(var(--overlay-rgb),0.08)]">
 
                 {/* Saut arrière rapide */}
                 <button
                     onClick={() => setOffset(o => o - bigStep)}
                     title={`− ${bigStep} périodes`}
                     aria-label={`− ${bigStep} périodes`}
-                    className="px-2 py-[7px] hover:bg-white/10 text-white/22 hover:text-white/65 transition-colors rounded-l-xl"
+                    className="px-2 py-[7px] hover:bg-[rgba(var(--overlay-rgb),0.1)] text-[rgba(var(--overlay-rgb),0.22)] hover:text-[rgba(var(--overlay-rgb),0.65)] transition-colors rounded-l-xl"
                 >
                     <ChevronsLeft className="h-3.5 w-3.5" />
                 </button>
 
                 <button
                     onClick={() => setOffset(o => o - 1)}
-                    className="px-2.5 py-[7px] hover:bg-white/10 text-white/45 hover:text-white transition-colors"
+                    className="px-2.5 py-[7px] hover:bg-[rgba(var(--overlay-rgb),0.1)] text-[rgba(var(--overlay-rgb),0.45)] hover:text-[rgb(var(--overlay-rgb))] transition-colors"
                 >
                     <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -106,19 +106,19 @@ export function GanttToolbar({
                             setPickerYear(days[0]?.getFullYear() ?? new Date().getFullYear());
                             setShowMonthPicker(p => !p);
                         }}
-                        className="flex items-center gap-1 px-4 py-[7px] min-w-[180px] justify-center hover:bg-white/5 transition-colors group"
+                        className="flex items-center gap-1 px-4 py-[7px] min-w-[180px] justify-center hover:bg-[rgba(var(--overlay-rgb),0.05)] transition-colors group"
                     >
-                        <span className="text-sm font-bold text-white/85 group-hover:text-white transition-colors select-none">
+                        <span className="text-sm font-bold text-[rgba(var(--overlay-rgb),0.85)] group-hover:text-[rgb(var(--overlay-rgb))] transition-colors select-none">
                             {periodLabel}
                         </span>
-                        <ChevronDown className={`h-3 w-3 text-white/30 transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`h-3 w-3 text-[rgba(var(--overlay-rgb),0.3)] transition-transform duration-200 ${showMonthPicker ? 'rotate-180' : ''}`} />
                     </button>
 
                     {/* Month picker dropdown */}
                     {showMonthPicker && (
                         <div
                             ref={monthPickerRef}
-                            className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 rounded-2xl border border-white/15 shadow-2xl p-3"
+                            className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 rounded-2xl border border-[rgba(var(--overlay-rgb),0.15)] shadow-2xl p-3"
                             style={{ width: 236, backgroundColor: 'var(--bg-secondary)' }}
                             onMouseDown={e => e.stopPropagation()}
                         >
@@ -126,14 +126,14 @@ export function GanttToolbar({
                             <div className="flex items-center justify-between mb-2.5 px-1">
                                 <button
                                     onClick={() => setPickerYear(y => y - 1)}
-                                    className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                                    className="p-2 rounded-lg hover:bg-[rgba(var(--overlay-rgb),0.1)] text-[rgba(var(--overlay-rgb),0.4)] hover:text-[rgb(var(--overlay-rgb))] transition-colors"
                                 >
                                     <ChevronLeft className="h-3.5 w-3.5" />
                                 </button>
-                                <span className="text-sm font-bold text-white/75">{pickerYear}</span>
+                                <span className="text-sm font-bold text-[rgba(var(--overlay-rgb),0.75)]">{pickerYear}</span>
                                 <button
                                     onClick={() => setPickerYear(y => y + 1)}
-                                    className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                                    className="p-2 rounded-lg hover:bg-[rgba(var(--overlay-rgb),0.1)] text-[rgba(var(--overlay-rgb),0.4)] hover:text-[rgb(var(--overlay-rgb))] transition-colors"
                                 >
                                     <ChevronRight className="h-3.5 w-3.5" />
                                 </button>
@@ -152,8 +152,8 @@ export function GanttToolbar({
                                                 isActive
                                                     ? ''
                                                     : isThisMonth
-                                                        ? 'text-white/60 ring-1 ring-inset ring-white/20 hover:ring-white/30 hover:text-white/80'
-                                                        : 'text-white/35 hover:text-white/70 hover:bg-white/[0.06]'
+                                                        ? 'text-[rgba(var(--overlay-rgb),0.6)] ring-1 ring-inset ring-[rgba(var(--overlay-rgb),0.2)] hover:ring-[rgba(var(--overlay-rgb),0.3)] hover:text-[rgba(var(--overlay-rgb),0.8)]'
+                                                        : 'text-[rgba(var(--overlay-rgb),0.35)] hover:text-[rgba(var(--overlay-rgb),0.7)] hover:bg-[rgba(var(--overlay-rgb),0.06)]'
                                             }`}
                                             style={isActive ? {
                                                 backgroundColor: `${primaryColor}28`,
@@ -172,7 +172,7 @@ export function GanttToolbar({
 
                 <button
                     onClick={() => setOffset(o => o + 1)}
-                    className="px-2.5 py-[7px] hover:bg-white/10 text-white/45 hover:text-white transition-colors"
+                    className="px-2.5 py-[7px] hover:bg-[rgba(var(--overlay-rgb),0.1)] text-[rgba(var(--overlay-rgb),0.45)] hover:text-[rgb(var(--overlay-rgb))] transition-colors"
                 >
                     <ChevronRight className="h-4 w-4" />
                 </button>
@@ -182,7 +182,7 @@ export function GanttToolbar({
                     onClick={() => setOffset(o => o + bigStep)}
                     title={`+ ${bigStep} périodes`}
                     aria-label={`+ ${bigStep} périodes`}
-                    className="px-2 py-[7px] hover:bg-white/10 text-white/22 hover:text-white/65 transition-colors rounded-r-xl"
+                    className="px-2 py-[7px] hover:bg-[rgba(var(--overlay-rgb),0.1)] text-[rgba(var(--overlay-rgb),0.22)] hover:text-[rgba(var(--overlay-rgb),0.65)] transition-colors rounded-r-xl"
                 >
                     <ChevronsRight className="h-3.5 w-3.5" />
                 </button>
@@ -204,8 +204,8 @@ export function GanttToolbar({
                 const viewedUser = selectedUserId ? users.find(u => u.id === selectedUserId) : null;
                 if (!viewedUser) return null;
                 return (
-                    <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Vue</span>
+                    <div className="flex items-center gap-2 rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-1.5">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(var(--overlay-rgb),0.45)]">Vue</span>
                         <span className="text-sm font-bold" style={{ color: getUserColor(viewedUser.id) }}>
                             {viewedUser.name.split(' ')[0]}
                         </span>
@@ -213,7 +213,7 @@ export function GanttToolbar({
                 );
             })()}
 
-            <span className="hidden xl:flex items-center gap-1.5 text-[10px] text-white/20 font-medium ml-1">
+            <span className="hidden xl:flex items-center gap-1.5 text-[10px] text-theme-muted font-medium ml-1">
                 <MousePointerClick className="h-3 w-3" />
                 Cliquer pour planifier · Ctrl+clic multi-sélection
             </span>

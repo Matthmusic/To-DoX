@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CheckCircle2, RotateCcw, Archive, ChevronDown, ChevronRight } from 'lucide-react';
 import useStore from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import { getProjectColor } from '../utils';
 import type { Task } from '../types';
 
@@ -36,7 +37,7 @@ const PRIORITY_STYLE = {
 };
 
 function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick, archiveTask, reopenTask }: TaskSectionProps) {
-    const { highlightedTaskId } = useStore();
+    const { highlightedTaskId } = useStore(useShallow((s) => ({ highlightedTaskId: s.highlightedTaskId })));
     const [collapsedProjects, setCollapsedProjects] = useState<Record<string, boolean>>({});
     const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
 
@@ -69,7 +70,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
                         </span>
                     </div>
                     {!isCollapsed && (
-                        <div className="divide-y divide-white/5">
+                        <div className="divide-y divide-[rgba(var(--overlay-rgb),0.05)]">
                             {projectTasks.map(task => {
                                 const isExpanded = expandedTasks[task.id] ?? false;
                                 const prio = PRIORITY_STYLE[task.priority];
@@ -78,7 +79,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
                                 <div key={task.id} className={`transition-colors rounded-lg ${highlightedTaskId === task.id ? 'ring-2 ring-cyan-400 ring-offset-1 ring-offset-[#161b2e] animate-pulse' : ''}`}>
                                     {/* Ligne principale — clic = toggle expand */}
                                     <div
-                                        className="flex items-start gap-3 px-4 py-3 hover:bg-white/[0.02] cursor-pointer group"
+                                        className="flex items-start gap-3 px-4 py-3 hover:bg-[rgba(var(--overlay-rgb),0.02)] cursor-pointer group"
                                         onClick={() => toggleTask(task.id)}
                                     >
                                         <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0 text-emerald-400" />
@@ -129,7 +130,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
                                             )}
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); onTaskClick(task, e.clientX, e.clientY); }}
-                                                className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold text-slate-400 transition hover:bg-white/10 hover:text-slate-200"
+                                                className="flex items-center gap-1 rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1 text-[10px] font-semibold text-slate-400 transition hover:bg-[rgba(var(--overlay-rgb),0.1)] hover:text-slate-200"
                                                 title="Éditer"
                                                 aria-label="Éditer"
                                             >
@@ -144,7 +145,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
 
                                     {/* Détails dépliés */}
                                     {isExpanded && (
-                                        <div className="px-11 pb-4 space-y-3 bg-white/[0.015] border-t border-white/5">
+                                        <div className="px-11 pb-4 space-y-3 bg-[rgba(var(--overlay-rgb),0.015)] border-t border-[rgba(var(--overlay-rgb),0.05)]">
                                             <div className="flex flex-wrap gap-2 pt-3">
                                                 <span className={`text-[10px] font-semibold border rounded-full px-2 py-0.5 ${prio.cls}`}>
                                                     {prio.label}
@@ -195,7 +196,7 @@ function TaskSection({ grouped, canAct, projectColors, getUserName, onTaskClick,
 }
 
 export function TermineesView({ onTaskClick, readOnly = false }: TermineesViewProps) {
-    const { tasks, users, currentUser, projectColors, archiveTask, reopenTask } = useStore();
+    const { tasks, users, currentUser, projectColors, archiveTask, reopenTask } = useStore(useShallow((s) => ({ tasks: s.tasks, users: s.users, currentUser: s.currentUser, projectColors: s.projectColors, archiveTask: s.archiveTask, reopenTask: s.reopenTask })));
 
     const doneTasks = useMemo(() => {
         return tasks
@@ -235,10 +236,10 @@ export function TermineesView({ onTaskClick, readOnly = false }: TermineesViewPr
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
                     {/* Colonne : mes tâches */}
-                    <div className="space-y-4 rounded-2xl border border-theme-primary bg-white/[0.02] p-4">
+                    <div className="space-y-4 rounded-2xl border border-theme-primary bg-[rgba(var(--overlay-rgb),0.02)] p-4">
                         <div className="flex items-center gap-2 mb-2">
                             <h2 className="text-sm font-semibold text-theme-primary">Mes tâches terminées</h2>
-                            <span className="text-xs text-theme-secondary bg-white/5 border border-theme-primary rounded-full px-2 py-0.5">
+                            <span className="text-xs text-theme-secondary bg-[rgba(var(--overlay-rgb),0.05)] border border-theme-primary rounded-full px-2 py-0.5">
                                 {myTasks.length}
                             </span>
                         </div>
@@ -258,10 +259,10 @@ export function TermineesView({ onTaskClick, readOnly = false }: TermineesViewPr
                     </div>
 
                     {/* Colonne : autres tâches */}
-                    <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.01] p-4">
+                    <div className="space-y-4 rounded-2xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.01)] p-4">
                         <div className="flex items-center gap-2 mb-2">
                             <h2 className="text-sm font-semibold text-slate-400">Autres tâches terminées</h2>
-                            <span className="text-xs text-slate-500 bg-white/5 border border-white/10 rounded-full px-2 py-0.5">
+                            <span className="text-xs text-slate-500 bg-[rgba(var(--overlay-rgb),0.05)] border border-[rgba(var(--overlay-rgb),0.1)] rounded-full px-2 py-0.5">
                                 {otherTasks.length}
                             </span>
                         </div>

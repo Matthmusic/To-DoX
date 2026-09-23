@@ -6,6 +6,7 @@ import {
     ChevronRight, Sparkles,
 } from "lucide-react";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from "../hooks/useTheme";
 import type { AppNotification, Task } from "../types";
 import { getInitials } from "../utils";
@@ -15,11 +16,13 @@ import { getInitials } from "../utils";
 const TAB_WIDTH_MIN = 48;
 const TAB_WIDTH_MAX = 96;
 
-/** Calcule la largeur du tab = 2/3 du gap entre la droite de .kanban-row et le bord droit de l'écran */
-function computeTabWidth(): number {
+/** Calcule la largeur du tab = 2/3 du gap entre .kanban-row et le bord de l'écran côté
+ *  où le panneau est ancré (droite par défaut, gauche si notificationPanelSide === 'left'). */
+function computeTabWidth(side: 'left' | 'right'): number {
     const kanbanRow = document.querySelector('.kanban-row');
     if (!kanbanRow) return 64;
-    const gap = window.innerWidth - kanbanRow.getBoundingClientRect().right;
+    const rect = kanbanRow.getBoundingClientRect();
+    const gap = side === 'left' ? rect.left : window.innerWidth - rect.right;
     const w = Math.round(gap * (2 / 3));
     return Math.min(TAB_WIDTH_MAX, Math.max(TAB_WIDTH_MIN, w));
 }
@@ -54,15 +57,14 @@ function getNotifIcon(type: AppNotification["type"]) {
 
 // ── Composant principal ───────────────────────────────────────────────────────
 
-interface RightSidebarProps {
-    onTaskClick?: (task: Task, x: number, y: number) => void;
-}
-
-export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
+export function RightSidebar() {
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState<'notifs' | 'messages'>('notifs');
 
-    const [tabWidth, setTabWidth] = useState(() => computeTabWidth());
+    const { currentUser, users, tasks, comments, appNotifications, notificationPanelSide, markNotificationRead, markAllNotificationsRead, markNotificationsByTypeRead, deleteNotificationForUser, setHighlightedTaskId, setHighlightedCommentId } = useStore(useShallow((s) => ({ currentUser: s.currentUser, users: s.users, tasks: s.tasks, comments: s.comments, appNotifications: s.appNotifications, notificationPanelSide: s.notificationPanelSide, markNotificationRead: s.markNotificationRead, markAllNotificationsRead: s.markAllNotificationsRead, markNotificationsByTypeRead: s.markNotificationsByTypeRead, deleteNotificationForUser: s.deleteNotificationForUser, setHighlightedTaskId: s.setHighlightedTaskId, setHighlightedCommentId: s.setHighlightedCommentId })));
+    const isLeft = notificationPanelSide === 'left';
+
+    const [tabWidth, setTabWidth] = useState(() => computeTabWidth(notificationPanelSide));
 
     // Largeur totale quand ouvert : contenu 33vw (280–560px) + tab strip
     const expandedWidth = Math.min(Math.max(280, window.innerWidth * 0.33), 560) + tabWidth;
@@ -71,7 +73,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
 
     // Recalcul responsive : observe .kanban-row + resize fenêtre
     useEffect(() => {
-        const update = () => setTabWidth(computeTabWidth());
+        const update = () => setTabWidth(computeTabWidth(notificationPanelSide));
 
         // Observer le kanban-row (ses dimensions changent à chaque resize/ajout de colonne)
         const kanbanRow = document.querySelector('.kanban-row');
@@ -89,7 +91,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
             window.removeEventListener('resize', update);
             clearTimeout(t);
         };
-    }, []);
+    }, [notificationPanelSide]);
 
     // Fermeture au clic en dehors
     useEffect(() => {
@@ -102,13 +104,6 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isOpen]);
-
-    const {
-        currentUser, users, tasks, comments,
-        appNotifications, markNotificationRead, markAllNotificationsRead,
-        markNotificationsByTypeRead, deleteNotificationForUser,
-        setHighlightedTaskId, setHighlightedCommentId,
-    } = useStore();
 
     const { activeTheme } = useTheme();
     const { primary, bgPrimary, bgSecondary, borderPrimary, textMuted } = activeTheme.palette;
@@ -253,14 +248,16 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
 
     return (
         /*
-         * L'élément racine est le SEUL élément glassmorphique — il contient
-         * à la fois le panneau (à gauche, flex-1) et la bande de tab (à droite, fixe).
-         * Grâce à flex-row-reverse + overflow-hidden, la bande de tab reste
-         * toujours visible tandis que le panneau est masqué quand la largeur est réduite.
+         * L'élément racine est le SEUL élément glassmorphique — il contient à la fois le
+         * panneau (flex-1) et la bande de tab (fixe). Ancré à droite par défaut
+         * (flex-row-reverse : la bande de tab, première dans le DOM, se retrouve à droite
+         * visuellement) ou à gauche (flex-row normal) selon notificationPanelSide -- réglable
+         * depuis le menu ☰ (voir KanbanHeaderPremium). overflow-hidden garde la
+         * bande de tab toujours visible tandis que le panneau est masqué quand réduit.
          */
         <motion.div
             ref={containerRef}
-            className="fixed right-0 top-1/2 -translate-y-1/2 z-[8000] flex flex-row-reverse overflow-hidden rounded-l-3xl shadow-2xl"
+            className={`fixed top-1/2 -translate-y-1/2 z-[8000] flex overflow-hidden shadow-2xl ${isLeft ? 'left-0 flex-row rounded-r-3xl' : 'right-0 flex-row-reverse rounded-l-3xl'}`}
             animate={{ width: isOpen ? expandedWidth : tabWidth }}
             transition={{ duration: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
             style={{
@@ -270,22 +267,27 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                 background: panelBg,
                 backdropFilter: 'blur(32px) saturate(180%)',
                 WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-                border: `1px solid ${withOpacity(borderPrimary, 0.25)}`,
-                borderRight: 'none',
-                boxShadow: `-20px 0 60px rgba(0,0,0,0.45), inset 1px 0 0 ${withOpacity(primary, 0.08)}`,
+                // borderPrimary est déjà une chaîne rgba() avec sa propre opacité (voir
+                // les presets de thème) -- withOpacity() attend un hex brut et lui
+                // accolait un suffixe alpha invalide, ce qui rendait la déclaration
+                // border entière invalide (donc ignorée) pour tous les thèmes.
+                border: `1px solid ${borderPrimary}`,
+                borderRight: isLeft ? undefined : 'none',
+                borderLeft: isLeft ? 'none' : undefined,
+                boxShadow: `${isLeft ? '20px' : '-20px'} 0 60px rgba(0,0,0,0.45), inset 1px 0 0 ${withOpacity(primary, 0.08)}`,
             }}
         >
             {/* Accent top */}
             <div className="absolute top-0 left-0 right-0 h-px pointer-events-none"
                 style={{ background: `linear-gradient(to right, transparent, ${withOpacity(primary, 0.4)}, transparent)` }} />
 
-            {/* ── Bande de tab (toujours visible, à droite) ─────────────────── */}
+            {/* ── Bande de tab (toujours visible) ─────────────────────────────── */}
             <div
                 className="shrink-0 flex flex-col relative"
                 style={{ width: tabWidth }}
             >
-                {/* Ligne d'accent verticale (côté gauche de la bande) */}
-                <div className="absolute left-0 top-8 bottom-8 w-px pointer-events-none"
+                {/* Ligne d'accent verticale (côté qui fait face au panneau de contenu) */}
+                <div className={`absolute top-8 bottom-8 w-px pointer-events-none ${isLeft ? 'right-0' : 'left-0'}`}
                     style={{ background: `linear-gradient(to bottom, transparent, ${withOpacity(primary, 0.25)}, transparent)` }} />
 
                 {/* Zone HAUTE — Notifications (occupe 50% de la hauteur) */}
@@ -402,7 +404,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                             {/* Header */}
                             <div className="flex items-center gap-2 px-4 pt-5 pb-3 shrink-0">
                                 <Sparkles className="h-3.5 w-3.5" style={{ color: withOpacity(primary, 0.7) }} />
-                                <span className="text-[11px] font-bold tracking-widest uppercase" style={{ color: textMuted }}>
+                                <span className="text-[12.5px] font-bold tracking-widest uppercase" style={{ color: textMuted }}>
                                     Centre d'activité
                                 </span>
                             </div>
@@ -416,7 +418,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                                         <button
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold transition-all duration-200"
+                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12.5px] font-semibold transition-all duration-200"
                                             style={isActive
                                                 ? {
                                                     color: primary,
@@ -442,12 +444,22 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                                 {activeTab === 'notifs' && unreadCount > 0 && currentUser && (
                                     <button
                                         onClick={() => markAllNotificationsRead(currentUser)}
-                                        className="ml-auto flex items-center gap-1 text-[10px] transition-colors"
-                                        style={{ color: withOpacity(primary, 0.35) }}
+                                        // h-9 (36px) plutôt que le 44px recommandé (WCAG 2.5.5) : la rangée de
+                                        // pills à côté fait ~36px de haut (px-3 py-1.5 + texte 12.5px) -- passer
+                                        // ce bouton à 44px le ferait dépasser visuellement de la rangée. Reste un
+                                        // gain réel par rapport aux 28px d'origine.
+                                        className="ml-auto flex items-center justify-center h-9 w-9 rounded-full shrink-0 transition-all duration-200"
+                                        style={{
+                                            color: primary,
+                                            background: withOpacity(primary, 0.18),
+                                            border: `1px solid ${withOpacity(primary, 0.6)}`,
+                                        }}
+                                        onMouseEnter={e => (e.currentTarget.style.background = withOpacity(primary, 0.28))}
+                                        onMouseLeave={e => (e.currentTarget.style.background = withOpacity(primary, 0.18))}
                                         title="Tout marquer comme lu"
                                         aria-label="Tout marquer comme lu"
                                     >
-                                        <CheckCheck className="h-3 w-3" />
+                                        <CheckCheck className="h-3.5 w-3.5" />
                                     </button>
                                 )}
                             </div>
@@ -457,37 +469,59 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                                 style={{ background: `linear-gradient(to right, transparent, ${withOpacity(primary, 0.2)}, transparent)` }} />
 
                             {/* Contenu scrollable */}
-                            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 px-2 py-2">
+                            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[rgba(var(--overlay-rgb),0.1)] px-2 py-2">
 
                                 {/* ── Notifications ──────────────────────────── */}
                                 {activeTab === 'notifs' && (
                                     <div className="flex flex-col gap-1.5">
                                         {myNotifs.length === 0 ? (
-                                            <EmptyState icon={<Bell className="h-8 w-8" />} label="Aucune notification" primary={primary} />
-                                        ) : myNotifs.map(notif => (
+                                            <EmptyState icon={<Bell className="h-8 w-8" />} label="Aucune notification" primary={primary} textMuted={textMuted} />
+                                        ) : myNotifs.map(notif => {
+                                            const notifProject = tasks.find(t => t.id === notif.taskId)?.project;
+                                            return (
                                             <div
                                                 key={notif.id}
+                                                role="button"
+                                                tabIndex={0}
                                                 className="group relative flex items-start gap-3 rounded-2xl px-3 py-3 cursor-pointer transition-all duration-200"
                                                 style={{
                                                     borderLeft: `2px solid ${!notif.readAt ? withOpacity(primary, 0.6) : 'transparent'}`,
                                                     background: !notif.readAt ? withOpacity(primary, 0.06) : 'transparent',
                                                 }}
                                                 onClick={() => handleNotifClick(notif)}
+                                                onKeyDown={e => {
+                                                    // Le trash inline est un <button> imbriqué -- cette ligne ne peut donc pas
+                                                    // être un vrai <button> (imbrication interdite en HTML). role="button" +
+                                                    // ce handler la rendent quand même activable au clavier (Entrée/Espace),
+                                                    // comme la ligne "Messages" ci-dessous qui n'a pas ce problème.
+                                                    // e.target !== e.currentTarget : ignore les Entrée/Espace qui remontent
+                                                    // depuis le bouton supprimer, sinon Entrée sur ce bouton déclencherait
+                                                    // AUSSI l'ouverture de la tâche (double action).
+                                                    if (e.target !== e.currentTarget) return;
+                                                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleNotifClick(notif); }
+                                                }}
                                                 onMouseEnter={e => (e.currentTarget.style.background = withOpacity(primary, 0.08))}
                                                 onMouseLeave={e => (e.currentTarget.style.background = !notif.readAt ? withOpacity(primary, 0.06) : 'transparent')}
+                                                onFocus={e => (e.currentTarget.style.background = withOpacity(primary, 0.08))}
+                                                onBlur={e => (e.currentTarget.style.background = !notif.readAt ? withOpacity(primary, 0.06) : 'transparent')}
                                             >
                                                 <div className="mt-0.5 shrink-0 p-1.5 rounded-xl" style={{ background: withOpacity(primary, 0.08) }}>
                                                     {getNotifIcon(notif.type)}
                                                 </div>
 
                                                 <div className="flex-1 min-w-0">
+                                                    {notifProject && (
+                                                        <span className="text-[11.5px] block truncate font-medium" style={{ color: withOpacity(primary, 0.85) }}>
+                                                            {notifProject}
+                                                        </span>
+                                                    )}
                                                     <p
-                                                        className={`text-[11px] leading-snug ${!notif.readAt ? 'font-semibold' : ''}`}
-                                                        style={{ color: !notif.readAt ? 'rgba(255,255,255,0.90)' : 'rgba(255,255,255,0.45)' }}
+                                                        className={`text-[12.5px] leading-snug mt-0.5 ${!notif.readAt ? 'font-semibold' : ''}`}
+                                                        style={{ color: !notif.readAt ? 'rgba(var(--overlay-rgb),0.90)' : textMuted }}
                                                     >
                                                         {notif.message}
                                                     </p>
-                                                    <span className="text-[10px] mt-1 block" style={{ color: textMuted }}>
+                                                    <span className="text-[11.5px] mt-1 block" style={{ color: textMuted }}>
                                                         {timeAgo(notif.createdAt)}
                                                     </span>
                                                 </div>
@@ -500,15 +534,20 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                                                     {currentUser && (
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); deleteNotificationForUser(notif.id, currentUser); }}
-                                                            className="p-1.5 rounded-lg text-white/15 hover:text-rose-400 hover:bg-rose-400/10 transition opacity-0 group-hover:opacity-100"
+                                                            // p-3.5 (44px avec l'icône 16px) au lieu de p-2 (32px) : la carte de
+                                                            // notification est assez haute pour l'accueillir sans déséquilibrer
+                                                            // la mise en page, contrairement au bouton "tout marquer comme lu"
+                                                            // ci-dessus qui doit rester aligné avec une rangée plus basse.
+                                                            className="p-3.5 rounded-xl text-[rgba(var(--overlay-rgb),0.15)] hover:text-rose-400 hover:bg-rose-400/10 transition opacity-0 group-hover:opacity-100"
                                                             aria-label="Supprimer cette notification"
                                                         >
-                                                            <Trash2 className="h-3 w-3" />
+                                                            <Trash2 className="h-4 w-4" />
                                                         </button>
                                                     )}
                                                 </div>
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
 
@@ -516,7 +555,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                                 {activeTab === 'messages' && (
                                     <div className="flex flex-col gap-1.5">
                                         {messageFeed.length === 0 ? (
-                                            <EmptyState icon={<MessageCircle className="h-8 w-8" />} label="Aucun message" primary={primary} />
+                                            <EmptyState icon={<MessageCircle className="h-8 w-8" />} label="Aucun message" primary={primary} textMuted={textMuted} />
                                         ) : messageFeed.map(item => (
                                             <button
                                                 key={item.commentId}
@@ -530,7 +569,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                                                 onMouseLeave={e => (e.currentTarget.style.background = item.mentionsMe ? withOpacity(primary, 0.05) : 'transparent')}
                                             >
                                                 <div
-                                                    className="shrink-0 h-7 w-7 rounded-xl flex items-center justify-center text-[10px] font-black"
+                                                    className="shrink-0 h-7 w-7 rounded-xl flex items-center justify-center text-[11.5px] font-black"
                                                     style={{
                                                         background: withOpacity(primary, 0.12),
                                                         color: primary,
@@ -542,25 +581,25 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
 
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-1 mb-1">
-                                                        <span className="text-[9px] font-bold uppercase tracking-wider truncate max-w-[60px]" style={{ color: withOpacity(primary, 0.5) }}>
+                                                        <span className="text-[10.5px] font-bold uppercase tracking-wider truncate max-w-[60px]" style={{ color: withOpacity(primary, 0.5) }}>
                                                             {item.task.project}
                                                         </span>
                                                         <ChevronRight className="h-2.5 w-2.5 shrink-0" style={{ color: withOpacity(primary, 0.2) }} />
-                                                        <span className="text-[10px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                                                        <span className="text-[11.5px] truncate" style={{ color: textMuted }}>
                                                             {item.task.title}
                                                         </span>
                                                     </div>
 
                                                     <div className="flex items-center gap-1.5 mb-1.5">
-                                                        <span className="text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                                                        <span className="text-[12.5px] font-semibold" style={{ color: 'rgba(var(--overlay-rgb),0.65)' }}>
                                                             {item.authorName}
                                                         </span>
-                                                        <span className="text-[9px]" style={{ color: textMuted }}>
+                                                        <span className="text-[10.5px]" style={{ color: textMuted }}>
                                                             {timeAgo(item.createdAt)}
                                                         </span>
                                                         {item.mentionsMe && (
                                                             <span
-                                                                className="text-[8px] font-black rounded-full px-1.5 py-0.5 leading-none"
+                                                                className="text-[9px] font-black rounded-full px-1.5 py-0.5 leading-none"
                                                                 style={{
                                                                     color: primary,
                                                                     background: withOpacity(primary, 0.15),
@@ -572,7 +611,7 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
                                                         )}
                                                     </div>
 
-                                                    <p className="text-[11px] leading-relaxed line-clamp-2" style={{ color: 'rgba(255,255,255,0.45)' }}>
+                                                    <p className="text-[12.5px] leading-relaxed line-clamp-2" style={{ color: textMuted }}>
                                                         {item.text}
                                                     </p>
                                                 </div>
@@ -595,11 +634,11 @@ export function RightSidebar({ onTaskClick: _onTaskClick }: RightSidebarProps) {
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
-function EmptyState({ icon, label, primary }: { icon: React.ReactNode; label: string; primary: string }) {
+function EmptyState({ icon, label, primary, textMuted }: { icon: React.ReactNode; label: string; primary: string; textMuted: string }) {
     return (
-        <div className="flex flex-col items-center justify-center gap-3 py-16" style={{ color: withOpacity(primary, 0.2) }}>
-            <div className="opacity-60">{icon}</div>
-            <span className="text-xs tracking-wide">{label}</span>
+        <div className="flex flex-col items-center justify-center gap-3 py-16">
+            <div style={{ color: withOpacity(primary, 0.3) }}>{icon}</div>
+            <span className="text-xs tracking-wide" style={{ color: textMuted }}>{label}</span>
         </div>
     );
 }

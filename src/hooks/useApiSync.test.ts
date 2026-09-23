@@ -37,10 +37,10 @@ describe('useApiSync', () => {
   it('re-fetches on the 10s refresh interval', async () => {
     renderHook(() => useApiSync());
     await waitFor(() => expect(useStore.getState().isLoadingData).toBe(false));
-    const callsBefore = (useStore.getState().fetchTasks as any).mock.calls.length;
+    const callsBefore = vi.mocked(useStore.getState().fetchTasks).mock.calls.length;
 
     vi.advanceTimersByTime(10_000);
-    await vi.waitFor(() => expect((useStore.getState().fetchTasks as any).mock.calls.length).toBeGreaterThan(callsBefore));
+    await vi.waitFor(() => expect(vi.mocked(useStore.getState().fetchTasks).mock.calls.length).toBeGreaterThan(callsBefore));
   });
 
   // Régression I4 (review finale de branche) : avant ce fix, un fetch* rejeté laissait

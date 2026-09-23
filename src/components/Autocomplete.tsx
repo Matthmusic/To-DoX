@@ -159,7 +159,7 @@ export function Autocomplete<T, V = unknown>({
                     <div
                         ref={dropdownRef}
                         role="listbox"
-                        className="fixed z-[99999] overflow-auto rounded-b-2xl border border-white/20 bg-white/5 backdrop-blur-xl shadow-2xl"
+                        className="fixed z-[99999] overflow-auto rounded-b-2xl border border-[rgba(var(--overlay-rgb),0.2)] bg-theme-secondary backdrop-blur-xl shadow-2xl"
                         style={{
                             top: dropdownPosition.top,
                             left: dropdownPosition.left,
@@ -174,7 +174,7 @@ export function Autocomplete<T, V = unknown>({
                                 aria-selected={getValue!(option) === value}
                                 className={classNames(
                                     "cursor-pointer px-3 py-2 text-sm text-slate-100 transition",
-                                    optionIndex === focusedOptionIndex ? "bg-[#1E3A8A]" : "hover:bg-[#1E3A8A]/60"
+                                    optionIndex === focusedOptionIndex ? "bg-[var(--color-primary)]" : "hover:bg-[rgba(var(--color-primary-rgb),0.6)]"
                                 )}
                                 onMouseDown={(event) => {
                                     event.preventDefault();

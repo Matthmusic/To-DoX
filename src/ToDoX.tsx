@@ -1,36 +1,49 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { todayISO, devError } from "./utils";
 import { migrateTask } from "./utils/taskMigration";
 
 // Store and Types
 import useStore from "./store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import type { StoredData, Task } from "./types";
 
 type StoredDataRaw = Omit<StoredData, 'tasks'> & { tasks?: unknown[] };
 
-// Composants extraits
+// Composants toujours nécessaires au premier rendu (vue Kanban + ses panneaux de base) --
+// restent en import statique.
 import {
     TaskEditPanel,
     TaskCard,
-    ArchivePanel,
-    TaskArchivePanel,
-    ProjectDirs,
-    ProjectsListPanel,
-    AdminProjectsPanel,
-    UsersPanel,
-    StoragePanel,
-    WeeklyReportModal,
     ConfirmModalHost,
     KanbanHeaderPremium,
     KanbanBoard,
-    TimelineView,
-    DashboardView,
 } from "./components";
-import { TermineesView } from "./components/TermineesView";
-import { TimesheetView } from "./components/TimesheetView";
 import { alertModal } from "./utils/confirm";
 import { playSoundFile } from "./utils/sound";
+
+// Vues alternatives et panneaux modaux : ouverts occasionnellement, jamais tous en même
+// temps -- chargés à la demande (React.lazy) plutôt que dans le bundle initial. Le module
+// exporte le composant en export nommé (convention du projet), d'où le .then() qui
+// l'adapte en export par défaut attendu par lazy(), sans toucher aux fichiers sources.
+// Cf. /impeccable audit : bundle principal signalé à 1.28 Mo par Vite avant ce découpage.
+const TimelineView = lazy(() => import("./components/TimelineView").then(m => ({ default: m.TimelineView })));
+const DashboardView = lazy(() => import("./components/DashboardView").then(m => ({ default: m.DashboardView })));
+const TermineesView = lazy(() => import("./components/TermineesView").then(m => ({ default: m.TermineesView })));
+const TimesheetView = lazy(() => import("./components/TimesheetView").then(m => ({ default: m.TimesheetView })));
+const WeeklyReportModal = lazy(() => import("./components/WeeklyReportModal").then(m => ({ default: m.WeeklyReportModal })));
+const ArchivePanel = lazy(() => import("./components/archive/ProjectArchivePanel").then(m => ({ default: m.ProjectArchivePanel })));
+const TaskArchivePanel = lazy(() => import("./components/archive/TaskArchivePanel").then(m => ({ default: m.TaskArchivePanel })));
+const ProjectDirs = lazy(() => import("./components/settings/ProjectDirs").then(m => ({ default: m.ProjectDirs })));
+const ProjectsListPanel = lazy(() => import("./components/settings/ProjectsListPanel").then(m => ({ default: m.ProjectsListPanel })));
+const AdminProjectsPanel = lazy(() => import("./components/settings/AdminProjectsPanel").then(m => ({ default: m.AdminProjectsPanel })));
+const UsersPanel = lazy(() => import("./components/settings/UsersPanel").then(m => ({ default: m.UsersPanel })));
+const AccountPanel = lazy(() => import("./components/settings/AccountPanel").then(m => ({ default: m.AccountPanel })));
+const ShortcutsHelpPanel = lazy(() => import("./components/ShortcutsHelpPanel").then(m => ({ default: m.ShortcutsHelpPanel })));
+const NotificationsPanel = lazy(() => import("./components/settings/NotificationsPanel").then(m => ({ default: m.NotificationsPanel })));
+const ThemePanel = lazy(() => import("./components/settings/ThemePanel").then(m => ({ default: m.ThemePanel })));
+const TemplatesPanel = lazy(() => import("./components/settings/TemplatesPanel").then(m => ({ default: m.TemplatesPanel })));
+const OutlookPanel = lazy(() => import("./components/settings/OutlookPanel").then(m => ({ default: m.OutlookPanel })));
 
 // Hooks personnalisés
 import { useFilters } from "./hooks/useFilters";
@@ -40,17 +53,6 @@ import { useNotifications } from "./hooks/useNotifications";
 
 // Contexts
 import { ShortcutsProvider, type ShortcutsContextValue } from "./contexts/ShortcutsContext";
-
-// Composants raccourcis
-import { ShortcutsHelpPanel } from "./components/ShortcutsHelpPanel";
-
-// Composants notifications
-import { NotificationsPanel } from "./components/settings/NotificationsPanel";
-
-// Composants thèmes
-import { ThemePanel } from "./components/settings/ThemePanel";
-import { TemplatesPanel } from "./components/settings/TemplatesPanel";
-import { OutlookPanel } from "./components/settings/OutlookPanel";
 
 // Hook Outlook
 import { useOutlookSync } from "./hooks/useOutlookSync";
@@ -72,7 +74,7 @@ interface ReviewerPickerDialogProps {
 }
 
 function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDialogProps) {
-    const { tasks, users, currentUser } = useStore();
+    const { tasks, users, currentUser } = useStore(useShallow((s) => ({ tasks: s.tasks, users: s.users, currentUser: s.currentUser })));
     const task = tasks.find(t => t.id === taskId);
     const [selected, setSelected] = useState<string[]>(task?.reviewers || []);
     const sortedUsers = [...users].sort((a, b) => {
@@ -85,15 +87,15 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
 
     return (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="w-80 rounded-2xl border border-violet-400/30 bg-[#0f1629] p-5 shadow-2xl">
-                <h3 className="mb-1 text-sm font-bold text-white">Désigner un réviseur</h3>
+            <div className="w-80 rounded-2xl border border-violet-400/30 bg-theme-secondary p-5 shadow-2xl">
+                <h3 className="mb-1 text-sm font-bold text-theme-primary">Désigner un réviseur</h3>
                 <p className="mb-4 text-xs text-slate-400 leading-relaxed">
                     La tâche <span className="text-violet-300 font-semibold">"{task.title}"</span> est en révision.
                     Choisissez un ou plusieurs réviseurs.
                 </p>
                 <div className="space-y-1 max-h-48 overflow-y-auto mb-4">
                     {sortedUsers.map(user => (
-                        <label key={user.id} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-white/5 cursor-pointer transition">
+                        <label key={user.id} className="flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-[rgba(var(--overlay-rgb),0.05)] cursor-pointer transition">
                             <input
                                 type="checkbox"
                                 checked={selected.includes(user.id)}
@@ -111,13 +113,13 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
                     <button
                         onClick={() => onConfirm(selected)}
                         disabled={selected.length === 0}
-                        className="flex-1 rounded-xl bg-violet-500/80 px-3 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex-1 rounded-xl bg-violet-500/80 px-3 py-2 text-sm font-semibold text-theme-primary transition hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                         Confirmer
                     </button>
                     <button
                         onClick={onDismiss}
-                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-400 transition hover:bg-white/10"
+                        className="rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2 text-sm text-slate-400 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                     >
                         Plus tard
                     </button>
@@ -134,7 +136,7 @@ function ReviewerPickerDialog({ taskId, onConfirm, onDismiss }: ReviewerPickerDi
 export default function ToDoX() {
     // Note: useApiSync est maintenant appelé dans App.tsx pour éviter le problème de chicken-and-egg
 
-    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, renameProject, currentUser, viewAsUser, appNotifications, notificationSettings, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId, setHighlightedTaskId } = useStore();
+    const { tasks, directories, projectHistory, users, collapsedProjects, archiveProject, renameProject, currentUser, viewAsUser, appNotifications, notificationSettings, setReviewers, pendingReviewDialogTaskId, setPendingReviewDialogTaskId, setHighlightedTaskId } = useStore(useShallow((s) => ({ tasks: s.tasks, directories: s.directories, projectHistory: s.projectHistory, users: s.users, collapsedProjects: s.collapsedProjects, archiveProject: s.archiveProject, renameProject: s.renameProject, currentUser: s.currentUser, viewAsUser: s.viewAsUser, appNotifications: s.appNotifications, notificationSettings: s.notificationSettings, setReviewers: s.setReviewers, pendingReviewDialogTaskId: s.pendingReviewDialogTaskId, setPendingReviewDialogTaskId: s.setPendingReviewDialogTaskId, setHighlightedTaskId: s.setHighlightedTaskId })));
 
     const mentionCount = currentUser
         ? appNotifications.filter(n => !n.readAt && !n.deletedBy?.includes(currentUser) && n.toUserId === currentUser && n.type === 'comment_mention').length
@@ -169,7 +171,7 @@ export default function ToDoX() {
     const [showArchivePanel, setShowArchivePanel] = useState(false);
     const [showTaskArchivePanel, setShowTaskArchivePanel] = useState(false);
     const [showUsersPanel, setShowUsersPanel] = useState(false);
-    const [showStoragePanel, setShowStoragePanel] = useState(false);
+    const [showAccountPanel, setShowAccountPanel] = useState(false);
     const [showWeeklyReportPanel, setShowWeeklyReportPanel] = useState(false);
     const [showProjectsListPanel, setShowProjectsListPanel] = useState(false);
     const [showAdminProjectsPanel, setShowAdminProjectsPanel] = useState(false);
@@ -360,7 +362,7 @@ export default function ToDoX() {
         showArchivePanel ||
         showTaskArchivePanel ||
         showUsersPanel ||
-        showStoragePanel ||
+        showAccountPanel ||
         showWeeklyReportPanel ||
         showProjectsListPanel ||
         showAdminProjectsPanel ||
@@ -392,7 +394,7 @@ export default function ToDoX() {
             setShowArchivePanel(false);
             setShowTaskArchivePanel(false);
             setShowUsersPanel(false);
-            setShowStoragePanel(false);
+            setShowAccountPanel(false);
             setShowWeeklyReportPanel(false);
             setShowProjectsListPanel(false);
             setShowAdminProjectsPanel(false);
@@ -428,7 +430,7 @@ export default function ToDoX() {
                 onArchiveProject={archiveProject}
                 onRenameProject={renameProject}
                 onOpenWeeklyReport={() => setShowWeeklyReportPanel(true)}
-                onOpenStorage={() => setShowStoragePanel(true)}
+                onOpenAccount={() => setShowAccountPanel(true)}
                 onOpenUsers={() => setShowUsersPanel(true)}
                 mentionCount={mentionCount}
                 onOpenNotifications={() => {
@@ -479,6 +481,7 @@ export default function ToDoX() {
 
             {/* MAIN CONTENT */}
             <ErrorBoundary name="KanbanBoard">
+              <Suspense fallback={null}>
                 {activeView === 'kanban' ? (
                     <KanbanBoard
                         grouped={grouped}
@@ -521,6 +524,7 @@ export default function ToDoX() {
                         <DashboardView />
                     </ErrorBoundary>
                 )}
+              </Suspense>
             </ErrorBoundary>
 
             {/* MODALS & PANELS */}
@@ -556,6 +560,9 @@ export default function ToDoX() {
                 document.body
             )}
 
+            {/* Suspense partagé : ces panneaux sont chargés à la demande (React.lazy, voir
+                imports en haut du fichier) et ne s'affichent jamais plusieurs à la fois. */}
+            <Suspense fallback={null}>
             {showWeeklyReportPanel && (
                 <ErrorBoundary name="WeeklyReportModal">
                     <WeeklyReportModal
@@ -600,9 +607,9 @@ export default function ToDoX() {
                 />
             )}
 
-            {showStoragePanel && (
-                <StoragePanel
-                    onClose={() => setShowStoragePanel(false)}
+            {showAccountPanel && (
+                <AccountPanel
+                    onClose={() => setShowAccountPanel(false)}
                 />
             )}
 
@@ -639,6 +646,7 @@ export default function ToDoX() {
                     icsServerUrl={icsServerUrl}
                 />
             )}
+            </Suspense>
 
             {/* Sélecteur de réviseurs — s'ouvre quand une tâche passe en révision sans réviseur (action locale uniquement) */}
             {pendingReviewDialogTaskId && (
@@ -653,9 +661,7 @@ export default function ToDoX() {
             )}
             </ErrorBoundary>
 
-            <RightSidebar
-                onTaskClick={(task, x, y) => setContextMenu({ x, y, task })}
-            />
+            <RightSidebar />
 
             {/* Hidden File Input for Import */}
             <input

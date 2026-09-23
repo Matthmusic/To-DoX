@@ -113,7 +113,7 @@ export function TaskReviewSection({
                             </button>
                             <button
                                 onClick={(e) => { e.stopPropagation(); setShowCorrectionInput(false); setCorrectionText(""); }}
-                                className="rounded-xl border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-400 transition hover:bg-white/10"
+                                className="rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1 text-xs text-slate-400 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                             >
                                 Annuler
                             </button>

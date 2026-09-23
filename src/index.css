@@ -9,6 +9,7 @@
 :root {
   /* Variables de thème (dynamiques, modifiées par useTheme) */
   --color-primary: #06b6d4;
+  --color-primary-rgb: 6, 182, 212;
   --color-secondary: #a855f7;
 
   --bg-primary: #050b1f;
@@ -26,6 +27,16 @@
   --gradient-via: rgba(54, 20, 74, 0.85);
   --gradient-to: #1a0f2c;
 
+  /* Triplet RGB pour les surcouches translucides ("verre dépoli") -- blanc par défaut
+     (thème sombre initial), voir applyTheme() dans useTheme.ts pour la bascule vers un
+     voile sombre en thème clair. */
+  --overlay-rgb: 255, 255, 255;
+
+  /* Paire d'ombres pour l'effet néomorphique (colonnes Kanban) -- valeurs par défaut du
+     thème sombre initial, voir applyTheme() dans useTheme.ts pour le calcul par thème. */
+  --neu-shadow-light: rgba(6, 182, 212, 0.12);
+  --neu-shadow-dark: rgba(0, 0, 0, 0.45);
+
   /* Smooth transitions pour les changements de thème */
   --theme-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -34,6 +45,146 @@
 .theme-transitioning * {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
 }
+
+/* ========================================
+   SURCHARGES THÈME CLAIR
+   ========================================
+   De nombreux encadrés colorés (info/succès/erreur/avertissement) dans l'app utilisent
+   un texte en teinte claire (text-rose-100, text-blue-200, text-slate-300...) sur un fond
+   très légèrement teinté (bg-rose-400/5, etc.) -- un idiome pensé pour un fond d'app
+   sombre, où le texte clair ressort bien. Sur le thème clair, ce même texte devient
+   quasi invisible (texte presque blanc sur fond presque blanc). Plutôt que de retoucher
+   chaque occurrence une par une dans le code (plus de 200 à travers l'app), ces règles
+   assombrissent ces classes précises quand .theme-light est présent sur <html> (posé par
+   applyTheme() dans useTheme.ts). Spécificité (0,2,0) > la classe Tailwind seule (0,1,0),
+   donc ces règles gagnent quel que soit l'ordre de chargement des feuilles de style.
+   Contrastes vérifiés ≥7:1 sur blanc pour chaque teinte ci-dessous. */
+.theme-light .text-slate-100,
+.theme-light .text-slate-200,
+.theme-light .text-slate-300 { color: #334155; } /* slate-700 */
+
+.theme-light .text-blue-100,
+.theme-light .text-blue-200,
+.theme-light .text-blue-300 { color: #1e40af; } /* blue-800 */
+
+.theme-light .text-sky-100,
+.theme-light .text-sky-200,
+.theme-light .text-sky-300 { color: #075985; } /* sky-800 */
+
+.theme-light .text-cyan-100,
+.theme-light .text-cyan-200,
+.theme-light .text-cyan-300 { color: #155e75; } /* cyan-800 */
+
+.theme-light .text-indigo-100,
+.theme-light .text-indigo-200,
+.theme-light .text-indigo-300 { color: #3730a3; } /* indigo-800 */
+
+.theme-light .text-violet-100,
+.theme-light .text-violet-200,
+.theme-light .text-violet-300 { color: #5b21b6; } /* violet-800 */
+
+.theme-light .text-purple-100,
+.theme-light .text-purple-200,
+.theme-light .text-purple-300 { color: #6b21a8; } /* purple-800 */
+
+.theme-light .text-pink-100,
+.theme-light .text-pink-200,
+.theme-light .text-pink-300 { color: #9d174d; } /* pink-800 */
+
+.theme-light .text-rose-100,
+.theme-light .text-rose-200,
+.theme-light .text-rose-300 { color: #9f1239; } /* rose-800 */
+
+.theme-light .text-red-100,
+.theme-light .text-red-200,
+.theme-light .text-red-300 { color: #991b1b; } /* red-800 */
+
+.theme-light .text-orange-100,
+.theme-light .text-orange-200,
+.theme-light .text-orange-300 { color: #9a3412; } /* orange-800 */
+
+.theme-light .text-amber-100,
+.theme-light .text-amber-200,
+.theme-light .text-amber-300 { color: #92400e; } /* amber-800 */
+
+.theme-light .text-yellow-100,
+.theme-light .text-yellow-200,
+.theme-light .text-yellow-300 { color: #854d0e; } /* yellow-800 */
+
+.theme-light .text-lime-100,
+.theme-light .text-lime-200,
+.theme-light .text-lime-300 { color: #3f6212; } /* lime-800 */
+
+.theme-light .text-green-100,
+.theme-light .text-green-200,
+.theme-light .text-green-300 { color: #166534; } /* green-800 */
+
+.theme-light .text-emerald-100,
+.theme-light .text-emerald-200,
+.theme-light .text-emerald-300 { color: #065f46; } /* emerald-800 */
+
+.theme-light .text-teal-100,
+.theme-light .text-teal-200,
+.theme-light .text-teal-300 { color: #115e59; } /* teal-800 */
+
+/* Palier -400 : très utilisé comme couleur d'icône/accent vive, mais tout aussi illisible
+   en texte sur fond clair (ex. les libellés "Supprimer"/"Éditer" trouvés en test). -700
+   plutôt que -800 pour rester plus proche du caractère "vif" recherché à l'origine. */
+.theme-light .text-slate-400 { color: #334155; } /* slate-700 */
+/* placeholder-slate-400 cible ::placeholder, un pseudo-élément distinct de .text-slate-400 --
+   non couvert par la règle ci-dessus. Repéré sur QuickAdd (fond var(--bg-tertiary) devenu
+   clair) mais partagé par 4 champs de saisie de l'app : placeholder quasi invisible en
+   thème clair sans cette règle. */
+.theme-light .placeholder-slate-400::placeholder { color: #334155; } /* slate-700 */
+.theme-light .text-blue-400 { color: #1d4ed8; } /* blue-700 */
+.theme-light .text-sky-400 { color: #0369a1; } /* sky-700 */
+.theme-light .text-cyan-400 { color: #0e7490; } /* cyan-700 */
+.theme-light .text-indigo-400 { color: #4338ca; } /* indigo-700 */
+.theme-light .text-violet-400 { color: #6d28d9; } /* violet-700 */
+.theme-light .text-purple-400 { color: #7e22ce; } /* purple-700 */
+.theme-light .text-pink-400 { color: #be185d; } /* pink-700 */
+.theme-light .text-rose-400 { color: #be123c; } /* rose-700 */
+.theme-light .text-red-400 { color: #b91c1c; } /* red-700 */
+.theme-light .text-orange-400 { color: #c2410c; } /* orange-700 */
+.theme-light .text-amber-400 { color: #b45309; } /* amber-700 */
+.theme-light .text-yellow-400 { color: #a16207; } /* yellow-700 */
+.theme-light .text-lime-400 { color: #4d7c0f; } /* lime-700 */
+.theme-light .text-green-400 { color: #15803d; } /* green-700 */
+.theme-light .text-emerald-400 { color: #047857; } /* emerald-700 */
+.theme-light .text-teal-400 { color: #0f766e; } /* teal-700 */
+
+/* Fonds quasi-noirs des bandeaux d'urgence (ex. le bandeau "EN RETARD" des cartes de
+   tâche : bg-rose-950 + text-rose-300) -- pensés pour rester "alarmants" sur fond sombre,
+   ils tranchent de façon incohérente sur une carte devenue claire. Passés à une teinte
+   très claire de la même couleur : le texte -300/-400 ci-dessus (déjà assombri en -700/
+   -800) reste lisible dessus, et le bandeau garde son code couleur (rouge=retard,
+   ambre=bientôt, vert=ok) sans redevenir un bloc noir incongru. */
+/* Tailwind génère un nom de classe distinct par valeur d'opacité (bg-rose-950\/80 ≠
+   bg-rose-950) -- chaque variante réellement utilisée doit donc avoir sa propre règle,
+   le slash étant échappé dans le sélecteur CSS. */
+.theme-light .bg-rose-950,
+.theme-light .bg-rose-950\/60,
+.theme-light .bg-rose-950\/70,
+.theme-light .bg-rose-950\/80 { background-color: #ffe4e6; } /* rose-100 */
+.theme-light .bg-red-950,
+.theme-light .bg-red-950\/30 { background-color: #fee2e2; } /* red-100 */
+.theme-light .bg-amber-950,
+.theme-light .bg-amber-950\/60 { background-color: #fef3c7; } /* amber-100 */
+.theme-light .bg-emerald-950,
+.theme-light .bg-emerald-950\/40 { background-color: #d1fae5; } /* emerald-100 */
+.theme-light .bg-indigo-800 { background-color: #e0e7ff; } /* indigo-100 */
+.theme-light .bg-slate-800,
+.theme-light .bg-slate-800\/40,
+.theme-light .bg-slate-800\/60 { background-color: #f1f5f9; } /* slate-100 */
+.theme-light .bg-gray-800 { background-color: #f3f4f6; } /* gray-100 */
+
+/* Petites puces (date d'échéance sur les cartes, valeur affichée dans un <code> Outlook)
+   qui assombrissent leur fond de 30-50% de noir pour faire ressortir un texte pastel en
+   thème sombre -- sur une carte déjà claire, 30% de noir ne fait qu'un gris terne, ni
+   franchement clair ni franchement sombre, sur lequel même le texte assombri plus haut
+   reste limite. Fond neutre propre à la place, le code couleur reste porté par le texte. */
+.theme-light .bg-black\/30,
+.theme-light .bg-black\/50 { background-color: #f1f5f9; } /* slate-100 */
 
 /* Classes utilitaires pour utiliser les variables de thème */
 .bg-theme-primary { background-color: var(--bg-primary); }
@@ -70,6 +221,7 @@ body {
 /* Limit kanban row width on very wide aspect ratios */
 .kanban-row {
   width: 100%;
+  max-width: 2400px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -123,24 +275,24 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(var(--overlay-rgb, 255, 255, 255), 0.04);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(var(--overlay-rgb, 255, 255, 255), 0.18);
   border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(var(--overlay-rgb, 255, 255, 255), 0.06);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: rgba(var(--overlay-rgb, 255, 255, 255), 0.28);
 }
 
 /* Scrollbar glassmorphism - Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.28) rgba(255, 255, 255, 0.06);
+  scrollbar-color: rgba(var(--overlay-rgb, 255, 255, 255), 0.28) rgba(var(--overlay-rgb, 255, 255, 255), 0.06);
 }
 
 /* Styles améliorés pour inputs et selects dans les modals */
@@ -231,13 +383,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   border-radius: calc(1rem + 4px);
   background: linear-gradient(45deg, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000, #fb0094, #0000ff, #00ff00, #ffff00, #ff0000);
   background-size: 400% 400%;
-  animation: rainbow-chase 14s linear infinite;
   pointer-events: none;
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
 }
 
+/* Animée volontairement seulement ici (l'anneau net, une fine bande 2-4px) et pas sur
+   ::after ci-dessous (le halo flouté) : c'était le halo -- filter: blur(24px) recalculé à
+   chaque frame sur CHAQUE carte favorite en même temps -- qui coûtait cher, pas l'anneau
+   lui-même. Le flou rend de toute façon le défilement des couleurs à peine perceptible sur
+   cette couche, donc la garder figée ne se voit presque pas tout en coupant le plus gros
+   du coût. Demande explicite de l'utilisateur de retrouver l'animation (14/09) après
+   qu'elle ait été coupée entièrement pour le problème de lenteur générale de l'app. */
+.rainbow-border::before {
+  animation: rainbow-chase 14s linear infinite;
+}
 
 .rainbow-border::after {
   inset: -5px;
@@ -248,7 +409,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .rainbow-border.rainbow-pulse::before,
 .rainbow-border.rainbow-pulse::after {
-  animation: rainbow-chase 14s linear infinite, rainbow-pulse 3s ease-in-out infinite;
+  animation: rainbow-pulse 3s ease-in-out infinite;
 }
 
 .card-surface {
@@ -314,15 +475,29 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 @keyframes border-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35), 0 0 18px rgba(239, 68, 68, 0.25);
+    opacity: 0.5;
   }
   50% {
-    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.7), 0 0 28px rgba(239, 68, 68, 0.45);
+    opacity: 1;
   }
 }
 
+/* Le glow des tâches "à faire aujourd'hui" animait directement box-shadow, ce qui force
+   un repaint complet de la carte à chaque frame. Ici on anime seulement l'opacité d'un
+   pseudo-élément dont le box-shadow est fixe : l'animation devient compositor-only
+   (quasi gratuite), même avec beaucoup de cartes "aujourd'hui" affichées en même temps. */
 .pulse-glow {
+  position: relative;
+}
+
+.pulse-glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.7), 0 0 28px rgba(239, 68, 68, 0.45);
   animation: border-pulse 2s ease-in-out infinite;
+  pointer-events: none;
 }
 
 /* ============================================
@@ -428,6 +603,27 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   );
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
+}
+
+/* Les animations Framer Motion respectent déjà prefers-reduced-motion via
+   <MotionConfig reducedMotion="user"> (App.tsx) -- ce média query couvre les animations
+   CSS brutes ci-dessus, qui n'en bénéficient pas automatiquement. On coupe le mouvement
+   perpétuel/décoratif sans effacer l'état qu'il signale (ex. le glow "à faire aujourd'hui"
+   reste visible, juste fixe au lieu de pulser -- voir la note sur prefers-reduced-motion
+   dans /impeccable audit). */
+@media (prefers-reduced-motion: reduce) {
+  .pulse-glow::after {
+    animation: none;
+    opacity: 1;
+  }
+  .animate-gradient-x,
+  .animate-spin-slow,
+  .quickadd-premium-container:focus-within,
+  .glow-pulse,
+  .animate-shimmer,
+  .rainbow-border::before {
+    animation: none;
+  }
 }
 
 /* Fade edges pour les projets scrollables */

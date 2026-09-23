@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { StoragePanel } from './StoragePanel';
+import { AccountPanel } from './AccountPanel';
 import useStore from '../../store/useStore';
 import * as api from '../../services/api';
 
@@ -9,7 +9,7 @@ vi.mock('../../services/api', async (importOriginal) => {
   return { ...actual, clearToken: vi.fn(), changePassword: vi.fn() };
 });
 
-describe('StoragePanel', () => {
+describe('AccountPanel', () => {
   beforeEach(() => {
     // currentUser (UUID backend) et localAuthUserId (id LOCAL FIXED_USERS, utilisé par
     // saveToken/clearToken) sont délibérément DIFFÉRENTS ici -- c'est le blind spot exact
@@ -20,13 +20,13 @@ describe('StoragePanel', () => {
   });
 
   it('shows the connected server and a logout button, no folder picker', () => {
-    render(<StoragePanel onClose={() => {}} />);
+    render(<AccountPanel onClose={() => {}} />);
     expect(screen.getByText('Se déconnecter')).toBeInTheDocument();
     expect(screen.queryByText(/dossier/i)).not.toBeInTheDocument();
   });
 
   it('logout clears the token and the session', async () => {
-    render(<StoragePanel onClose={() => {}} />);
+    render(<AccountPanel onClose={() => {}} />);
     fireEvent.click(screen.getByText('Se déconnecter'));
 
     // handleLogout is async (awaits clearToken before clearing the session) —
@@ -55,7 +55,7 @@ describe('StoragePanel', () => {
 
     it('soumission valide : appelle changePassword avec le token, affiche un succès, vide le formulaire', async () => {
       vi.mocked(api.changePassword).mockResolvedValue(undefined);
-      render(<StoragePanel onClose={() => {}} />);
+      render(<AccountPanel onClose={() => {}} />);
       openForm();
 
       fillAndSubmit('ancien-mdp', 'nouveau-mdp-123', 'nouveau-mdp-123');
@@ -68,7 +68,7 @@ describe('StoragePanel', () => {
     });
 
     it('nouveau mot de passe trop court : erreur affichée, changePassword jamais appelé', async () => {
-      render(<StoragePanel onClose={() => {}} />);
+      render(<AccountPanel onClose={() => {}} />);
       openForm();
 
       fillAndSubmit('ancien-mdp', 'court', 'court');
@@ -78,7 +78,7 @@ describe('StoragePanel', () => {
     });
 
     it('confirmation différente du nouveau mot de passe : erreur affichée, changePassword jamais appelé', async () => {
-      render(<StoragePanel onClose={() => {}} />);
+      render(<AccountPanel onClose={() => {}} />);
       openForm();
 
       fillAndSubmit('ancien-mdp', 'nouveau-mdp-123', 'autre-chose-123');
@@ -89,7 +89,7 @@ describe('StoragePanel', () => {
 
     it("mauvais mot de passe actuel (401) : erreur affichée, mais l'utilisateur reste connecté (pas de déconnexion forcée)", async () => {
       vi.mocked(api.changePassword).mockRejectedValue(new api.ApiError(401, 'Mot de passe actuel incorrect'));
-      render(<StoragePanel onClose={() => {}} />);
+      render(<AccountPanel onClose={() => {}} />);
       openForm();
 
       fillAndSubmit('mauvais-mdp', 'nouveau-mdp-123', 'nouveau-mdp-123');

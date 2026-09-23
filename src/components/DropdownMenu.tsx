@@ -92,10 +92,10 @@ export function DropdownMenu({ icon: Icon, label, children, className = "" }: Dr
                     }}
                 >
                     {/* Effet vitre teintée - Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/[0.02] pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[rgba(var(--overlay-rgb),0.05)] via-transparent to-[rgba(var(--overlay-rgb),0.02)] pointer-events-none" />
 
                     {/* Reflet lumineux en haut */}
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[rgba(var(--overlay-rgb),0.3)] to-transparent pointer-events-none" />
 
                     {/* Content */}
                     <div className="relative z-10">
@@ -123,7 +123,7 @@ export function DropdownItem({ icon: Icon, label, onClick, className = "" }: Dro
         <button
             onClick={onClick}
             type="button"
-            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-theme-primary transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white ${className}`}
+            className={`w-full flex items-center gap-3 px-4 py-2.5 text-left text-theme-primary transition hover:bg-[rgba(var(--overlay-rgb),0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white ${className}`}
         >
             {Icon && <Icon className="h-3.5 w-3.5 text-theme-secondary" />}
             <span className="text-sm">{label}</span>

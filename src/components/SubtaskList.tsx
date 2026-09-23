@@ -1,88 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { GripVertical, Trash2, CheckSquare, Plus, ExternalLink, ArrowUpFromLine, LayoutTemplate, UserPlus, Calendar } from "lucide-react";
-import { getInitials } from "../utils";
+import { GripVertical, Trash2, CheckSquare, Plus, ArrowUpFromLine, LayoutTemplate, UserPlus, Calendar } from "lucide-react";
+import { getInitials, devLog } from "../utils";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import type { Task, Subtask } from "../types";
 import { alertModal } from "../utils/confirm";
 import { LinkedTextContent } from "./LinkedTextContent";
 import {
-    formatPathForInsertion as formatDroppedPathForInsertion,
-    getDroppedFilePath as getNativeDroppedFilePath,
-    getPathDisplayName as getParsedPathDisplayName,
     hasSupportedLinkDropPayload,
     insertDroppedText,
-    parseFilePaths as parseTaskLinkParts,
     resolveDroppedLinkFromDataTransfer,
 } from "../utils/taskLinks";
-
-export function getDroppedFilePath(file: File): string {
-    return getNativeDroppedFilePath(file);
-}
-
-export function formatPathForInsertion(path: string): string {
-    return formatDroppedPathForInsertion(path);
-}
-
-/**
- * Récupère le chemin natif d'un File droppé (fichier ou dossier).
- * Utilise webUtils.getPathForFile via l'API Electron si disponible,
- * sinon fallback sur la propriété .path (ancienne API).
- */
- 
-
-/**
- * Détecte et parse les URLs https?:// et les chemins de fichiers dans le texte
- */
-export function parseFilePaths(text: string) {
-    return parseTaskLinkParts(text);
-    const parts: Array<{ type: 'text' | 'path' | 'url', content: string }> = [];
-    let lastIndex = 0;
-
-    // Regex combinée pour détecter dans l'ordre :
-    // 1. URLs https?://
-    // 2. Chemins entre guillemets (avec espaces): "C:\path with spaces\file.txt"
-    // 3. Chemins Windows sans espaces: C:\path\file.txt
-    // 4. Chemins Unix sans espaces: /path/file.txt ou ./path/file.txt
-    // 5. Chemins UNC: \\server\share\file
-    const combinedRegex = /(https?:\/\/[^\s"<>]+)|"([a-zA-Z]:[^"]+|\/[^"]+|\.\.?\/[^"]+|\\\\[^"]+)"|(?:[a-zA-Z]:\\(?:[^\s\\/:*?"<>|]+\\)*[^\s\\/:*?"<>|]+(?:\.[a-zA-Z0-9]+)?)|(?:\/(?:[^\s/]+\/)*[^\s/]+)|(?:\.\.?\/(?:[^\s/]+\/)*[^\s/]+)|(?:\\\\[^\s\\]+\\[^\s\\]+(?:\\[^\s\\]+)*)/g;
-
-    let match;
-    while ((match = combinedRegex.exec(text)) !== null) {
-        if (match.index > lastIndex) {
-            parts.push({ type: 'text', content: text.slice(lastIndex, match.index) });
-        }
-
-        if (match[1]) {
-            // URL https?://
-            parts.push({ type: 'url', content: match[1] });
-            lastIndex = match.index + match[0].length;
-        } else {
-            // Chemin fichier (avec ou sans guillemets)
-            const path = match[2] || match[0];
-            if (path.includes('\\') || path.includes('/') || path.match(/\.[a-zA-Z0-9]{2,4}$/)) {
-                parts.push({ type: 'path', content: path });
-                lastIndex = match.index + match[0].length;
-            } else {
-                parts.push({ type: 'text', content: match[0] });
-                lastIndex = match.index + match[0].length;
-            }
-        }
-    }
-
-    if (lastIndex < text.length) {
-        parts.push({ type: 'text', content: text.slice(lastIndex) });
-    }
-
-    return parts.length > 0 ? parts : [{ type: 'text', content: text }];
-}
-
-/**
- * Retourne uniquement le nom de fichier ou dossier (dernier segment du chemin)
- */
-export function getPathDisplayName(path: string): string {
-    return getParsedPathDisplayName(path);
-}
 
 interface ContextMenuProps {
     x: number;
@@ -115,17 +44,17 @@ function SubtaskContextMenu({ x, y, assignedTo, startDate, endDate, users, onCon
     return createPortal(
         <div
             style={style}
-            className="fixed z-[99999] min-w-[210px] rounded-lg border border-white/10 bg-slate-800 py-1 shadow-xl"
+            className="fixed z-[99999] min-w-[210px] rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-slate-800 py-1 shadow-xl"
             onMouseDown={(e) => e.stopPropagation()}
         >
             <button
                 onClick={() => { onConvert(); onClose(); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
             >
                 <ArrowUpFromLine className="h-4 w-4 text-blue-400" />
                 Convertir en tâche
             </button>
-            <div className="mx-2 my-1 h-px bg-white/10" />
+            <div className="mx-2 my-1 h-px bg-[rgba(var(--overlay-rgb),0.1)]" />
             <p className="px-3 py-1 text-[10px] font-semibold uppercase text-slate-500 flex items-center gap-1.5">
                 <UserPlus className="h-3 w-3" /> Affecter à
             </p>
@@ -138,7 +67,7 @@ function SubtaskContextMenu({ x, y, assignedTo, startDate, endDate, users, onCon
                         className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-[9px] font-bold transition ${
                             assignedTo.includes(u.id)
                                 ? "bg-blue-500/30 text-blue-300 ring-2 ring-blue-400/60"
-                                : "bg-white/10 text-slate-300 hover:bg-white/20"
+                                : "bg-[rgba(var(--overlay-rgb),0.1)] text-slate-300 hover:bg-[rgba(var(--overlay-rgb),0.2)]"
                         }`}
                     >
                         {getInitials(u.name)}
@@ -147,7 +76,7 @@ function SubtaskContextMenu({ x, y, assignedTo, startDate, endDate, users, onCon
             </div>
             {assignedTo.length > 0 && (
                 <>
-                    <div className="mx-2 my-1 h-px bg-white/10" />
+                    <div className="mx-2 my-1 h-px bg-[rgba(var(--overlay-rgb),0.1)]" />
                     <p className="px-3 py-1 text-[10px] font-semibold uppercase text-slate-500 flex items-center gap-1.5">
                         <Calendar className="h-3 w-3" /> Date (timeline)
                     </p>
@@ -159,7 +88,7 @@ function SubtaskContextMenu({ x, y, assignedTo, startDate, endDate, users, onCon
                                 value={startDate ?? ''}
                                 onChange={(e) => onSetDates({ startDate: e.target.value || null })}
                                 onMouseDown={(e) => e.stopPropagation()}
-                                className="flex-1 rounded bg-white/10 px-2 py-1 text-xs text-slate-200 outline-none focus:bg-white/20 [color-scheme:dark]"
+                                className="flex-1 rounded bg-[rgba(var(--overlay-rgb),0.1)] px-2 py-1 text-xs text-slate-200 outline-none focus:bg-[rgba(var(--overlay-rgb),0.2)] [color-scheme:dark]"
                             />
                         </div>
                         <div className="flex items-center gap-1.5">
@@ -169,14 +98,14 @@ function SubtaskContextMenu({ x, y, assignedTo, startDate, endDate, users, onCon
                                 value={endDate ?? ''}
                                 onChange={(e) => onSetDates({ endDate: e.target.value || null })}
                                 onMouseDown={(e) => e.stopPropagation()}
-                                className="flex-1 rounded bg-white/10 px-2 py-1 text-xs text-slate-200 outline-none focus:bg-white/20 [color-scheme:dark]"
+                                className="flex-1 rounded bg-[rgba(var(--overlay-rgb),0.1)] px-2 py-1 text-xs text-slate-200 outline-none focus:bg-[rgba(var(--overlay-rgb),0.2)] [color-scheme:dark]"
                             />
                         </div>
                     </div>
                     {(startDate || endDate) && (
                         <button
                             onClick={() => { onSetDates({ startDate: null, endDate: null }); onClose(); }}
-                            className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-rose-400 transition hover:bg-white/10"
+                            className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-rose-400 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                         >
                             Retirer les dates
                         </button>
@@ -199,7 +128,7 @@ interface SubtaskItemProps {
  * Item individuel d'une sous-tâche
  */
 export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: SubtaskItemProps) {
-    const { toggleSubtask, deleteSubtask, updateSubtaskTitle, assignSubtask, unassignSubtask, setSubtaskDates, addTask, users } = useStore();
+    const { toggleSubtask, deleteSubtask, updateSubtaskTitle, assignSubtask, unassignSubtask, setSubtaskDates, addTask, users } = useStore(useShallow((s) => ({ toggleSubtask: s.toggleSubtask, deleteSubtask: s.deleteSubtask, updateSubtaskTitle: s.updateSubtaskTitle, assignSubtask: s.assignSubtask, unassignSubtask: s.unassignSubtask, setSubtaskDates: s.setSubtaskDates, addTask: s.addTask, users: s.users })));
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(subtask.title);
     const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
@@ -223,7 +152,7 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
             e.preventDefault();
             e.stopPropagation();
             setIsFileDropTarget(false);
-            console.log('[NATIVE DROP] types:', Array.from(e.dataTransfer?.types ?? []), 'files:', e.dataTransfer?.files?.length, e.dataTransfer?.files?.[0]?.name);
+            devLog('[NATIVE DROP] types:', Array.from(e.dataTransfer?.types ?? []), 'files:', e.dataTransfer?.files?.length, e.dataTransfer?.files?.[0]?.name);
             if (!e.dataTransfer) return;
             const resolution = await resolveDroppedLinkFromDataTransfer(
                 e.dataTransfer as Pick<DataTransfer, 'files' | 'getData'>,
@@ -285,7 +214,7 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
                 onContextMenu={handleContextMenu}
                 onDragOver={handleFileDragOver}
                 onDragLeave={() => setIsFileDropTarget(false)}
-                className={`flex items-center gap-2 rounded-lg p-2 transition select-none ${isDragging ? "opacity-50" : ""} ${isFileDropTarget ? "border border-blue-400/60 bg-blue-400/10" : "bg-white/5"}`}
+                className={`flex items-center gap-2 rounded-lg p-2 transition select-none ${isDragging ? "opacity-50" : ""} ${isFileDropTarget ? "border border-blue-400/60 bg-blue-400/10" : "bg-[rgba(var(--overlay-rgb),0.05)]"}`}
                 title="Déposer un fichier pour l'attacher"
                 aria-label="Déposer un fichier pour l'attacher"
             >
@@ -331,7 +260,7 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
                             });
                             setEditTitle(newTitle);
                         }}
-                        className="flex-1 rounded bg-white/10 px-2 py-1 text-sm text-slate-100 outline-none focus:bg-white/20"
+                        className="flex-1 rounded bg-[rgba(var(--overlay-rgb),0.1)] px-2 py-1 text-sm text-slate-100 outline-none focus:bg-[rgba(var(--overlay-rgb),0.2)]"
                     />
                 ) : (
                     <span
@@ -344,57 +273,6 @@ export function SubtaskItem({ subtask, task, isDragging, onGripMouseDown }: Subt
                             text={subtask.title}
                             textClassName={subtask.completed ? "text-slate-400 line-through" : "text-slate-200"}
                         />
-                        {false && parseFilePaths(subtask.title).map((part, idx) =>
-                            part.type === 'url' ? (
-                                <button
-                                    key={idx}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (window.electronAPI?.openExternalUrl) {
-                                            window.electronAPI.openExternalUrl(part.content);
-                                        } else {
-                                            window.open(part.content, '_blank', 'noopener,noreferrer');
-                                        }
-                                    }}
-                                    onContextMenu={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        navigator.clipboard.writeText(part.content);
-                                    }}
-                                    className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 hover:text-emerald-200 transition border border-emerald-500/30 text-xs"
-                                    title={`Ouvrir : ${part.content}\nClic droit : copier`}
-                                    aria-label={`Ouvrir : ${part.content}\nClic droit : copier`}
-                                >
-                                    <ExternalLink className="h-3 w-3" />
-                                    {part.content.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 40)}{part.content.replace(/^https?:\/\//, '').length > 40 ? '…' : ''}
-                                </button>
-                            ) : part.type === 'path' ? (
-                                <button
-                                    key={idx}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (window.electronAPI?.openFolder) {
-                                            window.electronAPI.openFolder(part.content);
-                                        } else {
-                                            alert(`Chemin détecté: ${part.content}\n(Disponible uniquement en mode Electron)`);
-                                        }
-                                    }}
-                                    onContextMenu={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        navigator.clipboard.writeText(part.content);
-                                    }}
-                                    className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 hover:text-blue-200 transition border border-blue-500/30 font-mono text-xs"
-                                    title={part.content}
-                                    aria-label={part.content}
-                                >
-                                    <ExternalLink className="h-3 w-3" />
-                                    {getPathDisplayName(part.content)}
-                                </button>
-                            ) : (
-                                <span key={idx}>{part.content}</span>
-                            )
-                        )}
                     </span>
                 )}
                 {subtask.completed && subtask.completedBy && (() => {
@@ -469,7 +347,7 @@ interface SubtaskListProps {
  * Liste de sous-tâches avec drag & drop
  */
 export function SubtaskList({ task, hideHeader }: SubtaskListProps) {
-    const { addSubtask, reorderSubtasks, templates, applyTemplateToTask } = useStore();
+    const { addSubtask, reorderSubtasks, templates, applyTemplateToTask } = useStore(useShallow((s) => ({ addSubtask: s.addSubtask, reorderSubtasks: s.reorderSubtasks, templates: s.templates, applyTemplateToTask: s.applyTemplateToTask })));
     const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const dragFromGrip = useRef(false);
@@ -496,7 +374,7 @@ export function SubtaskList({ task, hideHeader }: SubtaskListProps) {
             e.preventDefault();
             e.stopPropagation();
             setIsNewDropTarget(false);
-            console.log('[NATIVE DROP input] types:', Array.from(e.dataTransfer?.types ?? []), 'files:', e.dataTransfer?.files?.length);
+            devLog('[NATIVE DROP input] types:', Array.from(e.dataTransfer?.types ?? []), 'files:', e.dataTransfer?.files?.length);
             if (!e.dataTransfer) return;
             const resolution = await resolveDroppedLinkFromDataTransfer(
                 e.dataTransfer as Pick<DataTransfer, 'files' | 'getData'>,
@@ -559,7 +437,7 @@ export function SubtaskList({ task, hideHeader }: SubtaskListProps) {
                             Template
                         </button>
                         {showTemplateDropdown && (
-                            <div className="absolute top-full mt-1 right-0 w-52 rounded-xl border border-white/10 bg-[#161b2e] shadow-2xl p-1.5 z-[99999]">
+                            <div className="absolute top-full mt-1 right-0 w-52 rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-theme-secondary shadow-2xl p-1.5 z-[99999]">
                                 <p className="text-[10px] text-slate-500 px-2 pb-1 font-semibold uppercase">Templates</p>
                                 {templates.map(tpl => (
                                     <button
@@ -569,7 +447,7 @@ export function SubtaskList({ task, hideHeader }: SubtaskListProps) {
                                             applyTemplateToTask(task.id, tpl.id);
                                             setShowTemplateDropdown(false);
                                         }}
-                                        className="w-full text-left px-2 py-1.5 rounded-lg text-sm text-slate-200 hover:bg-white/5 transition"
+                                        className="w-full text-left px-2 py-1.5 rounded-lg text-sm text-slate-200 hover:bg-[rgba(var(--overlay-rgb),0.05)] transition"
                                     >
                                         <span className="font-medium block truncate">{tpl.name}</span>
                                         <span className="text-[10px] text-slate-500">{tpl.subtaskTitles.length} sous-tâche{tpl.subtaskTitles.length > 1 ? 's' : ''}</span>
@@ -617,7 +495,7 @@ export function SubtaskList({ task, hideHeader }: SubtaskListProps) {
                     }}
                     onDragLeave={() => setIsNewDropTarget(false)}
                     placeholder="Ajouter une sous-tâche... (ou déposer un fichier)"
-                    className={`flex-1 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-400 outline-none transition ${isNewDropTarget ? 'bg-blue-500/15 border border-blue-400/50' : 'bg-white/10 focus:bg-white/20'}`}
+                    className={`flex-1 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-400 outline-none transition ${isNewDropTarget ? 'bg-blue-500/15 border border-blue-400/50' : 'bg-[rgba(var(--overlay-rgb),0.1)] focus:bg-[rgba(var(--overlay-rgb),0.2)]'}`}
                 />
                 <button
                     onClick={handleAdd}

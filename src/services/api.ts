@@ -1,6 +1,6 @@
 /** Injecté au build via les variables d'env VITE_ (voir .env.production.example).
  *  Fallback sur le backend local pour que `npm run dev` fonctionne sans config supplémentaire. */
-const API_BASE_URL: string = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001';
+const API_BASE_URL: string = import.meta.env?.VITE_API_URL || 'http://localhost:3001';
 
 export class ApiError extends Error {
   status: number;

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ProjectDirs } from './ProjectDirs';
 import useStore from '../../store/useStore';
+import type { Task } from '../../types';
 
 // Régression I5 (review finale de branche) : save() fait un setDirectories(local) 100%
 // local -- le poll 10s de fetchProjects (Task 10, useApiSync) peut faire réapparaître
@@ -10,7 +11,7 @@ import useStore from '../../store/useStore';
 describe('ProjectDirs', () => {
     beforeEach(() => {
         useStore.setState({
-            tasks: [{ id: 't1', project: 'ACME', archived: false } as any],
+            tasks: [{ id: 't1', project: 'ACME', archived: false } as unknown as Task],
             directories: {},
         });
     });

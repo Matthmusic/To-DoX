@@ -3,6 +3,7 @@ import { STATUSES } from '../constants';
 import type { Task } from '../types';
 import { ProjectCard } from './ProjectCard';
 import useStore from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import type { DropIndicator } from '../hooks/useDragAndDrop';
 
 interface KanbanBoardProps {
@@ -45,7 +46,7 @@ export function KanbanBoard({
     dropIndicator,
     nestTarget,
 }: KanbanBoardProps) {
-    const { toggleProjectCollapse } = useStore();
+    const { toggleProjectCollapse, notificationPanelSide } = useStore(useShallow((s) => ({ toggleProjectCollapse: s.toggleProjectCollapse, notificationPanelSide: s.notificationPanelSide })));
     const [activeMobileTab, setActiveMobileTab] = useState(0);
 
     const renderColumnContent = (statusId: string) => {
@@ -86,7 +87,7 @@ export function KanbanBoard({
     };
 
     return (
-        <main className="min-h-0 flex-1 overflow-hidden flex flex-col md:block bg-transparent pr-24">
+        <main className={`min-h-0 flex-1 overflow-hidden flex flex-col md:block bg-transparent ${notificationPanelSide === 'left' ? 'pl-24' : 'pr-24'}`}>
 
             {/* ── MOBILE : onglets + vue colonne unique ── */}
             <div className="md:hidden flex flex-col h-full">
@@ -109,7 +110,7 @@ export function KanbanBoard({
                                 <status.Icon className="h-3.5 w-3.5 shrink-0" />
                                 <span className="truncate">{status.label}</span>
                                 {count > 0 && (
-                                    <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-px text-[9px] leading-none">
+                                    <span className="shrink-0 rounded-full bg-[rgba(var(--overlay-rgb),0.1)] px-1.5 py-px text-[9px] leading-none">
                                         {count}
                                     </span>
                                 )}
@@ -120,7 +121,7 @@ export function KanbanBoard({
 
                 {/* Contenu colonne active — on rend uniquement la colonne sélectionnée */}
                 <div
-                    className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10"
+                    className="flex-1 overflow-y-auto p-2 space-y-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[rgba(var(--overlay-rgb),0.1)]"
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => onDrop(e, kanbanStatuses[activeMobileTab].id)}
                 >
@@ -129,30 +130,44 @@ export function KanbanBoard({
             </div>
 
             {/* ── DESKTOP : colonnes côte à côte ── */}
-            <div className="hidden md:flex h-full pl-4 pr-0 pb-4 pt-1 lg:pl-6 lg:pb-6 gap-4 lg:gap-6 overflow-x-auto">
+            {/*
+             * La marge intérieure est en miroir de notificationPanelSide : le côté qui accole
+             * le panneau (via pl-24/pr-24 sur <main> ci-dessus) reste sans marge supplémentaire,
+             * l'autre côté garde une petite marge de respiration (4/6). Sans ce miroir, passer
+             * en dock gauche cumulait pl-24 (main) + pl-4 (ici) à gauche et laissait 0 à droite :
+             * la dernière colonne touchait le bord de l'écran.
+             */}
+            <div className={`hidden md:flex h-full pb-4 pt-1 lg:pb-6 gap-4 lg:gap-6 overflow-x-auto ${notificationPanelSide === 'left' ? 'pr-4 lg:pr-6' : 'pl-4 lg:pl-6'}`}>
                 <div className="kanban-row flex h-full gap-4 lg:gap-6 w-full">
                     {kanbanStatuses.map((status) => (
                         <div
                             key={status.id}
-                            className="flex h-full flex-1 basis-0 min-w-[260px] lg:min-w-[280px] flex-col overflow-hidden rounded-3xl bg-theme-secondary border border-theme-primary shadow-[0_16px_50px_rgba(2,6,23,0.35)] backdrop-blur-xl"
+                            // Effet néomorphique : ombre douce légèrement portée vers le bas (voir
+                            // --neu-shadow-dark, calculée par thème dans useTheme.ts) + un fin liseré
+                            // clair intérieur (--neu-shadow-light) tout autour pour le relief, sans
+                            // bordure. Une ombre parfaitement symétrique (0 0 24px, essayée avant)
+                            // remontait trop haut et créait une couture visible avec la barre au-dessus
+                            // des colonnes -- léger décalage vers le bas + rayon réduit pour rester
+                            // contenue sous chaque colonne.
+                            className="flex h-full flex-1 basis-0 min-w-[260px] lg:min-w-[280px] flex-col overflow-hidden rounded-3xl bg-theme-secondary shadow-[0_6px_16px_var(--neu-shadow-dark),inset_0_0_0_1px_var(--neu-shadow-light)] backdrop-blur-xl"
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => onDrop(e, status.id)}
                         >
                             {/* Column Header */}
-                            <div className="flex items-center justify-between border-b border-theme-primary px-3 py-2 bg-white/[0.02]">
+                            <div className="flex items-center justify-between border-b border-theme-primary px-3 py-2 bg-[rgba(var(--overlay-rgb),0.02)]">
                                 <div className="flex items-center gap-2">
                                     <div className={`flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${status.color} shadow-lg`}>
                                         <status.Icon className="h-4 w-4 text-white" />
                                     </div>
                                     <h2 className="text-sm font-bold text-theme-primary">{status.label}</h2>
                                 </div>
-                                <span className="rounded-full border border-theme-primary bg-white/5 px-2 py-0.5 text-xs font-semibold text-theme-secondary">
+                                <span className="rounded-full border border-theme-primary bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-0.5 text-xs font-semibold text-theme-secondary">
                                     {grouped[status.id] ? Object.values(grouped[status.id]).reduce((acc, tasks) => acc + tasks.length, 0) : 0}
                                 </span>
                             </div>
 
                             {/* Column Content */}
-                            <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 hover:scrollbar-thumb-white/20">
+                            <div className="flex-1 overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[rgba(var(--overlay-rgb),0.1)] hover:scrollbar-thumb-[rgba(var(--overlay-rgb),0.2)]">
                                 {renderColumnContent(status.id)}
                             </div>
                         </div>

@@ -17,7 +17,7 @@ describe('UserProfile', () => {
   beforeEach(() => {
     // currentUser (UUID backend) et localAuthUserId (id LOCAL FIXED_USERS, utilisé par
     // saveToken/clearToken) sont délibérément DIFFÉRENTS ici -- même raison que
-    // StoragePanel.test.tsx.
+    // AccountPanel.test.tsx.
     useStore.setState({
       currentUser: 'u1',
       localAuthUserId: 'local-u1',

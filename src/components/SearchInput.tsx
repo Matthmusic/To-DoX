@@ -56,18 +56,18 @@ export const SearchInput = forwardRef<{ focus: () => void }, SearchInputProps>(
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="w-full rounded-xl border border-white/10 bg-white/5 pl-10 pr-10 py-2 text-sm text-slate-100 placeholder-slate-400 transition focus:border-cyan-400/40 focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-400/20"
+          className="w-full rounded-xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] pl-10 pr-10 py-2 text-sm text-slate-100 placeholder-slate-400 transition focus:border-cyan-400/40 focus:bg-[rgba(var(--overlay-rgb),0.1)] focus:outline-none focus:ring-2 focus:ring-cyan-400/20"
         />
 
         {/* Bouton clear (seulement si value non vide) */}
         {value && (
           <button
             onClick={handleClear}
-            className="absolute right-3 rounded-full p-1.5 transition hover:bg-white/10"
+            className="absolute right-3 rounded-full p-1.5 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
             type="button"
             aria-label="Effacer la recherche"
           >
-            <X className="h-3.5 w-3.5 text-slate-400 hover:text-white" />
+            <X className="h-3.5 w-3.5 text-slate-400 hover:text-[rgb(var(--overlay-rgb))]" />
           </button>
         )}
       </div>

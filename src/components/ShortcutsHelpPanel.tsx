@@ -49,7 +49,7 @@ export function ShortcutsHelpPanel({ onClose, shortcuts }: ShortcutsHelpPanelPro
       <div className="flex items-center gap-1">
         {keys.map((key, idx) => (
           <span key={idx} className="flex items-center">
-            <kbd className="rounded-lg border border-white/20 bg-slate-800 px-2.5 py-1 text-xs font-mono text-cyan-300 shadow-sm">
+            <kbd className="rounded-lg border border-[rgba(var(--overlay-rgb),0.2)] bg-slate-800 px-2.5 py-1 text-xs font-mono text-cyan-300 shadow-sm">
               {key}
             </kbd>
             {idx < keys.length - 1 && <span className="mx-1 text-xs text-slate-500">+</span>}
@@ -71,7 +71,7 @@ export function ShortcutsHelpPanel({ onClose, shortcuts }: ShortcutsHelpPanelPro
     return (
       <div key={category} className="space-y-3">
         {/* Header de catégorie */}
-        <div className="flex items-center gap-2 border-b border-white/10 pb-2">
+        <div className="flex items-center gap-2 border-b border-[rgba(var(--overlay-rgb),0.1)] pb-2">
           <Icon className="h-4 w-4 text-cyan-400" />
           <h4 className="text-sm font-semibold text-slate-300">{categoryLabels[category]}</h4>
         </div>
@@ -81,7 +81,7 @@ export function ShortcutsHelpPanel({ onClose, shortcuts }: ShortcutsHelpPanelPro
           {items.map((shortcut, idx) => (
             <div
               key={idx}
-              className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] p-3 transition hover:bg-white/5"
+              className="flex items-center justify-between rounded-xl border border-[rgba(var(--overlay-rgb),0.05)] bg-[rgba(var(--overlay-rgb),0.02)] p-3 transition hover:bg-[rgba(var(--overlay-rgb),0.05)]"
             >
               <span className="text-sm text-slate-200">{shortcut.description}</span>
               {renderShortcutKeys(shortcut)}
@@ -108,13 +108,21 @@ export function ShortcutsHelpPanel({ onClose, shortcuts }: ShortcutsHelpPanelPro
         {renderCategory('navigation')}
         {renderCategory('actions')}
 
-        {/* Footer avec astuce */}
-        <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-3 text-center">
-          <p className="text-xs text-slate-400">
-            <span className="font-semibold text-cyan-400">Astuce :</span> Sur macOS, utilisez{' '}
-            <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-cyan-300">Cmd</kbd> au lieu de{' '}
-            <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-cyan-300">Ctrl</kbd>
-          </p>
+        {/* Footer avec astuces */}
+        <div className="mt-6 space-y-2">
+          <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-3 text-center">
+            <p className="text-xs text-slate-400">
+              <span className="font-semibold text-cyan-400">Astuce :</span> Sur macOS, utilisez{' '}
+              <kbd className="rounded bg-[rgba(var(--overlay-rgb),0.1)] px-1.5 py-0.5 text-cyan-300">Cmd</kbd> au lieu de{' '}
+              <kbd className="rounded bg-[rgba(var(--overlay-rgb),0.1)] px-1.5 py-0.5 text-cyan-300">Ctrl</kbd>
+            </p>
+          </div>
+          <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-3 text-center">
+            <p className="text-xs text-slate-400">
+              <span className="font-semibold text-cyan-400">Sans souris :</span> le glisser-déposer entre
+              colonnes a une alternative — ouvrez une tâche et changez son champ <span className="text-slate-300">Statut</span>
+            </p>
+          </div>
         </div>
       </div>
     </GlassModal>

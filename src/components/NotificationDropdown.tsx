@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Bell, CheckCircle2, RotateCcw, Eye, Clock, CheckCheck, Trash2, MessageCircle, AtSign } from "lucide-react";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import type { AppNotification } from "../types";
 
 interface NotificationDropdownProps {
@@ -33,7 +34,7 @@ function timeAgo(ts: number): string {
 }
 
 export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: NotificationDropdownProps) {
-    const { currentUser, appNotifications, markNotificationRead, markAllNotificationsRead, deleteNotificationForUser } = useStore();
+    const { currentUser, appNotifications, markNotificationRead, markAllNotificationsRead, deleteNotificationForUser } = useStore(useShallow((s) => ({ currentUser: s.currentUser, appNotifications: s.appNotifications, markNotificationRead: s.markNotificationRead, markAllNotificationsRead: s.markAllNotificationsRead, deleteNotificationForUser: s.deleteNotificationForUser })));
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const myNotifs = appNotifications
@@ -63,7 +64,7 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
     return createPortal(
         <div
             ref={dropdownRef}
-            className="fixed z-[99998] flex flex-col rounded-2xl border border-white/15 shadow-2xl overflow-hidden"
+            className="fixed z-[99998] flex flex-col rounded-2xl border border-[rgba(var(--overlay-rgb),0.15)] shadow-2xl overflow-hidden"
             style={{
                 top,
                 left: bellCenterX,
@@ -74,12 +75,12 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
             }}
         >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <div className="flex items-center justify-between border-b border-[rgba(var(--overlay-rgb),0.1)] px-4 py-3">
                 <div className="flex items-center gap-2">
                     <Bell className="h-4 w-4 text-violet-400" />
-                    <span className="text-sm font-bold text-white">Notifications</span>
+                    <span className="text-sm font-bold text-theme-primary">Notifications</span>
                     {unreadCount > 0 && (
-                        <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        <span className="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-theme-primary">
                             {unreadCount}
                         </span>
                     )}
@@ -87,7 +88,7 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
                 {unreadCount > 0 && currentUser && (
                     <button
                         onClick={() => markAllNotificationsRead(currentUser)}
-                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] text-slate-400 transition hover:bg-white/5 hover:text-white"
+                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] text-slate-400 transition hover:bg-[rgba(var(--overlay-rgb),0.05)] hover:text-[rgb(var(--overlay-rgb))]"
                         title="Tout marquer comme lu"
                         aria-label="Tout marquer comme lu"
                     >
@@ -98,7 +99,7 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
             </div>
 
             {/* List */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[rgba(var(--overlay-rgb),0.1)]">
                 {myNotifs.length === 0 ? (
                     <div className="flex flex-col items-center justify-center gap-2 py-10 text-slate-500">
                         <Bell className="h-8 w-8 opacity-30" />
@@ -108,7 +109,7 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
                     myNotifs.map(notif => (
                         <div
                             key={notif.id}
-                            className={`group flex items-start gap-3 px-4 py-3 border-b border-white/5 transition hover:bg-white/5 ${!notif.readAt ? "bg-white/[0.03]" : ""}`}
+                            className={`group flex items-start gap-3 px-4 py-3 border-b border-[rgba(var(--overlay-rgb),0.05)] transition hover:bg-[rgba(var(--overlay-rgb),0.05)] ${!notif.readAt ? "bg-[rgba(var(--overlay-rgb),0.03)]" : ""}`}
                         >
                             <div className="mt-0.5 flex-shrink-0">
                                 {getNotifIcon(notif.type)}
@@ -121,7 +122,7 @@ export function NotificationDropdown({ onClose, onTaskClick, anchorRef }: Notifi
                                 }}
                                 className="flex-1 min-w-0 text-left"
                             >
-                                <p className={`text-xs leading-snug ${!notif.readAt ? "text-white font-semibold" : "text-slate-300"}`}>
+                                <p className={`text-xs leading-snug ${!notif.readAt ? "text-theme-primary font-semibold" : "text-slate-300"}`}>
                                     {notif.message}
                                 </p>
                                 <span className="text-[10px] text-slate-500 mt-0.5 block">

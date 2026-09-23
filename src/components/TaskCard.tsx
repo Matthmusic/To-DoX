@@ -9,9 +9,11 @@ import {
 import { createPortal } from "react-dom";
 import { businessDayDelta, getInitials } from "../utils";
 import { alertModal } from "../utils/confirm";
-import { SubtaskList, getDroppedFilePath, formatPathForInsertion } from "./SubtaskList";
+import { getDroppedFilePath, formatPathForInsertion } from "../utils/taskLinks";
+import { SubtaskList } from "./SubtaskList";
 import { TaskComments } from "./TaskComments";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import type { Task } from "../types";
 import { TaskCardActions } from "./taskcard/TaskCardActions";
 import { TaskSubtasksFooter } from "./taskcard/TaskSubtasksFooter";
@@ -20,26 +22,7 @@ import { TaskNotesSection } from "./taskcard/TaskNotesSection";
 import { PriorityBadge } from "./taskcard/PriorityBadge";
 import { ChildTaskTree } from "./taskcard/ChildTaskTree";
 import { CalendarContent } from "./DatePickerModal";
-
-export type CardMode = 'full' | 'compact';
-const CARD_MODES_KEY = "todox_card_modes";
-export function getCardMode(id: string): CardMode {
-    try {
-        const legacy = new Set<string>(JSON.parse(localStorage.getItem("todox_compact_cards") || "[]"));
-        const modes: Record<string, CardMode> = JSON.parse(localStorage.getItem(CARD_MODES_KEY) || "{}");
-        const saved = modes[id];
-        if (saved === 'compact' || saved === 'full') return saved;
-        if (legacy.has(id)) return 'compact';
-        return 'full';
-    } catch { return 'full'; }
-}
-function saveCardMode(id: string, mode: CardMode) {
-    try {
-        const modes: Record<string, CardMode> = JSON.parse(localStorage.getItem(CARD_MODES_KEY) || "{}");
-        modes[id] = mode;
-        localStorage.setItem(CARD_MODES_KEY, JSON.stringify(modes));
-    } catch { /* ignore */ }
-}
+import { type CardMode, getCardMode, saveCardMode } from "./taskcard/cardMode";
 
 interface TaskCardProps {
     task: Task;
@@ -74,7 +57,7 @@ export function TaskCard({
     nestTarget,
     forcedMode,
 }: TaskCardProps) {
-    const { directories, users, tasks, updateTask, comments, currentUser, validateTask, requestCorrections, convertSubtaskBack, setTaskParent, highlightedTaskId, setHighlightedTaskId } = useStore();
+    const { directories, users, tasks, updateTask, comments, currentUser, validateTask, requestCorrections, convertSubtaskBack, setTaskParent, highlightedTaskId, setHighlightedTaskId } = useStore(useShallow((s) => ({ directories: s.directories, users: s.users, tasks: s.tasks, updateTask: s.updateTask, comments: s.comments, currentUser: s.currentUser, validateTask: s.validateTask, requestCorrections: s.requestCorrections, convertSubtaskBack: s.convertSubtaskBack, setTaskParent: s.setTaskParent, highlightedTaskId: s.highlightedTaskId, setHighlightedTaskId: s.setHighlightedTaskId })));
     const [cardMode, setCardMode] = useState<CardMode>(() => getCardMode(task.id));
     const isCompact = (forcedMode ?? cardMode) === 'compact';
     const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
@@ -232,19 +215,25 @@ export function TaskCard({
             onFocus={(e) => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) setIsTextFocused(true); }}
             onBlur={(e) => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) setIsTextFocused(false); }}
             onMouseDown={(e) => { preventNextDrag.current = !!(e.target as HTMLElement).closest('[data-nodrag]'); }}
+            // motion.div définit son propre onDragStart pour le drag physique (gesture, signature
+            // PanInfo) -- incompatible avec le DragEvent HTML natif qu'on utilise réellement ici
+            // (drag-and-drop de carte, pas de geste framer-motion). any nécessaire pour contourner
+            // ce conflit de typage entre les deux API, pas un raccourci de flemme.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onDragStart={(e: any) => {
-                if (isTextFocused || preventNextDrag.current) { e.preventDefault(); preventNextDrag.current = false; return; }
-                onDragStart(e as React.DragEvent, task.id);
-            }}
-            onDragOver={(e: any) => {
                 const dragEvent = e as React.DragEvent;
+                if (isTextFocused || preventNextDrag.current) { dragEvent.preventDefault(); preventNextDrag.current = false; return; }
+                onDragStart(dragEvent, task.id);
+            }}
+            onDragOver={(e: React.DragEvent) => {
+                const dragEvent = e;
                 if (dragEvent.dataTransfer.types.includes('Files')) {
                     dragEvent.preventDefault(); dragEvent.stopPropagation(); setCardFileDropTarget(true); return;
                 }
-                cardRef.current && onDragOverTask?.(dragEvent, task.id, cardRef.current);
+                if (cardRef.current) onDragOverTask?.(dragEvent, task.id, cardRef.current);
             }}
-            onDrop={(e: any) => {
-                const dragEvent = e as React.DragEvent;
+            onDrop={(e: React.DragEvent) => {
+                const dragEvent = e;
                 if (dragEvent.dataTransfer.files.length > 0) {
                     dragEvent.preventDefault(); dragEvent.stopPropagation(); setCardFileDropTarget(false);
                     const file = dragEvent.dataTransfer.files[0];
@@ -269,7 +258,7 @@ export function TaskCard({
                 onCardModeChange?.(task.id, next);
             }}
             onContextMenu={(e) => onContextMenu(e, task)}
-            className={`group relative mb-3 flex flex-col rounded-2xl border border-white/5 bg-[#161b2e] shadow-lg transition-all hover:border-white/20 ${urgencyGlowClass} ${isDueToday ? "pulse-glow" : isOverdue ? "ring-1 ring-rose-500/50" : ""} ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"} ${isDropTarget ? "ring-1 ring-blue-400/50" : ""} ${cardFileDropTarget ? "ring-2 ring-blue-400/70 border-blue-400/40 bg-blue-500/5" : ""} ${isHighlighted ? "animate-pulse" : ""}`}
+            className={`group relative mb-3 flex flex-col rounded-2xl border border-[rgba(var(--overlay-rgb),0.05)] bg-theme-secondary shadow-lg transition-all hover:border-[rgba(var(--overlay-rgb),0.2)] ${urgencyGlowClass} ${isDueToday ? "pulse-glow" : isOverdue ? "ring-1 ring-rose-500/50" : ""} ${task.favorite ? "overflow-visible rainbow-border" : "overflow-hidden"} ${isDropTarget ? "ring-1 ring-blue-400/50" : ""} ${cardFileDropTarget ? "ring-2 ring-blue-400/70 border-blue-400/40 bg-blue-500/5" : ""} ${isHighlighted ? "animate-pulse" : ""}`}
             style={isHighlighted ? {
                 boxShadow: '0 0 0 2px var(--color-primary), 0 0 28px var(--color-primary), 0 0 60px color-mix(in srgb, var(--color-primary) 40%, transparent)',
                 borderColor: 'var(--color-primary)',
@@ -300,7 +289,7 @@ export function TaskCard({
             {!isCompact && (
                 <div className={`relative z-10 flex items-center gap-1.5 px-3 py-1.5 ${urgencyBand.bg} ${urgencyBand.border}`}>
                     {/* ● Dot priorité */}
-                    <span className={`h-2.5 w-2.5 rounded-full shrink-0 ring-1 ring-white/15 ${
+                    <span className={`h-2.5 w-2.5 rounded-full shrink-0 ring-1 ring-[rgba(var(--overlay-rgb),0.15)] ${
                         task.priority === 'high' ? 'bg-rose-500' :
                         task.priority === 'med'  ? 'bg-amber-400' : 'bg-emerald-400'
                     }`} title={`Priorité ${task.priority === 'high' ? 'HAUTE' : task.priority === 'med' ? 'MOY.' : 'BASSE'}`} />
@@ -321,7 +310,7 @@ export function TaskCard({
                         const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
                         return (
                             <span
-                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums bg-black/30 border border-white/10 cursor-pointer hover:bg-black/50 transition ${urgencyBand.text}`}
+                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums bg-black/30 border border-[rgba(var(--overlay-rgb),0.1)] cursor-pointer hover:bg-black/50 transition ${urgencyBand.text}`}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (dueDateTooltip) { setDueDateTooltip(null); return; }
@@ -337,8 +326,21 @@ export function TaskCard({
                         <>
                             <div className="fixed inset-0 z-[99998]" onClick={(e) => { e.stopPropagation(); setDueDateTooltip(null); }} />
                             <div
-                                style={{ top: dueDateTooltip.y, left: dueDateTooltip.x }}
-                                className="fixed z-[99999] w-[280px] rounded-2xl border border-white/20 bg-[#161b2e] p-3 text-slate-100 shadow-2xl"
+                                style={{
+                                    // Contrairement aux popups sous-tâche/tâche-parente plus bas dans ce fichier,
+                                    // ce calendrier ne clampait jamais sa position contre le bas de l'écran --
+                                    // signalé en conditions réelles : débordait sous la fenêtre quand le badge
+                                    // cliqué était dans la moitié basse de l'écran. 360 = hauteur approximative
+                                    // du calendrier complet (6 lignes de jours possibles).
+                                    // Largeur calculée en JS plutôt qu'en classe Tailwind fixe (w-[280px]) : sur
+                                    // un écran très étroit (<296px, cf. /impeccable audit), 280px déborderait --
+                                    // la largeur effective doit être la même valeur des deux côtés (position ET
+                                    // taille), d'où une seule source de vérité ici plutôt qu'un split JS/CSS.
+                                    top: Math.max(8, Math.min(dueDateTooltip.y, window.innerHeight - 360)),
+                                    left: Math.max(8, Math.min(dueDateTooltip.x, window.innerWidth - 296)),
+                                    width: Math.min(280, window.innerWidth - 16),
+                                }}
+                                className="fixed z-[99999] rounded-2xl border border-[rgba(var(--overlay-rgb),0.2)] bg-theme-secondary p-3 text-slate-100 shadow-2xl"
                                 onClick={(e) => e.stopPropagation()}
                             >
                                 <CalendarContent
@@ -403,7 +405,7 @@ export function TaskCard({
                     {commentCount > 0 && (
                         <button
                             onClick={(e) => { e.stopPropagation(); setIsSubtasksExpanded(true); }}
-                            className={`flex items-center gap-0.5 rounded p-0.5 text-[9px] font-bold transition ${hasMention ? "text-amber-400 animate-pulse" : "text-slate-500 hover:text-white"}`}
+                            className={`flex items-center gap-0.5 rounded p-0.5 text-[9px] font-bold transition ${hasMention ? "text-amber-400 animate-pulse" : "text-slate-500 hover:text-[var(--color-primary)]"}`}
                             title={hasMention ? `Vous êtes mentionné(e) — ${commentCount} commentaire(s)` : `${commentCount} commentaire(s)`}
                             aria-label={hasMention ? `Vous êtes mentionné(e) — ${commentCount} commentaire(s)` : `${commentCount} commentaire(s)`}
                         >
@@ -431,7 +433,7 @@ export function TaskCard({
                     )}
                     <button
                         onClick={(e) => { e.stopPropagation(); onContextMenu(e, task); }}
-                        className="rounded p-0.5 text-slate-500 transition hover:text-white"
+                        className="rounded p-0.5 text-slate-500 transition hover:text-[var(--color-primary)]"
                     >
                         <MoreHorizontal className="h-3.5 w-3.5" />
                     </button>
@@ -460,7 +462,7 @@ export function TaskCard({
                 {subtaskOriginMenu && createPortal(
                     <div
                         style={{ top: Math.min(subtaskOriginMenu.y, window.innerHeight - 60), left: Math.min(subtaskOriginMenu.x, window.innerWidth - 200) }}
-                        className="fixed z-[99999] min-w-[190px] rounded-lg border border-white/10 bg-slate-800 py-1 shadow-xl"
+                        className="fixed z-[99999] min-w-[190px] rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-slate-800 py-1 shadow-xl"
                         onMouseDown={(e) => e.stopPropagation()}
                     >
                         <button
@@ -476,7 +478,7 @@ export function TaskCard({
                                     alertModal("Erreur lors de la reconversion en sous-tâche. Réessayez.");
                                 }
                             }}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                         >
                             <ArrowDownToLine className="h-4 w-4 text-indigo-400" />
                             Reconvertir en sous-tâche
@@ -513,12 +515,12 @@ export function TaskCard({
                     {parentTaskMenu && createPortal(
                         <div
                             style={{ top: Math.min(parentTaskMenu.y, window.innerHeight - 60), left: Math.min(parentTaskMenu.x, window.innerWidth - 200) }}
-                            className="fixed z-[99999] min-w-[170px] rounded-lg border border-white/10 bg-slate-800 py-1 shadow-xl"
+                            className="fixed z-[99999] min-w-[170px] rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-slate-800 py-1 shadow-xl"
                             onMouseDown={(e) => e.stopPropagation()}
                         >
                             <button
                                 onClick={(e) => { e.stopPropagation(); setTaskParent(task.id, null); setParentTaskMenu(null); }}
-                                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-200 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                             >
                                 <Link2Off className="h-4 w-4 text-rose-400" />
                                 Délier du parent
@@ -550,14 +552,14 @@ export function TaskCard({
                                     return next;
                                 });
                             }}
-                            className="shrink-0 rounded p-0.5 text-slate-300 transition hover:text-white"
+                            className="shrink-0 rounded p-0.5 text-slate-300 transition hover:text-[var(--color-primary)]"
                             title={isCompact ? 'Afficher le détail' : 'Réduire la carte'}
                             aria-label={isCompact ? 'Afficher le détail' : 'Réduire la carte'}
                         >
                             {isCompact ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                         </button>
                     )}
-                    <h4 className={`font-bold text-white leading-snug uppercase ${isCompact ? "text-sm line-clamp-1" : "text-base line-clamp-2"}`}>
+                    <h4 className={`font-bold text-theme-primary leading-snug uppercase ${isCompact ? "text-sm line-clamp-1" : "text-base line-clamp-2"}`}>
                         {task.title}
                     </h4>
                 </div>
@@ -574,7 +576,7 @@ export function TaskCard({
                             const week = Math.ceil(((utc.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
                             return (
                                 <span
-                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums bg-black/30 border border-white/10 cursor-pointer hover:bg-black/50 transition ${urgencyBand.text}`}
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums bg-black/30 border border-[rgba(var(--overlay-rgb),0.1)] cursor-pointer hover:bg-black/50 transition ${urgencyBand.text}`}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         if (dueDateTooltip) { setDueDateTooltip(null); return; }
@@ -637,7 +639,7 @@ export function TaskCard({
             {/* Vert (100%) et rose (<30%) sont sémantiques et fixes ; l'état "en cours" suit
                 les couleurs d'accent du thème actif plutôt qu'un dégradé codé en dur. */}
             {isCompact && totalSubtasks > 0 && (
-                <div className="h-0.5 w-full overflow-hidden rounded-full bg-white/5 mt-1">
+                <div className="h-0.5 w-full overflow-hidden rounded-full bg-[rgba(var(--overlay-rgb),0.05)] mt-1">
                     <div
                         className={`h-full rounded-full transition-all duration-500 ${
                             progressPercentage === 100 ? "bg-gradient-to-r from-emerald-500 to-teal-400" :
@@ -710,13 +712,13 @@ export function TaskCard({
 
                 {/* Contenu étendu : tâches liées + commentaires */}
                 {isSubtasksExpanded && (
-                    <div data-nodrag onClick={e => e.stopPropagation()} className="mt-2 pt-2 border-t border-white/5 space-y-3">
+                    <div data-nodrag onClick={e => e.stopPropagation()} className="mt-2 pt-2 border-t border-[rgba(var(--overlay-rgb),0.05)] space-y-3">
                         <ChildTaskTree
                             parentTask={task}
                             allTasks={tasks}
                             onOpenTask={_onClick}
                         />
-                        <div className="pt-2 border-t border-white/5">
+                        <div className="pt-2 border-t border-[rgba(var(--overlay-rgb),0.05)]">
                             <TaskComments taskId={task.id} />
                         </div>
                     </div>

@@ -7,7 +7,7 @@ import {
     Archive,
     Upload,
     Download,
-    HardDrive,
+    UserCircle,
     List,
     Search,
     ChevronDown,
@@ -26,11 +26,13 @@ import {
     LayoutTemplate,
     Calendar,
 } from "lucide-react";
+import logoSvg from "../assets/To Do X.svg";
 import { QuickAddPremium } from "./QuickAddPremium";
 import { CircularProgressBadge } from "./CircularProgressBadge";
 import { DropdownMenu, DropdownItem, DropdownSection } from ".";
 import { SearchInput } from "./SearchInput";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from "../hooks/useTheme";
 
 interface KanbanHeaderPremiumProps {
@@ -39,7 +41,7 @@ interface KanbanHeaderPremiumProps {
     onArchiveProject: (projectName: string) => void;
     onRenameProject: (oldName: string, newName: string) => void;
     onOpenWeeklyReport: () => void;
-    onOpenStorage: () => void;
+    onOpenAccount: () => void;
     onOpenUsers: () => void;
     onOpenArchive: () => void;
     onOpenNotifications: () => void;
@@ -85,7 +87,7 @@ export function KanbanHeaderPremium({
     onArchiveProject,
     onRenameProject,
     onOpenWeeklyReport,
-    onOpenStorage,
+    onOpenAccount,
     onOpenUsers,
     onOpenArchive,
     onOpenNotifications,
@@ -114,7 +116,7 @@ export function KanbanHeaderPremium({
     triggerOpenQuickAdd,
     triggerOpenWithProject,
 }: KanbanHeaderPremiumProps) {
-    const { tasks, projectColors, currentUser, viewAsUser, setProjectColor } = useStore();
+    const { tasks, projectColors, currentUser, viewAsUser, setProjectColor, notificationPanelSide } = useStore(useShallow((s) => ({ tasks: s.tasks, projectColors: s.projectColors, currentUser: s.currentUser, viewAsUser: s.viewAsUser, setProjectColor: s.setProjectColor, notificationPanelSide: s.notificationPanelSide })));
     const { activeTheme } = useTheme();
     const [showQuickAdd, setShowQuickAdd] = useState(false);
     const quickAddContainerRef = useRef<HTMLDivElement>(null);
@@ -230,9 +232,18 @@ export function KanbanHeaderPremium({
     ];
 
     return (
-        <header className="kanban-header relative z-10 flex shrink-0 min-w-0 flex-col gap-2 pl-2 pr-24 py-2 sm:pl-4 lg:pl-6">
-            <div className="min-w-0 rounded-2xl border border-theme-primary px-3 py-2.5 sm:px-4" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
+        <header className={`kanban-header relative z-10 flex shrink-0 min-w-0 flex-col gap-2 py-2 ${notificationPanelSide === 'left' ? 'pr-2 pl-24 sm:pr-4 lg:pr-6' : 'pl-2 pr-24 sm:pl-4 lg:pl-6'}`}>
+            {/* max-w-2400px + mx-auto : reste aligné avec .kanban-row (même plafond) sur les
+                écrans très larges, plutôt que de s'étirer bord à bord dans le header. */}
+            <div className="min-w-0 max-w-[2400px] w-full mx-auto rounded-2xl border border-theme-primary px-3 py-2.5 sm:px-4" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
                 <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+                    {!window.electronAPI?.isElectron && (
+                        <img
+                            src={logoSvg}
+                            alt="To-DoX"
+                            className="h-6 w-auto shrink-0"
+                        />
+                    )}
                     <select
                         aria-label="Vue des tâches"
                         value={activeView}
@@ -241,10 +252,10 @@ export function KanbanHeaderPremium({
                     >
                         {viewButtons.map(({ id, label }) => <option key={id} value={id}>{label}</option>)}
                     </select>
-                    <nav aria-label="Vues des tâches" className="hidden min-w-0 flex-1 flex-wrap gap-1 md:flex">
+                    <nav aria-label="Vues des tâches" className="hidden min-w-0 flex-1 flex-wrap items-center justify-center gap-1 md:flex">
                         {viewButtons.map(({ id, Icon, label }) => (
                             <button key={id} type="button" onClick={() => onViewChange(id)} aria-current={activeView === id ? 'page' : undefined}
-                                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:text-sm ${activeView === id ? 'bg-white/10 text-theme-primary' : 'text-theme-secondary hover:bg-white/5 hover:text-theme-primary'}`}>
+                                className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:text-sm ${activeView === id ? 'bg-[rgba(var(--overlay-rgb),0.1)] text-theme-primary' : 'text-theme-secondary hover:bg-[rgba(var(--overlay-rgb),0.05)] hover:text-theme-primary'}`}>
                                 <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                                 {label}
                             </button>
@@ -264,11 +275,13 @@ export function KanbanHeaderPremium({
                         <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 transition-transform ${showQuickAdd ? 'rotate-180' : ''}`} />
                     </button>
                     <button type="button" onClick={onOpenSearch} aria-label="Rechercher des tâches" aria-expanded={showSearch} aria-controls="header-search" title="Rechercher (Ctrl+F)"
-                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-theme-primary transition-colors hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-theme-primary transition-colors hover:bg-[rgba(var(--overlay-rgb),0.1)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
                         <Search className="h-4 w-4" aria-hidden="true" />
                     </button>
                     <div className="relative shrink-0">
-                        <DropdownMenu icon={Menu} label="Menu" className="whitespace-nowrap rounded-xl border border-theme-primary bg-white/5 text-sm text-theme-primary hover:bg-white/10">
+                        <DropdownMenu icon={Menu} label="Menu" className="whitespace-nowrap rounded-xl border border-theme-primary bg-[rgba(var(--overlay-rgb),0.05)] text-sm text-theme-primary hover:bg-[rgba(var(--overlay-rgb),0.1)]">
+                            <DropdownSection label="Mon compte" />
+                            <DropdownItem icon={UserCircle} label="Mon compte" onClick={onOpenAccount} />
                             <DropdownSection label="Actions" />
                             <DropdownItem icon={Printer} label="Rapport hebdomadaire" onClick={onOpenWeeklyReport} />
                             <DropdownItem icon={HelpCircle} label="Aide (F1)" onClick={onOpenHelp} />
@@ -279,7 +292,6 @@ export function KanbanHeaderPremium({
                             <DropdownItem icon={LayoutTemplate} label="Templates" onClick={onOpenTemplates} />
                             <DropdownItem icon={Calendar} label="Outlook / ICS" onClick={onOpenOutlook} />
                             <DropdownItem icon={Users} label="Utilisateurs" onClick={onOpenUsers} />
-                            <DropdownItem icon={HardDrive} label="Stockage" onClick={onOpenStorage} />
                             <DropdownSection label="Projets" />
                             <DropdownItem icon={FolderPlus} label="Dossiers projets" onClick={onOpenDirPanel} />
                             <DropdownItem icon={List} label="Gérer projets" onClick={onOpenProjectsList} />
@@ -304,7 +316,7 @@ export function KanbanHeaderPremium({
                 )}
                 <div className="mt-2 min-w-0 border-t border-theme-primary pt-2">
                     {projectStats.length > 0 && (
-                        <div role="region" aria-label="Filtrer par projet" tabIndex={0} className="flex min-w-0 items-center gap-2 overflow-x-auto px-1 py-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+                        <div role="region" aria-label="Filtrer par projet" tabIndex={0} className="flex min-w-0 items-center justify-center gap-2 overflow-x-auto px-1 py-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[rgba(var(--overlay-rgb),0.2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
                             {projectStats.map((stat) => (
                                 <CircularProgressBadge key={stat.project} project={stat.project} percentage={stat.pct} total={stat.total} done={stat.done}
                                     isSelected={filterProject === stat.project} onClick={() => onProjectClick(stat.project)}

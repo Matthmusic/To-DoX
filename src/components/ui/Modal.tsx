@@ -38,7 +38,7 @@ export function Modal({ isOpen, onClose, title, children, className, width = "ma
                 >
                     <motion.div
                         className={classNames(
-                            "w-full rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-[#0f1629] to-[#0b1124] p-6 text-slate-100 shadow-[0_25px_60px_rgba(79,70,229,0.3),0_10px_30px_rgba(0,0,0,0.5)] relative max-h-[90vh] overflow-y-auto ring-1 ring-white/5",
+                            "w-full rounded-3xl border border-indigo-500/20 bg-gradient-to-br from-[#0f1629] to-[#0b1124] p-6 text-slate-100 shadow-[0_25px_60px_rgba(79,70,229,0.3),0_10px_30px_rgba(0,0,0,0.5)] relative max-h-[90vh] overflow-y-auto ring-1 ring-[rgba(var(--overlay-rgb),0.05)]",
                             width,
                             className
                         )}
@@ -48,7 +48,7 @@ export function Modal({ isOpen, onClose, title, children, className, width = "ma
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
                     >
-                        <div className="mb-6 flex items-center justify-between border-b border-white/5 pb-4">
+                        <div className="mb-6 flex items-center justify-between border-b border-[rgba(var(--overlay-rgb),0.05)] pb-4">
                             {title && (
                                 <h3 className="text-xl font-semibold text-slate-100">
                                     {title}
@@ -57,7 +57,7 @@ export function Modal({ isOpen, onClose, title, children, className, width = "ma
                             <button
                                 onClick={onClose}
                                 aria-label="Fermer"
-                                className="rounded-full p-2 transition-all hover:bg-white/10 text-slate-400 hover:text-white hover:scale-110 hover:rotate-90"
+                                className="rounded-full p-2 transition-all hover:bg-[rgba(var(--overlay-rgb),0.1)] text-slate-400 hover:text-[rgb(var(--overlay-rgb))] hover:scale-110 hover:rotate-90"
                             >
                                 <X className="h-5 w-5" />
                             </button>

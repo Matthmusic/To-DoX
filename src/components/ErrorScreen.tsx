@@ -39,7 +39,13 @@ export function ErrorScreen({ error, errorInfo, onReset, boundaryName }: ErrorSc
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen pt-8 bg-gradient-to-br from-[#0a0e1a] via-[#1a1f35] to-[#0a0e1a] p-6">
+    // fixed + z-[10001] : ce composant peut apparaître imbriqué n'importe où dans l'arbre
+    // (un ErrorBoundary par section), pas forcément au-dessus de la TitleBar (fixed,
+    // z-[9999]) dans l'ordre du DOM -- sans position propre, il restait dans le flux
+    // normal et la TitleBar passait devant dès qu'il touchait le haut de l'écran. z-[10001]
+    // > TitleBar (9999) et son tooltip (10000), mais < ConfirmModalHost (100000) pour
+    // qu'une confirmation en cours reste au-dessus d'un plantage ailleurs dans l'app.
+    <div className="fixed inset-0 z-[10001] overflow-y-auto flex items-center justify-center pt-8 bg-gradient-to-br from-[#0a0e1a] via-[#1a1f35] to-[#0a0e1a] p-6">
       <div className="max-w-2xl w-full">
         {/* Card d'erreur principale */}
         <div className="rounded-2xl border border-red-500/30 bg-[#161b2e]/90 backdrop-blur-xl p-8 shadow-2xl">
@@ -97,7 +103,7 @@ export function ErrorScreen({ error, errorInfo, onReset, boundaryName }: ErrorSc
           {/* Toggle détails */}
           <button
             onClick={() => setShowDetails(!showDetails)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] text-slate-400 hover:text-[rgb(var(--overlay-rgb))] hover:bg-[rgba(var(--overlay-rgb),0.1)] transition-all"
           >
             {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             {showDetails ? 'Masquer les détails' : 'Voir les détails techniques'}
@@ -105,7 +111,7 @@ export function ErrorScreen({ error, errorInfo, onReset, boundaryName }: ErrorSc
 
           {/* Détails techniques */}
           {showDetails && (
-            <div className="mt-4 p-4 rounded-lg bg-black/50 border border-white/10 max-h-96 overflow-y-auto">
+            <div className="mt-4 p-4 rounded-lg bg-black/50 border border-[rgba(var(--overlay-rgb),0.1)] max-h-96 overflow-y-auto">
               <div className="space-y-4">
                 {/* Stack trace */}
                 {error?.stack && (

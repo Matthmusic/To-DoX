@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LogIn } from "lucide-react";
 import { motion } from "framer-motion";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from "../hooks/useTheme";
 import { GlassModal } from "./ui/GlassModal";
 import { login, getToken, saveToken, clearToken, apiGet, ApiError } from "../services/api";
@@ -13,7 +14,7 @@ function getUserInitials(name: string): string {
 }
 
 export function LoginModal() {
-  const { users, setCurrentUser, setLocalAuthUserId, setAuthToken, setAuthError, authError } = useStore();
+  const { users, setCurrentUser, setLocalAuthUserId, setAuthToken, setAuthError, authError } = useStore(useShallow((s) => ({ users: s.users, setCurrentUser: s.setCurrentUser, setLocalAuthUserId: s.setLocalAuthUserId, setAuthToken: s.setAuthToken, setAuthError: s.setAuthError, authError: s.authError })));
   const { activeTheme } = useTheme();
   const primary   = activeTheme.palette.primary;
   const secondary = activeTheme.palette.secondary;
@@ -176,7 +177,7 @@ export function LoginModal() {
                     className="w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-colors group"
                     style={{
                       borderColor: isLastUsed ? `${primary}55` : 'var(--border-primary)',
-                      backgroundColor: isLastUsed ? `${primary}10` : 'rgba(255,255,255,0.04)',
+                      backgroundColor: isLastUsed ? `${primary}10` : 'rgba(var(--overlay-rgb),0.04)',
                     }}
                     onMouseEnter={e => {
                       e.currentTarget.style.borderColor = `${primary}55`;
@@ -184,7 +185,7 @@ export function LoginModal() {
                     }}
                     onMouseLeave={e => {
                       e.currentTarget.style.borderColor = isLastUsed ? `${primary}55` : 'var(--border-primary)';
-                      e.currentTarget.style.backgroundColor = isLastUsed ? `${primary}10` : 'rgba(255,255,255,0.04)';
+                      e.currentTarget.style.backgroundColor = isLastUsed ? `${primary}10` : 'rgba(var(--overlay-rgb),0.04)';
                     }}
                   >
                     {/* Avatar */}

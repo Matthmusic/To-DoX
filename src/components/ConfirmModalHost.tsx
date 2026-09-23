@@ -22,14 +22,14 @@ export function ConfirmModalHost() {
                 }
             }}
         >
-            <div className="w-full max-w-md rounded-2xl border border-white/20 bg-white/5 p-6 text-slate-100 shadow-2xl backdrop-blur-xl">
+            <div className="w-full max-w-md rounded-2xl border border-[rgba(var(--overlay-rgb),0.2)] bg-theme-secondary p-6 text-slate-100 shadow-2xl backdrop-blur-xl">
                 <div className="text-sm font-semibold text-slate-100">Confirmation</div>
                 <div className="mt-3 text-sm text-slate-200">{request.message}</div>
                 <div className="mt-5 flex justify-end gap-2">
                     {isConfirm && (
                         <button
                             type="button"
-                            className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm text-slate-200 transition hover:bg-white/10"
+                            className="rounded-xl border border-[rgba(var(--overlay-rgb),0.2)] bg-[rgba(var(--overlay-rgb),0.05)] px-4 py-2 text-sm text-slate-200 transition hover:bg-[rgba(var(--overlay-rgb),0.1)]"
                             onClick={() => {
                                 request.resolve(false);
                                 setRequest(null);

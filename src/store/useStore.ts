@@ -83,6 +83,11 @@ export interface StoreState {
     saveError: string | null;
     notificationSettings: NotificationSettings;
     themeSettings: ThemeSettings;
+    // Préférence d'affichage locale (pas de sync serveur ni data.json, comme themeSettings) :
+    // quel côté de l'écran héberge le Centre d'activité (RightSidebar). Persistée séparément
+    // en localStorage plutôt que via le pipeline de sync tâches/backend, qui ne concerne pas
+    // ce genre de réglage purement local à ce poste.
+    notificationPanelSide: 'left' | 'right';
 
     // Simple Setters
     setTasks: (tasks: Task[]) => void;
@@ -111,6 +116,7 @@ export interface StoreState {
     setNotificationSettings: (settings: NotificationSettings) => void;
     setThemeSettings: (settings: ThemeSettings) => void;
     updateThemeSettings: (patch: Partial<ThemeSettings>) => void;
+    setNotificationPanelSide: (side: 'left' | 'right') => void;
 
     // Task Actions — via API (todox-backend), voir src/services/api.ts
     fetchTasks: () => Promise<void>;
@@ -276,6 +282,10 @@ const useStore = create<StoreState>((set, get) => ({
         customThemes: [],
         customAccentColor: undefined,
     },
+    // Lu directement en localStorage (pas via un useEffect comme le thème) : c'est une
+    // simple chaîne, pas de mutation DOM associée à appliquer au montage, donc rien à
+    // gagner à différer la lecture -- évite aussi un flash "côté droit" avant bascule.
+    notificationPanelSide: (typeof localStorage !== 'undefined' && localStorage.getItem('notification_panel_side') === 'left') ? 'left' : 'right',
 
     // Simple Setters
     setTasks: (tasks) => set({ tasks }),
@@ -398,6 +408,10 @@ const useStore = create<StoreState>((set, get) => ({
         set((state) => ({
             themeSettings: { ...state.themeSettings, ...patch }
         }));
+    },
+    setNotificationPanelSide: (side) => {
+        localStorage.setItem('notification_panel_side', side);
+        set({ notificationPanelSide: side });
     },
 
     // Task Actions — via API (todox-backend/src/routes/tasks.ts)

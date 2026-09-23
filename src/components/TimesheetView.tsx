@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Plus, X, Clock, CalendarDays, Info, GripVertical } from "lucide-react";
 import useStore from "../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from "../hooks/useTheme";
 import { getProjectColor } from "../utils";
 
@@ -155,8 +156,8 @@ function HoursDropdown({ anchorRect, currentHours, primaryColor, onSelect, onClo
         const isHalf = h % 1 !== 0;
         return {
             backgroundColor: "transparent",
-            color: isHalf ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.8)",
-            borderColor: "rgba(255,255,255,0.08)",
+            color: isHalf ? "rgba(var(--overlay-rgb),0.5)" : "rgba(var(--overlay-rgb),0.8)",
+            borderColor: "rgba(var(--overlay-rgb),0.08)",
         };
     }
 
@@ -179,9 +180,9 @@ function HoursDropdown({ anchorRect, currentHours, primaryColor, onSelect, onClo
             {/* En-tête */}
             <div
                 className="flex items-center justify-between px-3 py-2"
-                style={{ borderBottom: `1px solid rgba(255,255,255,0.06)`, backgroundColor: `${primaryColor}10` }}
+                style={{ borderBottom: `1px solid rgba(var(--overlay-rgb),0.06)`, backgroundColor: `${primaryColor}10` }}
             >
-                <span className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Heures pointées</span>
+                <span className="text-[11px] font-bold text-[rgba(var(--overlay-rgb),0.5)] uppercase tracking-wider">Heures pointées</span>
                 {currentHours > 0 && (
                     <button
                         onClick={() => onSelect(0)}
@@ -206,7 +207,7 @@ function HoursDropdown({ anchorRect, currentHours, primaryColor, onSelect, onClo
                             e.stopPropagation();
                         }}
                         placeholder="ex : 7h30 ou 7.5"
-                        className="flex-1 rounded-lg border bg-white/5 px-2.5 py-1.5 text-xs text-white placeholder:text-white/25 outline-none transition-all"
+                        className="flex-1 rounded-lg border bg-[rgba(var(--overlay-rgb),0.05)] px-2.5 py-1.5 text-xs text-theme-primary placeholder:text-[rgba(var(--overlay-rgb),0.25)] outline-none transition-all"
                         style={{
                             borderColor: inputError ? "#f87171" : `${primaryColor}40`,
                             boxShadow: inputError ? "0 0 0 2px rgba(248,113,113,0.25)" : undefined,
@@ -245,7 +246,7 @@ function HoursDropdown({ anchorRect, currentHours, primaryColor, onSelect, onClo
 // ─── Composant principal ─────────────────────────────────────────────────────
 
 export function TimesheetView() {
-    const { tasks, timeEntries, upsertTimeEntry, projectColors, currentUser, viewAsUser, users } = useStore();
+    const { tasks, timeEntries, upsertTimeEntry, projectColors, currentUser, viewAsUser, users } = useStore(useShallow((s) => ({ tasks: s.tasks, timeEntries: s.timeEntries, upsertTimeEntry: s.upsertTimeEntry, projectColors: s.projectColors, currentUser: s.currentUser, viewAsUser: s.viewAsUser, users: s.users })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
     const selectedViewUserId = viewAsUser ?? currentUser;
@@ -495,7 +496,7 @@ export function TimesheetView() {
     // - Vendredi : vert entre 4h et 7h (inclus)
     // - Sinon : bleu < 8h, vert = 8h, orange > 8h, rouge > 11h
     function dayTotalColor(h: number, dateIso: string): string {
-        if (h === 0) return "rgba(255,255,255,0.2)";
+        if (h === 0) return "rgba(var(--overlay-rgb),0.2)";
         const dayOfWeek = new Date(`${dateIso}T00:00:00`).getDay(); // 5 = vendredi
         if (dayOfWeek === 5 && h >= 4 && h <= 7) return "#4ade80";  // vert
         if (h > 11) return "#f87171";   // rouge
@@ -506,7 +507,7 @@ export function TimesheetView() {
 
     // Couleur du total semaine : bleu < 35h, vert = 35h, jaune > 35h et < 40h, rouge >= 40h
     function weekTotalColor(h: number): string {
-        if (h === 0) return "rgba(255,255,255,0.2)";
+        if (h === 0) return "rgba(var(--overlay-rgb),0.2)";
         if (h >= 40) return "#f87171";         // rouge
         if (h > 35)  return "#facc15";         // jaune (35.5 -> 39.5)
         if (h === 35) return "#4ade80";        // vert
@@ -523,23 +524,23 @@ export function TimesheetView() {
             >
                 <div className="flex items-center gap-3">
                     <Clock className="h-5 w-5 shrink-0" style={{ color: primaryColor }} />
-                    <span className="font-bold text-white text-lg">Feuille de pointage</span>
-                    <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5">
-                        <span className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Vue</span>
+                    <span className="font-bold text-theme-primary text-lg">Feuille de pointage</span>
+                    <div className="flex items-center gap-2 rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-1.5">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-[rgba(var(--overlay-rgb),0.45)]">Vue</span>
                         <span
                             className="text-sm font-bold"
-                            style={{ color: selectedViewUserId ? primaryColor : "rgba(255,255,255,0.45)" }}
+                            style={{ color: selectedViewUserId ? primaryColor : "rgba(var(--overlay-rgb),0.45)" }}
                         >
                             {selectedViewFirstName}
                         </span>
                     </div>
-                    <span className="text-base font-bold text-white/60 ml-1 tabular-nums">S{String(weekNum).padStart(2, "0")}</span>
+                    <span className="text-base font-bold text-[rgba(var(--overlay-rgb),0.6)] ml-1 tabular-nums">S{String(weekNum).padStart(2, "0")}</span>
                 </div>
 
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => setWeekOffset(w => w - 1)}
-                        className="rounded-lg border border-white/10 bg-white/5 p-2 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                        className="rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-2 text-[rgba(var(--overlay-rgb),0.6)] hover:bg-[rgba(var(--overlay-rgb),0.1)] hover:text-[rgb(var(--overlay-rgb))] transition-colors"
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
@@ -549,7 +550,7 @@ export function TimesheetView() {
                         className="rounded-lg border px-3 py-1 text-xs font-semibold transition-colors w-44 text-center"
                         style={weekOffset === 0
                             ? { borderColor: `${primaryColor}60`, backgroundColor: `${primaryColor}20`, color: primaryColor }
-                            : { borderColor: "rgba(255,255,255,0.1)", backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)" }
+                            : { borderColor: "rgba(var(--overlay-rgb),0.1)", backgroundColor: "rgba(var(--overlay-rgb),0.05)", color: "rgba(var(--overlay-rgb),0.6)" }
                         }
                     >
                         {weekOffset === 0 ? "Cette semaine" : weekLabel}
@@ -557,14 +558,14 @@ export function TimesheetView() {
 
                     <button
                         onClick={() => setWeekOffset(w => w + 1)}
-                        className="rounded-lg border border-white/10 bg-white/5 p-2 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                        className="rounded-lg border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-2 text-[rgba(var(--overlay-rgb),0.6)] hover:bg-[rgba(var(--overlay-rgb),0.1)] hover:text-[rgb(var(--overlay-rgb))] transition-colors"
                     >
                         <ChevronRight className="h-4 w-4" />
                     </button>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <span className="text-white/60 text-sm">Total semaine :</span>
+                    <span className="text-[rgba(var(--overlay-rgb),0.6)] text-sm">Total semaine :</span>
                     <span
                         className="text-xl font-black tabular-nums"
                         style={{ color: weekTotalColor(grandTotal) }}
@@ -593,7 +594,7 @@ export function TimesheetView() {
             <div className="flex-1 overflow-auto px-4 py-4">
                 <div
                     className="rounded-2xl border overflow-hidden"
-                    style={{ borderColor: `${primaryColor}20`, backgroundColor: "rgba(255,255,255,0.03)" }}
+                    style={{ borderColor: `${primaryColor}20`, backgroundColor: "rgba(var(--overlay-rgb),0.03)" }}
                 >
                     <table className="w-full table-fixed border-collapse text-base">
                         <colgroup>
@@ -606,7 +607,7 @@ export function TimesheetView() {
                         {/* Entête colonnes */}
                         <thead>
                             <tr style={{ backgroundColor: `${primaryColor}12`, borderBottom: `1px solid ${primaryColor}25` }}>
-                                <th className="py-3 px-4 text-left font-semibold text-white/75">
+                                <th className="py-3 px-4 text-left font-semibold text-[rgba(var(--overlay-rgb),0.75)]">
                                     <div className="flex items-center gap-2">
                                         <CalendarDays className="h-3.5 w-3.5" />
                                         Projet
@@ -633,7 +634,7 @@ export function TimesheetView() {
                                         <th
                                             key={date}
                                             className="py-3 px-1 text-center font-semibold w-16"
-                                            style={{ color: isToday ? primaryColor : "rgba(255,255,255,0.75)" }}
+                                            style={{ color: isToday ? primaryColor : "rgba(var(--overlay-rgb),0.75)" }}
                                         >
                                             <div className="flex flex-col items-center gap-0.5">
                                                 <span className="text-xs uppercase tracking-wider opacity-70">
@@ -649,7 +650,7 @@ export function TimesheetView() {
                                         </th>
                                     );
                                 })}
-                                <th className="py-3 px-3 text-center font-semibold text-white/70 w-20">
+                                <th className="py-3 px-3 text-center font-semibold text-[rgba(var(--overlay-rgb),0.7)] w-20">
                                     Total
                                 </th>
                             </tr>
@@ -658,7 +659,7 @@ export function TimesheetView() {
                         <tbody>
                             {orderedProjects.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} className="py-12 text-center text-white/30 text-base">
+                                    <td colSpan={7} className="py-12 text-center text-[rgba(var(--overlay-rgb),0.3)] text-base">
                                         Aucun projet en cours cette semaine.<br />
                                         <span className="text-sm opacity-60">Les projets "En cours" apparaissent automatiquement.</span>
                                     </td>
@@ -680,17 +681,17 @@ export function TimesheetView() {
                                             onDragEnd={handleRowDragEnd}
                                             className="group transition-colors"
                                             style={{
-                                                borderBottom: "1px solid rgba(255,255,255,0.04)",
+                                                borderBottom: "1px solid rgba(var(--overlay-rgb),0.04)",
                                                 borderTop: isDragOver ? `2px solid ${primaryColor}` : undefined,
                                                 cursor: canEditTimesheet ? "grab" : "default",
                                             }}
-                                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(255,255,255,0.03)"; }}
+                                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(var(--overlay-rgb),0.03)"; }}
                                             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
                                         >
                                             {/* Nom du projet */}
                                             <td className="py-2 px-2">
                                                 <div className="flex items-center gap-1.5 min-w-0">
-                                                    <GripVertical className="h-3.5 w-3.5 shrink-0 text-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <GripVertical className="h-3.5 w-3.5 shrink-0 text-[rgba(var(--overlay-rgb),0.2)] opacity-0 group-hover:opacity-100 transition-opacity" />
                                                     <span className={`h-2 w-2 rounded-full shrink-0 ${colors.bg.replace('/15', '')} border ${colors.border}`} />
                                                     <span className={`text-sm font-bold ${colors.text} flex-1 min-w-0 truncate`} title={project}>
                                                         {project}
@@ -707,7 +708,7 @@ export function TimesheetView() {
                                                         {canEditTimesheet && (
                                                             <button
                                                                 onClick={() => removeProject(project)}
-                                                                className="opacity-0 group-hover:opacity-100 text-white/30 hover:text-red-400 transition-all"
+                                                                className="opacity-0 group-hover:opacity-100 text-[rgba(var(--overlay-rgb),0.3)] hover:text-red-400 transition-all"
                                                             >
                                                                 <X className="h-3 w-3" />
                                                             </button>
@@ -748,7 +749,7 @@ export function TimesheetView() {
                                                                         }
                                                                         : {
                                                                             backgroundColor: "transparent",
-                                                                            color: "rgba(255,255,255,0.12)",
+                                                                            color: "rgba(var(--overlay-rgb),0.12)",
                                                                             border: "1px solid transparent",
                                                                         }
                                                             }
@@ -762,10 +763,10 @@ export function TimesheetView() {
                                                                 if (!canEditTimesheet || isOpen) return;
                                                                 (e.currentTarget as HTMLElement).style.borderColor = h > 0 ? `${primaryColor}30` : "transparent";
                                                                 (e.currentTarget as HTMLElement).style.backgroundColor = h > 0 ? `${primaryColor}18` : "transparent";
-                                                                (e.currentTarget as HTMLElement).style.color = h > 0 ? primaryColor : "rgba(255,255,255,0.12)";
+                                                                (e.currentTarget as HTMLElement).style.color = h > 0 ? primaryColor : "rgba(var(--overlay-rgb),0.12)";
                                                             }}
                                                         >
-                                                            {h > 0 ? fmtHours(h) : <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span>}
+                                                            {h > 0 ? fmtHours(h) : <span style={{ color: "rgba(var(--overlay-rgb),0.1)" }}>·</span>}
                                                         </button>
                                                     </td>
                                                 );
@@ -775,7 +776,7 @@ export function TimesheetView() {
                                             <td className="py-2 px-2 text-center">
                                                 <span
                                                     className="text-base font-black tabular-nums"
-                                                    style={{ color: rowTotal > 0 ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.15)" }}
+                                                    style={{ color: rowTotal > 0 ? "rgba(var(--overlay-rgb),0.75)" : "rgba(var(--overlay-rgb),0.15)" }}
                                                 >
                                                     {rowTotal > 0 ? fmtHours(rowTotal) : "—"}
                                                 </span>
@@ -788,8 +789,8 @@ export function TimesheetView() {
                             {/* Ligne "Ajouter projet" — même gabarit qu'une ligne projet */}
                             <tr
                                 className="group"
-                                style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(255,255,255,0.02)"; }}
+                                style={{ borderTop: "1px solid rgba(var(--overlay-rgb),0.06)" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(var(--overlay-rgb),0.02)"; }}
                                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
                             >
                                 <td className="py-2 px-2">
@@ -807,13 +808,13 @@ export function TimesheetView() {
                                             }}
                                             disabled={!canEditTimesheet}
                                             className="flex-1 text-left text-sm font-semibold transition-colors min-w-0 truncate"
-                                            style={{ color: canEditTimesheet ? `${primaryColor}70` : "rgba(255,255,255,0.35)" }}
+                                            style={{ color: canEditTimesheet ? `${primaryColor}70` : "rgba(var(--overlay-rgb),0.35)" }}
                                             onMouseEnter={e => {
                                                 if (!canEditTimesheet) return;
                                                 (e.currentTarget as HTMLElement).style.color = primaryColor;
                                             }}
                                             onMouseLeave={e => {
-                                                (e.currentTarget as HTMLElement).style.color = canEditTimesheet ? `${primaryColor}70` : "rgba(255,255,255,0.35)";
+                                                (e.currentTarget as HTMLElement).style.color = canEditTimesheet ? `${primaryColor}70` : "rgba(var(--overlay-rgb),0.35)";
                                             }}
                                         >
                                             Ajouter un projet...
@@ -829,7 +830,7 @@ export function TimesheetView() {
                             {/* Ligne TOTAL */}
                             <tr style={{ borderTop: `2px solid ${primaryColor}25`, backgroundColor: `${primaryColor}08` }}>
                                 <td className="py-3 px-4">
-                                    <span className="text-sm font-black text-white/50 uppercase tracking-wider">Total</span>
+                                    <span className="text-sm font-black text-[rgba(var(--overlay-rgb),0.5)] uppercase tracking-wider">Total</span>
                                 </td>
                                 {dayTotals.map((total, i) => {
                                     const isToday = weekDates[i] === today;
@@ -843,7 +844,7 @@ export function TimesheetView() {
                                                 className="text-base font-black tabular-nums"
                                                 style={{ color: dayTotalColor(total, weekDates[i]) }}
                                             >
-                                                {total > 0 ? fmtHours(total) : <span style={{ color: "rgba(255,255,255,0.12)" }}>—</span>}
+                                                {total > 0 ? fmtHours(total) : <span style={{ color: "rgba(var(--overlay-rgb),0.12)" }}>—</span>}
                                             </span>
                                         </td>
                                     );
@@ -862,7 +863,7 @@ export function TimesheetView() {
                 </div>
 
                 {/* Légende */}
-                <div className="mt-3 flex flex-wrap items-center gap-4 text-[11px] text-white/30 px-1">
+                <div className="mt-3 flex flex-wrap items-center gap-4 text-[11px] text-[rgba(var(--overlay-rgb),0.3)] px-1">
                     <span className="flex items-center gap-1.5">
                         <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: primaryColor }} />
                         "EN COURS" = projet avec tâches actives assignées
@@ -873,7 +874,7 @@ export function TimesheetView() {
                         <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5" style={{ backgroundColor: "#4ade80" }} /> = 8h/j (ou Ve 4-7h)</span>
                         <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5" style={{ backgroundColor: "#fb923c" }} /> &gt; 8h/j</span>
                         <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5" style={{ backgroundColor: "#f87171" }} /> &gt; 11h/j</span>
-                        <span className="mx-1 text-white/20">·</span>
+                        <span className="mx-1 text-[rgba(var(--overlay-rgb),0.2)]">·</span>
                         <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5" style={{ backgroundColor: "#60a5fa" }} /> sem. &lt; 35h</span>
                         <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5" style={{ backgroundColor: "#4ade80" }} /> = 35h</span>
                         <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5" style={{ backgroundColor: "#facc15" }} /> &gt; 35h et &lt; 40h</span>
@@ -913,9 +914,9 @@ export function TimesheetView() {
                     }}
                 >
                     {/* Gradient overlay vitre */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-white/[0.02] pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[rgba(var(--overlay-rgb),0.05)] via-transparent to-[rgba(var(--overlay-rgb),0.02)] pointer-events-none" />
                     {/* Reflet lumineux en haut */}
-                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[rgba(var(--overlay-rgb),0.3)] to-transparent pointer-events-none" />
 
                     <div className="relative z-10">
                         {/* Header */}
@@ -937,7 +938,7 @@ export function TimesheetView() {
                                 onChange={e => setPickerSearch(e.target.value)}
                                 onKeyDown={e => e.stopPropagation()}
                                 placeholder="Rechercher un projet..."
-                                className="w-full rounded-xl border bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none transition-all"
+                                className="w-full rounded-xl border bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2 text-sm text-theme-primary placeholder:text-[rgba(var(--overlay-rgb),0.3)] outline-none transition-all"
                                 style={{ borderColor: `${primaryColor}30` }}
                                 autoFocus
                             />
@@ -949,7 +950,7 @@ export function TimesheetView() {
                             {pickerSearch.trim() && !orderedProjects.includes(pickerSearch.trim()) && !allProjectNames.some(p => p.toLowerCase() === pickerSearch.trim().toLowerCase()) && (
                                 <button
                                     onClick={() => addProject(pickerSearch.trim())}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-white/80 transition-colors text-left border-b"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[rgba(var(--overlay-rgb),0.8)] transition-colors text-left border-b"
                                     style={{ borderColor: `${primaryColor}20` }}
                                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = `${primaryColor}15`; }}
                                     onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
@@ -961,7 +962,7 @@ export function TimesheetView() {
                                 </button>
                             )}
                             {pickerProjects.length === 0 && !pickerSearch.trim() ? (
-                                <div className="px-3 py-3 text-sm text-white/30 text-center italic">
+                                <div className="px-3 py-3 text-sm text-[rgba(var(--overlay-rgb),0.3)] text-center italic">
                                     Aucun projet disponible
                                 </div>
                             ) : (
@@ -971,7 +972,7 @@ export function TimesheetView() {
                                         <button
                                             key={p}
                                             onClick={() => addProject(p)}
-                                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-white/80 hover:bg-white/8 transition-colors text-left"
+                                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[rgba(var(--overlay-rgb),0.8)] hover:bg-[rgba(var(--overlay-rgb),0.08)] transition-colors text-left"
                                             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = `${primaryColor}15`; }}
                                             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
                                         >

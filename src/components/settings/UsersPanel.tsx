@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Users } from "lucide-react";
 import useStore from "../../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import type { User } from "../../types";
 import { uid } from "../../utils";
 import { GlassModal } from "../ui/GlassModal";
@@ -29,7 +30,7 @@ interface UsersPanelProps {
 //     pas seulement de remplacer un appel de store par un autre.
 // Conversion volontairement différée — reporté DONE_WITH_CONCERNS plutôt que deviné.
 export function UsersPanel({ onClose }: UsersPanelProps) {
-    const { users, setUsers, currentUser, setCurrentUser } = useStore();
+    const { users, setUsers, currentUser, setCurrentUser } = useStore(useShallow((s) => ({ users: s.users, setUsers: s.setUsers, currentUser: s.currentUser, setCurrentUser: s.setCurrentUser })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
     const [localUsers, setLocalUsers] = useState<User[]>(() => [...users]);
@@ -103,7 +104,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                     <select
                         value={currentUser || "unassigned"}
                         onChange={(e) => setCurrentUser(e.target.value === "unassigned" ? null : e.target.value)}
-                        className="flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-theme-primary focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 cursor-pointer"
+                        className="flex-1 rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.1)] px-3 py-2 text-theme-primary focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50 cursor-pointer"
                     >
                         <option value="unassigned" className="bg-slate-800 text-theme-primary">Non assigné</option>
                         {[...users].filter(u => u.id !== "unassigned").sort((a, b) => {
@@ -127,7 +128,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                 {localUsers.map((user) => (
                     <div
                         key={user.id}
-                        className="flex flex-col sm:grid sm:grid-cols-12 items-stretch sm:items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-3"
+                        className="flex flex-col sm:grid sm:grid-cols-12 items-stretch sm:items-center gap-2 rounded-2xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-3"
                     >
                         <div className="w-full sm:col-span-4">
                             <input
@@ -135,7 +136,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                                 value={user.name}
                                 onChange={(e) => updateUser(user.id, "name", e.target.value)}
                                 disabled={user.id === "unassigned"}
-                                className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-theme-primary disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                                className="w-full rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1.5 text-sm text-theme-primary disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                                 placeholder="Nom"
                             />
                         </div>
@@ -145,7 +146,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                                 value={user.email}
                                 onChange={(e) => updateUser(user.id, "email", e.target.value.toLowerCase())}
                                 disabled={user.id === "unassigned"}
-                                className="w-full rounded-xl border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-theme-primary disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                                className="w-full rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-2 py-1.5 text-sm text-theme-primary disabled:opacity-50 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                                 placeholder="email@exemple.com"
                             />
                         </div>
@@ -171,14 +172,14 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
                         type="text"
                         value={newUserName}
                         onChange={(e) => setNewUserName(e.target.value)}
-                        className="w-full sm:col-span-4 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                        className="w-full sm:col-span-4 rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                         placeholder="Nom complet"
                     />
                     <input
                         type="email"
                         value={newUserEmail}
                         onChange={(e) => setNewUserEmail(e.target.value)}
-                        className="w-full sm:col-span-6 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                        className="w-full sm:col-span-6 rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                         placeholder="email@exemple.com"
                     />
                     <button
@@ -202,7 +203,7 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
             <div className="mt-4 flex justify-end gap-2">
                 <button
                     onClick={onClose}
-                    className="rounded-2xl border border-white/20 px-4 py-2 text-theme-primary transition hover:bg-[#1E3A8A]/60"
+                    className="rounded-2xl border border-[rgba(var(--overlay-rgb),0.2)] px-4 py-2 text-theme-primary transition hover:bg-[rgba(var(--color-primary-rgb),0.6)]"
                 >
                     Annuler
                 </button>

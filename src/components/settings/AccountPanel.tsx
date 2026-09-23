@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { User } from "lucide-react";
 import useStore from "../../store/useStore";
+import { useShallow } from 'zustand/react/shallow';
 import { GlassModal } from "../ui/GlassModal";
 import { clearToken, changePassword, ApiError } from "../../services/api";
 import { useTheme } from "../../hooks/useTheme";
 
 const MIN_PASSWORD_LENGTH = 8; // doit rester synchro avec la validation serveur (todox-backend/src/routes/auth.ts)
 
-interface StoragePanelProps {
+interface AccountPanelProps {
     onClose: () => void;
 }
 
-export function StoragePanel({ onClose }: StoragePanelProps) {
-    const { localAuthUserId, authToken, setCurrentUser, setLocalAuthUserId, setAuthToken } = useStore();
+export function AccountPanel({ onClose }: AccountPanelProps) {
+    const { localAuthUserId, authToken, setCurrentUser, setLocalAuthUserId, setAuthToken } = useStore(useShallow((s) => ({ localAuthUserId: s.localAuthUserId, authToken: s.authToken, setCurrentUser: s.setCurrentUser, setLocalAuthUserId: s.setLocalAuthUserId, setAuthToken: s.setAuthToken })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
 
@@ -68,7 +69,7 @@ export function StoragePanel({ onClose }: StoragePanelProps) {
     }
 
     return (
-        <GlassModal isOpen={true} onClose={onClose} title={<><User className="w-6 h-6 mr-2" style={{ color: primaryColor }} />Compte</>} size="sm">
+        <GlassModal isOpen={true} onClose={onClose} title={<><User className="w-6 h-6 mr-2" style={{ color: primaryColor }} />Mon compte</>} size="sm">
             <div className="space-y-4">
                 <div className="rounded-2xl border border-indigo-400/30 bg-indigo-400/5 p-4">
                     <p className="text-sm text-slate-400">
@@ -87,7 +88,7 @@ export function StoragePanel({ onClose }: StoragePanelProps) {
                 )}
 
                 {showChangePassword && (
-                    <form onSubmit={handleSubmitPasswordChange} className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <form onSubmit={handleSubmitPasswordChange} className="space-y-3 rounded-2xl border border-[rgba(var(--overlay-rgb),0.1)] bg-[rgba(var(--overlay-rgb),0.05)] p-4">
                         <div className="space-y-1">
                             <label htmlFor="current-password" className="text-xs text-slate-400">Mot de passe actuel</label>
                             <input
@@ -95,7 +96,7 @@ export function StoragePanel({ onClose }: StoragePanelProps) {
                                 type="password"
                                 value={currentPassword}
                                 onChange={(e) => setCurrentPassword(e.target.value)}
-                                className="w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-slate-100"
+                                className="w-full rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-transparent px-3 py-2 text-sm text-slate-100"
                                 autoComplete="current-password"
                             />
                         </div>
@@ -106,7 +107,7 @@ export function StoragePanel({ onClose }: StoragePanelProps) {
                                 type="password"
                                 value={newPassword}
                                 onChange={(e) => setNewPassword(e.target.value)}
-                                className="w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-slate-100"
+                                className="w-full rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-transparent px-3 py-2 text-sm text-slate-100"
                                 autoComplete="new-password"
                             />
                         </div>
@@ -117,7 +118,7 @@ export function StoragePanel({ onClose }: StoragePanelProps) {
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full rounded-xl border border-white/15 bg-transparent px-3 py-2 text-sm text-slate-100"
+                                className="w-full rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-transparent px-3 py-2 text-sm text-slate-100"
                                 autoComplete="new-password"
                             />
                         </div>
@@ -148,7 +149,7 @@ export function StoragePanel({ onClose }: StoragePanelProps) {
             <div className="mt-6 flex justify-end">
                 <button
                     onClick={handleLogout}
-                    className="rounded-2xl border border-white/20 bg-white/5 px-4 py-2 text-slate-100 transition hover:bg-red-500/20 hover:border-red-500/50"
+                    className="rounded-2xl border border-[rgba(var(--overlay-rgb),0.2)] bg-[rgba(var(--overlay-rgb),0.05)] px-4 py-2 text-slate-100 transition hover:bg-red-500/20 hover:border-red-500/50"
                 >
                     Se déconnecter
                 </button>
