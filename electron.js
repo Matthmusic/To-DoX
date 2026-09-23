@@ -81,16 +81,19 @@ if (!isDev) {
 
 // Charger autoUpdater seulement en production
 let autoUpdater = null;
+// Version dev/beta (ex: "2.3.0-dev.4") : on ne vérifie JAMAIS automatiquement au
+// démarrage -- seulement sur clic explicite du bouton (voir UpdateNotification.tsx),
+// pour ne jamais changer de version dans le dos de l'utilisateur.
+const isPrereleaseBuild = /^\d+\.\d+\.\d+-/.test(app.getVersion());
 if (!isDev) {
   autoUpdater = require('electron-updater').autoUpdater;
   autoUpdater.autoDownload = false;
-  // CEA: experimental releases are installed manually through Appstore.
+  // allowPrerelease=false force la comparaison contre le canal stable même depuis
+  // un build dev -- un clic manuel sur ce build ne peut donc proposer que la
+  // prochaine version stable (jamais un autre build dev/beta), avec confirmation
+  // avant téléchargement côté renderer.
   autoUpdater.allowPrerelease = false;
   autoUpdater.allowDowngrade = false;
-  if (/^\d+\.\d+\.\d+-/.test(app.getVersion())) {
-    autoUpdater.checkForUpdates = async () => null;
-    autoUpdater.checkForUpdatesAndNotify = async () => null;
-  }
   autoUpdater.autoInstallOnAppQuit = true;
 }
 
@@ -206,8 +209,9 @@ app.whenReady().then(() => {
 
   createWindow();
 
-  // Vérifier les mises à jour au démarrage (seulement en production)
-  if (!isDev && autoUpdater) {
+  // Vérifier les mises à jour au démarrage (seulement en production, jamais sur un
+  // build dev/beta -- voir commentaire sur isPrereleaseBuild plus haut).
+  if (!isDev && autoUpdater && !isPrereleaseBuild) {
     setTimeout(() => {
       autoUpdater.checkForUpdates();
     }, 3000);
@@ -244,6 +248,9 @@ if (autoUpdater) {
 
   autoUpdater.on('update-not-available', () => {
     console.log('Application à jour');
+    if (mainWindow) {
+      mainWindow.webContents.send('update-not-available');
+    }
   });
 
   autoUpdater.on('download-progress', (progressObj) => {

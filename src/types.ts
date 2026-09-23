@@ -129,6 +129,7 @@ export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   getSoundUrl: (soundFile: string) => Promise<{ success: boolean; url?: string; error?: string }>;
   onUpdateAvailable: (callback: (info: UpdateInfo) => void) => void;
+  onUpdateNotAvailable: (callback: () => void) => void;
   onDownloadProgress: (callback: (progress: DownloadProgress) => void) => void;
   onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => void;
   onUpdateError: (callback: (error: { message: string }) => void) => void;

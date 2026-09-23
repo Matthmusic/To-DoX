@@ -23,6 +23,10 @@ export function useAutoUpdater() {
       setChecking(false);
     });
 
+    window.electronAPI.onUpdateNotAvailable(() => {
+      setChecking(false);
+    });
+
     window.electronAPI.onDownloadProgress((progress) => {
       setDownloadProgress(Math.round(progress.percent));
     });

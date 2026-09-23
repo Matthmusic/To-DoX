@@ -2,6 +2,7 @@ import { useAutoUpdater } from '../hooks/useAutoUpdater';
 import { Download, RefreshCw, X, CheckCircle, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { confirmModal } from '../utils/confirm';
 
 // Helper pour convertir du markdown basique en HTML
 function parseMarkdown(text: string): string {
@@ -119,6 +120,18 @@ export function UpdateNotification() {
   // Notification de mise à jour disponible
   if (updateAvailable) {
     const hasChangelog = updateAvailable.releaseNotes && updateAvailable.releaseNotes.trim().length > 0;
+    // Un build dev/beta (version avec suffixe -x.y) ne peut voir ici qu'une mise à
+    // jour stable (allowPrerelease=false côté electron.js) -- c'est donc toujours un
+    // changement de canal, qu'on signale explicitement avant de lancer le téléchargement.
+    const isChannelSwitch = currentVersion.includes('-') && !updateAvailable.version.includes('-');
+
+    async function handleDownloadClick() {
+      const message = isChannelSwitch
+        ? `Vous utilisez la version de développement ${currentVersion}. Télécharger la version stable ${updateAvailable!.version} ?`
+        : `Télécharger la mise à jour ${updateAvailable!.version} ?`;
+      const confirmed = await confirmModal(message);
+      if (confirmed) downloadUpdate();
+    }
 
     return (
       <motion.div
@@ -164,7 +177,7 @@ export function UpdateNotification() {
 
             <div className="flex gap-2 flex-wrap">
               <button
-                onClick={downloadUpdate}
+                onClick={handleDownloadClick}
                 className="bg-white text-indigo-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-indigo-50 transition-colors"
               >
                 Télécharger
