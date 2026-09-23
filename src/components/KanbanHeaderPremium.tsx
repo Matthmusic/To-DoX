@@ -327,7 +327,7 @@ export function KanbanHeaderPremium({
                     )}
                 </div>
             </div>
-            <div id="header-quick-add" ref={quickAddContainerRef} hidden={!showQuickAdd} className="w-full overflow-visible">
+            <div id="header-quick-add" ref={quickAddContainerRef} hidden={!showQuickAdd} className="min-w-0 max-w-[2400px] w-full mx-auto overflow-visible">
                 <QuickAddPremium ref={quickAddRef} />
             </div>
         </header>
