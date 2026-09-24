@@ -1,44 +1,39 @@
 import { useState } from "react";
-import { Users } from "lucide-react";
+import { Users, Eye, EyeOff } from "lucide-react";
 import useStore from "../../store/useStore";
 import { useShallow } from 'zustand/react/shallow';
 import type { User } from "../../types";
-import { uid } from "../../utils";
 import { GlassModal } from "../ui/GlassModal";
 import { alertModal, confirmModal } from "../../utils/confirm";
 import { useTheme } from "../../hooks/useTheme";
+import { ApiError } from "../../services/api";
+import { MIN_PASSWORD_LENGTH } from "../../constants";
 
 interface UsersPanelProps {
     onClose: () => void;
 }
 
-// ⚠️ GAP CONNU (bascule backend, Task 3) : ce panneau gère encore
-// les utilisateurs 100% en local (setUsers) et n'a PAS été branché sur l'API backend
-// (fetchUsers/createUser, désormais disponibles dans useStore.ts). Raisons :
-//  1. "Ajouter" ne collecte aucun mot de passe, or POST /api/users en exige un — il
-//     faudrait un nouveau champ + une UX de création immédiate (pas de "brouillon").
-//  2. "Modifier"/"Supprimer" n'ont pas d'équivalent backend : il n'existe aujourd'hui
-//     aucune route PUT/DELETE /api/users/:id (todox-backend/src/routes/users.ts).
-//     Une suppression pose en plus une vraie question produit (que devient un
-//     utilisateur qui a des tâches/commentaires/etc. assignés ? le schéma Prisma User
-//     n'a pas de cascade configurée sur ces relations) — ce n'est pas un simple ajout
-//     de route mécanique.
-//  3. Le modèle actuel est un "brouillon local" (localUsers) validé en un seul batch au
-//     clic "Enregistrer" (setUsers(localUsers)) ; l'API REST granulaire (un appel par
-//     entité créée/modifiée/supprimée, pas de endpoint bulk) demanderait de repenser ce
-//     flux (diff du brouillon, réconciliation des ids serveur, erreurs partielles), et
-//     pas seulement de remplacer un appel de store par un autre.
-// Conversion volontairement différée — reporté DONE_WITH_CONCERNS plutôt que deviné.
+// L'AJOUT passe par le backend (createUser -> POST /api/users, admin uniquement).
+// La modification et la suppression restent un brouillon local (localUsers, validé par
+// setUsers au clic "Enregistrer") : il n'existe pas encore de PUT/DELETE /api/users/:id côté
+// backend, et supprimer un utilisateur qui a des tâches/commentaires assignés pose une vraie
+// question produit (le schéma Prisma User n'a pas de cascade sur ces relations).
 export function UsersPanel({ onClose }: UsersPanelProps) {
-    const { users, setUsers, currentUser, setCurrentUser } = useStore(useShallow((s) => ({ users: s.users, setUsers: s.setUsers, currentUser: s.currentUser, setCurrentUser: s.setCurrentUser })));
+    const { users, setUsers, currentUser, setCurrentUser, createUser } = useStore(useShallow((s) => ({ users: s.users, setUsers: s.setUsers, currentUser: s.currentUser, setCurrentUser: s.setCurrentUser, createUser: s.createUser })));
     const { activeTheme } = useTheme();
     const primaryColor = activeTheme.palette.primary;
     const [localUsers, setLocalUsers] = useState<User[]>(() => [...users]);
     const [newUserName, setNewUserName] = useState("");
     const [newUserEmail, setNewUserEmail] = useState("");
+    const [newUserPassword, setNewUserPassword] = useState("");
+    const [showNewUserPassword, setShowNewUserPassword] = useState(false);
+    const [creating, setCreating] = useState(false);
 
-    function addUser() {
-        // GAP backend cutover (Task 3) : ajout encore 100% local, pas createUser() (pas de mot de passe collecté ici) — voir commentaire en tête de fichier.
+    // role absent = compte pas encore synchronisé avec le backend : on ne présume pas admin.
+    const isAdmin = users.find(u => u.id === currentUser)?.role === 'admin';
+
+    async function addUser() {
+        if (creating) return;
         if (!newUserName.trim()) {
             alertModal("Le nom de l'utilisateur est requis");
             return;
@@ -47,20 +42,33 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
             alertModal("Un email valide est requis");
             return;
         }
+        if (newUserPassword.length < MIN_PASSWORD_LENGTH) {
+            alertModal(`Le mot de passe initial doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères`);
+            return;
+        }
 
-        const newUser: User = {
-            id: uid(),
-            name: newUserName.trim(),
-            email: newUserEmail.trim().toLowerCase(),
-        };
-
-        setLocalUsers([...localUsers, newUser]);
-        setNewUserName("");
-        setNewUserEmail("");
+        setCreating(true);
+        try {
+            const created = await createUser({
+                name: newUserName.trim(),
+                email: newUserEmail.trim().toLowerCase(),
+                password: newUserPassword,
+            });
+            // Le brouillon doit aussi contenir le compte créé : sinon "Enregistrer" (setUsers(localUsers))
+            // le retirerait du store jusqu'au prochain poll.
+            setLocalUsers(prev => [...prev, created]);
+            setNewUserName("");
+            setNewUserEmail("");
+            setNewUserPassword("");
+        } catch (err) {
+            alertModal(err instanceof ApiError ? err.message : "Erreur de connexion au serveur");
+        } finally {
+            setCreating(false);
+        }
     }
 
     async function removeUser(userId: string) {
-        // GAP backend cutover (Task 3) : pas de DELETE /api/users/:id côté backend — voir commentaire en tête de fichier.
+        // Pas de DELETE /api/users/:id côté backend — voir commentaire en tête de fichier.
         if (userId === "unassigned") {
             alertModal("Impossible de supprimer l'utilisateur par défaut");
             return;
@@ -71,14 +79,14 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
     }
 
     function updateUser(userId: string, field: keyof User, value: string) {
-        // GAP backend cutover (Task 3) : pas de PUT /api/users/:id côté backend — voir commentaire en tête de fichier.
+        // Pas de PUT /api/users/:id côté backend — voir commentaire en tête de fichier.
         setLocalUsers(localUsers.map(u =>
             u.id === userId ? { ...u, [field]: value } : u
         ));
     }
 
     function save() {
-        // GAP backend cutover (Task 3) : commit local uniquement (setUsers) — non persisté au backend, voir commentaire en tête de fichier.
+        // Commit local uniquement (setUsers) pour la modification/suppression — voir commentaire en tête de fichier.
         // Validation des emails
         for (const user of localUsers) {
             if (user.id !== "unassigned" && (!user.email || !user.email.includes("@"))) {
@@ -167,36 +175,62 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
             {/* Ajout d'un nouvel utilisateur */}
             <div className="mt-6 rounded-2xl border border-emerald-400/30 bg-emerald-400/5 p-4">
                 <h4 className="text-sm font-semibold text-emerald-200">Ajouter un utilisateur</h4>
-                <div className="mt-3 flex flex-col sm:grid sm:grid-cols-12 gap-2">
-                    <input
-                        type="text"
-                        value={newUserName}
-                        onChange={(e) => setNewUserName(e.target.value)}
-                        className="w-full sm:col-span-4 rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                        placeholder="Nom complet"
-                    />
-                    <input
-                        type="email"
-                        value={newUserEmail}
-                        onChange={(e) => setNewUserEmail(e.target.value)}
-                        className="w-full sm:col-span-6 rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                        placeholder="email@exemple.com"
-                    />
-                    <button
-                        onClick={addUser}
-                        className="w-full sm:col-span-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-3 py-2 text-sm font-semibold text-slate-900 transition hover:brightness-110"
-                    >
-                        Ajouter
-                    </button>
-                </div>
+                {isAdmin ? (
+                    <div className="mt-3 flex flex-col sm:grid sm:grid-cols-12 gap-2">
+                        <input
+                            type="text"
+                            aria-label="Nom du nouvel utilisateur"
+                            value={newUserName}
+                            onChange={(e) => setNewUserName(e.target.value)}
+                            className="w-full sm:col-span-3 rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                            placeholder="Nom complet"
+                        />
+                        <input
+                            type="email"
+                            aria-label="Email du nouvel utilisateur"
+                            value={newUserEmail}
+                            onChange={(e) => setNewUserEmail(e.target.value)}
+                            className="w-full sm:col-span-4 rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] px-3 py-2 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                            placeholder="email@exemple.com"
+                        />
+                        <div className="relative w-full sm:col-span-3">
+                            <input
+                                type={showNewUserPassword ? "text" : "password"}
+                                aria-label="Mot de passe initial"
+                                autoComplete="new-password"
+                                value={newUserPassword}
+                                onChange={(e) => setNewUserPassword(e.target.value)}
+                                className="w-full rounded-xl border border-[rgba(var(--overlay-rgb),0.15)] bg-[rgba(var(--overlay-rgb),0.05)] py-2 pl-3 pr-10 text-theme-primary placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                                placeholder={`Mot de passe (${MIN_PASSWORD_LENGTH} car. min.)`}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowNewUserPassword(v => !v)}
+                                aria-label={showNewUserPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                                className="absolute inset-y-0 right-2 flex items-center text-theme-muted transition hover:text-theme-primary"
+                            >
+                                {showNewUserPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
+                        <button
+                            onClick={addUser}
+                            disabled={creating}
+                            className="w-full sm:col-span-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-3 py-2 text-sm font-semibold text-slate-900 transition hover:brightness-110 disabled:opacity-50"
+                        >
+                            {creating ? "Création..." : "Ajouter"}
+                        </button>
+                    </div>
+                ) : (
+                    <p className="mt-2 text-sm text-theme-muted">
+                        Seuls les administrateurs peuvent ajouter des utilisateurs.
+                    </p>
+                )}
             </div>
 
-            {/* Fix I5 (review finale de branche) : save() ci-dessus fait un setUsers(localUsers)
-                100% local -- le poll 10s de fetchUsers (Task 10, useApiSync) peut donc faire
-                réapparaître l'état serveur par-dessus peu après. Avertissement visible plutôt
-                que silencieux, le temps d'une vraie conversion (voir commentaire en tête de fichier). */}
+            {/* L'ajout est persisté par le serveur ; la modification et la suppression passent
+                par setUsers (local) et le poll 10s de fetchUsers peut les écraser peu après. */}
             <p className="mt-6 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-200">
-                ⚠️ Les modifications enregistrées ici peuvent ne pas persister — fonctionnalité en cours de finalisation.
+                ⚠️ La modification et la suppression d'utilisateurs restent locales et peuvent ne pas persister — fonctionnalité en cours de finalisation.
             </p>
 
             {/* Boutons d'action */}
