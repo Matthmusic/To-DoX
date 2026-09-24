@@ -43,7 +43,9 @@ Capturées autour de `createUser` et affichées via `alertModal` avec le message
 
 ### 4. Connexion du nouvel utilisateur (écran de login)
 
-Ajout d'un accès « Mon nom n'est pas dans la liste » sur `LoginModal` : formulaire email + mot de passe → `login(email, password)`. En cas de succès : token sauvegardé sous l'id serveur (`backendUser.id`), `setAuthToken`, `setCurrentUser(backendUser.id)`, `setLocalAuthUserId(backendUser.id)`. La synchro démarre ensuite et remplit la liste des utilisateurs pour les connexions suivantes. Les 10 comptes existants gardent le parcours actuel (clic sur le nom, puis mot de passe).
+Ajout d'un accès « Mon nom n'est pas dans la liste » sur `LoginModal` : formulaire email + mot de passe → `login(email, password)`. En cas de succès : token sauvegardé sous l'id serveur (`backendUser.id`), `setAuthToken`, `setCurrentUser(backendUser.id)`, `setLocalAuthUserId(backendUser.id)`.
+
+La liste `users` n'est **pas** persistée localement (elle repart de `FIXED_USERS` à chaque lancement, la synchro ne la remplit qu'après connexion). Pour que le compte reste sélectionnable aux lancements suivants (avec la reconnexion instantanée par token déjà existante), le compte connecté via « Autre compte » est mémorisé dans `localStorage` (`todox_extra_login_accounts` : `{ id, name, email }`, dédoublonné par id) et fusionné dans la liste affichée par le login (sans doublon par id ni par email avec les comptes déjà listés). Les 10 comptes existants gardent le parcours actuel (clic sur le nom, puis mot de passe).
 
 ### 5. Bandeau d'avertissement
 
@@ -53,7 +55,7 @@ Reformulé pour ne concerner que la modification et la suppression, qui restent 
 
 - `UsersPanel` : appelle `createUser` avec nom, email et mot de passe ; rejette un mot de passe < 8 caractères ; affiche l'erreur serveur (409) sans vider le formulaire ; masque le formulaire pour un non-admin ; l'utilisateur créé reste dans la liste après « Enregistrer ».
 - Store : `createUser` renvoie l'utilisateur créé et l'ajoute à `users`.
-- `LoginModal` : le parcours « Autre compte » appelle `login` avec l'email saisi et renseigne token/utilisateur avec l'id serveur.
+- `LoginModal` : le parcours « Autre compte » appelle `login` avec l'email saisi, renseigne token/utilisateur avec l'id serveur, et mémorise le compte pour les lancements suivants ; un compte mémorisé apparaît dans la liste sans doublon avec un compte déjà listé.
 - Vérification finale : typecheck, suite de tests complète, build.
 
 ## Hors périmètre / suites possibles
