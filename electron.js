@@ -88,11 +88,17 @@ const isPrereleaseBuild = /^\d+\.\d+\.\d+-/.test(app.getVersion());
 if (!isDev) {
   autoUpdater = require('electron-updater').autoUpdater;
   autoUpdater.autoDownload = false;
-  // allowPrerelease=false force la comparaison contre le canal stable même depuis
-  // un build dev -- un clic manuel sur ce build ne peut donc proposer que la
-  // prochaine version stable (jamais un autre build dev/beta), avec confirmation
-  // avant téléchargement côté renderer.
+  // Le CI bake `channel: dev` (ou beta) dans app-update.yml des builds expérimentaux,
+  // donc sans surcharge le updater chercherait dev.yml dans la dernière release
+  // STABLE (qui ne contient que latest.yml -> 404). On force le canal stable : un clic
+  // manuel sur un build dev ne peut proposer que la prochaine stable, jamais un autre
+  // build dev/beta. La confirmation avant téléchargement est côté renderer.
+  if (isPrereleaseBuild) {
+    autoUpdater.channel = 'latest';
+  }
   autoUpdater.allowPrerelease = false;
+  // Doit rester APRÈS `channel = ...` : ce setter force allowDowngrade à true, ce qui
+  // proposerait une régression (ex: 2.4.0-dev.1 -> stable 2.3.0).
   autoUpdater.allowDowngrade = false;
   autoUpdater.autoInstallOnAppQuit = true;
 }
