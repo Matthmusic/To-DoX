@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { UsersPanel } from './UsersPanel';
 import useStore from '../../store/useStore';
 import { ApiError } from '../../services/api';
-import { alertModal } from '../../utils/confirm';
+import { alertModal, confirmModal } from '../../utils/confirm';
 
 vi.mock('../../utils/confirm', () => ({
     alertModal: vi.fn().mockResolvedValue(true),
@@ -83,6 +83,35 @@ describe('UsersPanel', () => {
 
         expect(createUser).toHaveBeenCalledTimes(1);
         await act(async () => { resolveCreate({ id: 'new-uuid', name: 'Nouveau Membre', email: 'nouveau@test.com', role: 'member' }); });
+    });
+
+    it("conserve un utilisateur créé pendant qu'une confirmation de suppression est en attente", async () => {
+        let resolveConfirm!: (confirmed: boolean) => void;
+        vi.mocked(confirmModal).mockReturnValueOnce(new Promise<boolean>(resolve => { resolveConfirm = resolve; }));
+        const created = { id: 'new-uuid', name: 'Nouveau Membre', email: 'nouveau@test.com', role: 'member' as const };
+        useStore.setState({ createUser: vi.fn().mockResolvedValue(created) });
+        render(<UsersPanel onClose={() => {}} />);
+
+        // 1. "Supprimer" sur la ligne MEMBRE (2e ligne, après ADMIN) : la confirmation reste ouverte.
+        fireEvent.click(screen.getAllByRole('button', { name: 'Supprimer' })[1]);
+        expect(confirmModal).toHaveBeenCalledTimes(1);
+
+        // 2. Pendant ce temps, l'ajout aboutit et le compte créé apparaît dans la liste.
+        fillAddForm();
+        fireEvent.click(screen.getByRole('button', { name: 'Ajouter' }));
+        await waitFor(() => expect(screen.getByDisplayValue('Nouveau Membre')).toBeInTheDocument());
+
+        // 3. L'admin confirme la suppression : elle ne doit pas écraser le compte créé entre-temps.
+        await act(async () => { resolveConfirm(true); });
+
+        expect(screen.queryByDisplayValue('Membre')).not.toBeInTheDocument();
+        expect(screen.getByDisplayValue('Nouveau Membre')).toBeInTheDocument();
+
+        // 4. "Enregistrer" valide le brouillon : le compte créé doit survivre dans le store.
+        fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+        const savedIds = useStore.getState().users.map(u => u.id);
+        expect(savedIds).toContain('new-uuid');
+        expect(savedIds).not.toContain('m1');
     });
 
     it("remplace le formulaire par une note pour un utilisateur non administrateur", () => {

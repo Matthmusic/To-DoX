@@ -74,13 +74,15 @@ export function UsersPanel({ onClose }: UsersPanelProps) {
             return;
         }
         if (await confirmModal("Supprimer cet utilisateur ?")) {
-            setLocalUsers(localUsers.filter(u => u.id !== userId));
+            // Mise à jour fonctionnelle : un compte créé (addUser) pendant que la confirmation
+            // était ouverte ne doit pas être écrasé par un localUsers périmé.
+            setLocalUsers(prev => prev.filter(u => u.id !== userId));
         }
     }
 
     function updateUser(userId: string, field: keyof User, value: string) {
         // Pas de PUT /api/users/:id côté backend — voir commentaire en tête de fichier.
-        setLocalUsers(localUsers.map(u =>
+        setLocalUsers(prev => prev.map(u =>
             u.id === userId ? { ...u, [field]: value } : u
         ));
     }
