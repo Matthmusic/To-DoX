@@ -107,6 +107,9 @@ export const FIXED_USERS = [
     { id: "unassigned", name: "Non assigné", email: "" }, // Gardé pour compatibilité avec anciennes données
 ];
 
+/** Longueur minimale d'un mot de passe — à garder synchro avec la validation serveur (todox-backend/src/routes/auth.ts). */
+export const MIN_PASSWORD_LENGTH = 8;
+
 /**
  * 🔔 Sons de notification disponibles
  */

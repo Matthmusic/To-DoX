@@ -5,8 +5,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { GlassModal } from "../ui/GlassModal";
 import { clearToken, changePassword, ApiError } from "../../services/api";
 import { useTheme } from "../../hooks/useTheme";
-
-const MIN_PASSWORD_LENGTH = 8; // doit rester synchro avec la validation serveur (todox-backend/src/routes/auth.ts)
+import { MIN_PASSWORD_LENGTH } from "../../constants";
 
 interface AccountPanelProps {
     onClose: () => void;

@@ -104,7 +104,7 @@ export interface StoreState {
     // que fetch/create pour les utilisateurs (pas de PUT/DELETE), voir plus bas.
     setUsers: (users: User[], updatedAt?: number) => void;
     fetchUsers: () => Promise<void>;
-    createUser: (data: { email: string; name: string; password: string; role?: 'admin' | 'member' }) => Promise<void>;
+    createUser: (data: { email: string; name: string; password: string; role?: 'admin' | 'member' }) => Promise<User>;
     setCurrentUser: (userId: string | null) => void;
     setLocalAuthUserId: (id: string | null) => void;
     setViewAsUser: (userId: string | null) => void;
@@ -377,8 +377,10 @@ const useStore = create<StoreState>((set, get) => ({
     },
     createUser: async (data) => {
         const token = get().authToken;
-        const created = await apiPost<User>('/api/users', data, token ?? undefined);
+        // Pas de canal d'erreur global : l'appelant (UsersPanel) affiche lui-même l'erreur.
+        const created = await apiPost<User>('/api/users', data, token ?? undefined, { suppressGlobalErrorHandling: true });
         get().setUsers([...get().users, created]);
+        return created;
     },
     setCurrentUser: (userId) => set((state) => {
         const DEFAULT_OUTLOOK: OutlookConfig = { enabled: false, icsUrl: '', exportEnabled: false, lastSync: null };

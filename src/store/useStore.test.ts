@@ -1098,13 +1098,17 @@ describe('users via API', () => {
         ]);
     });
 
-    it('createUser posts to the API and appends the result', async () => {
+    it('createUser posts to the API, appends the result and returns it', async () => {
         vi.mocked(api.apiPost).mockResolvedValue({ id: 'u2', email: 'c@d.com', name: 'C', role: 'member' });
         const { result } = renderHook(() => useStore());
 
-        await act(async () => { await result.current.createUser({ email: 'c@d.com', name: 'C', password: 'x' }); });
+        let created: unknown;
+        await act(async () => { created = await result.current.createUser({ email: 'c@d.com', name: 'C', password: 'x' }); });
 
-        expect(api.apiPost).toHaveBeenCalledWith('/api/users', { email: 'c@d.com', name: 'C', password: 'x' }, 'tok');
+        // suppressGlobalErrorHandling : UsersPanel affiche lui-même l'erreur, sinon le canal global
+        // ajouterait un bandeau en plus de l'alerte.
+        expect(api.apiPost).toHaveBeenCalledWith('/api/users', { email: 'c@d.com', name: 'C', password: 'x' }, 'tok', { suppressGlobalErrorHandling: true });
+        expect(created).toEqual({ id: 'u2', email: 'c@d.com', name: 'C', role: 'member' });
         expect(result.current.users.find(u => u.id === 'u2')).toBeTruthy();
     });
 });
