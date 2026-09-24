@@ -13,6 +13,35 @@ function getUserInitials(name: string): string {
   return name.substring(0, 2).toUpperCase();
 }
 
+const EXTRA_ACCOUNTS_KEY = 'todox_extra_login_accounts';
+
+interface ExtraAccount {
+  id: string;
+  name: string;
+  email: string;
+}
+
+// La liste `users` du store n'est pas persistée (elle repart de FIXED_USERS à chaque lancement) :
+// on mémorise ici les comptes connectés via « Autre compte » pour qu'ils restent sélectionnables.
+function readExtraAccounts(): ExtraAccount[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(EXTRA_ACCOUNTS_KEY) || '[]');
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(a => a && typeof a.id === 'string' && typeof a.name === 'string' && typeof a.email === 'string');
+  } catch {
+    return [];
+  }
+}
+
+function rememberExtraAccount(account: ExtraAccount) {
+  try {
+    const others = readExtraAccounts().filter(a => a.id !== account.id);
+    localStorage.setItem(EXTRA_ACCOUNTS_KEY, JSON.stringify([...others, account]));
+  } catch {
+    /* stockage indisponible : le compte ne sera simplement pas mémorisé */
+  }
+}
+
 export function LoginModal() {
   const { users, setCurrentUser, setLocalAuthUserId, setAuthToken, setAuthError, authError } = useStore(useShallow((s) => ({ users: s.users, setCurrentUser: s.setCurrentUser, setLocalAuthUserId: s.setLocalAuthUserId, setAuthToken: s.setAuthToken, setAuthError: s.setAuthError, authError: s.authError })));
   const { activeTheme } = useTheme();
@@ -22,11 +51,18 @@ export function LoginModal() {
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showOtherAccount, setShowOtherAccount] = useState(false);
+  const [otherEmail, setOtherEmail] = useState('');
+  const [extraAccounts] = useState(readExtraAccounts);
 
   const lastUsedId = localStorage.getItem('last_login_user_id');
 
   const realUsers = (() => {
-    const filtered = users.filter(u => u.id !== "unassigned");
+    const listed = users.filter(u => u.id !== "unassigned");
+    const listedIds = new Set(listed.map(u => u.id));
+    const listedEmails = new Set(listed.map(u => u.email.toLowerCase()));
+    const extras = extraAccounts.filter(a => !listedIds.has(a.id) && !listedEmails.has(a.email.toLowerCase()));
+    const filtered = [...listed, ...extras];
     if (!lastUsedId) return filtered;
     const last = filtered.find(u => u.id === lastUsedId);
     if (!last) return filtered;
@@ -81,6 +117,77 @@ export function LoginModal() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  async function handleSubmitOtherAccount(e: React.FormEvent) {
+    e.preventDefault();
+    if (!otherEmail.trim() || !password) return;
+
+    setSubmitting(true);
+    setAuthError(null);
+    try {
+      const { token, user: backendUser } = await login(otherEmail.trim().toLowerCase(), password);
+      // Compte absent de FIXED_USERS : pas d'id local, le token est indexé par l'UUID serveur.
+      await saveToken(backendUser.id, token);
+      rememberExtraAccount({ id: backendUser.id, name: backendUser.name, email: backendUser.email });
+      localStorage.setItem('last_login_user_id', backendUser.id);
+      setAuthToken(token);
+      setCurrentUser(backendUser.id);
+      setLocalAuthUserId(backendUser.id);
+      setShowOtherAccount(false);
+      setOtherEmail('');
+      setPassword('');
+    } catch (e) {
+      setAuthError(e instanceof ApiError ? e.message : 'Erreur de connexion au serveur');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  if (showOtherAccount) {
+    return (
+      <GlassModal isOpen={true} onClose={() => {}} size="sm" showCloseButton={false} closeOnBackdrop={false}>
+        <form onSubmit={handleSubmitOtherAccount} className="text-center">
+          <h1 className="text-xl font-bold mb-2">Autre compte</h1>
+          <p className="text-theme-muted text-sm mb-6">Connectez-vous avec l'email de votre compte</p>
+          <input
+            type="email"
+            autoFocus
+            placeholder="email@exemple.com"
+            value={otherEmail}
+            onChange={e => setOtherEmail(e.target.value)}
+            className="w-full p-3 rounded-xl border mb-3 bg-transparent text-theme-primary"
+            style={{ borderColor: 'var(--border-primary)' }}
+          />
+          <input
+            type="password"
+            placeholder="Mot de passe"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            className="w-full p-3 rounded-xl border mb-3 bg-transparent text-theme-primary"
+            style={{ borderColor: 'var(--border-primary)' }}
+          />
+          {authError && <p className="text-red-400 text-xs mb-3">{authError}</p>}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => { setShowOtherAccount(false); setOtherEmail(''); setPassword(''); setAuthError(null); }}
+              className="flex-1 p-2.5 rounded-xl border text-theme-secondary"
+            >
+              Retour
+            </button>
+            <button
+              type="submit"
+              disabled={submitting || !otherEmail.trim() || !password}
+              className="flex-1 p-2.5 rounded-xl text-white font-semibold disabled:opacity-50"
+              style={{ backgroundColor: primary }}
+            >
+              Se connecter
+            </button>
+          </div>
+        </form>
+      </GlassModal>
+    );
   }
 
   if (pendingUserId) {
@@ -232,6 +339,13 @@ export function LoginModal() {
             </p>
           </div>
         )}
+        <button
+          type="button"
+          onClick={() => { setAuthError(null); setShowOtherAccount(true); }}
+          className="mt-4 w-full text-center text-xs text-theme-muted underline transition-colors hover:text-theme-primary"
+        >
+          Mon nom n'est pas dans la liste
+        </button>
       </div>
 
       {/* Footer */}

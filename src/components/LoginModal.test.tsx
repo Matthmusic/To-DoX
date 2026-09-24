@@ -17,6 +17,8 @@ const ALICE = { id: 'alice', name: 'Alice Dupont', email: 'alice@test.com' };
 
 describe('LoginModal', () => {
   beforeEach(() => {
+    localStorage.removeItem('todox_extra_login_accounts');
+    localStorage.removeItem('last_login_user_id');
     useStore.setState({ users: [ALICE], currentUser: null, localAuthUserId: null, authToken: null, authStatus: 'idle', authError: null });
     vi.mocked(api.getToken).mockResolvedValue(null);
     vi.mocked(api.login).mockReset();
@@ -92,5 +94,66 @@ describe('LoginModal', () => {
     expect(useStore.getState().currentUser).toBeNull();
     // L'id local, pas l'UUID backend : le token stocké est indexé par l'id local (cf saveToken).
     expect(api.clearToken).toHaveBeenCalledWith('alice');
+  });
+
+  describe('compte absent de la liste (« Autre compte »)', () => {
+    const NEW_LOGIN = { token: 'tok-new', user: { id: 'new-uuid', email: 'nouveau@test.com', name: 'Nouveau Membre', role: 'member' } };
+
+    function loginViaOtherAccount(email = 'Nouveau@Test.com', password = 'motdepasse1') {
+      fireEvent.click(screen.getByText("Mon nom n'est pas dans la liste"));
+      fireEvent.change(screen.getByPlaceholderText('email@exemple.com'), { target: { value: email } });
+      fireEvent.change(screen.getByPlaceholderText('Mot de passe'), { target: { value: password } });
+      fireEvent.click(screen.getByText('Se connecter'));
+    }
+
+    it("connecte le compte par email et l'indexe par l'id serveur", async () => {
+      vi.mocked(api.login).mockResolvedValue(NEW_LOGIN);
+      render(<LoginModal />);
+
+      loginViaOtherAccount();
+
+      await waitFor(() => expect(useStore.getState().currentUser).toBe('new-uuid'));
+      expect(api.login).toHaveBeenCalledWith('nouveau@test.com', 'motdepasse1');
+      expect(api.saveToken).toHaveBeenCalledWith('new-uuid', 'tok-new');
+      expect(useStore.getState().authToken).toBe('tok-new');
+      expect(useStore.getState().localAuthUserId).toBe('new-uuid');
+    });
+
+    it('affiche le message du serveur sur un mauvais mot de passe', async () => {
+      vi.mocked(api.login).mockRejectedValue(new api.ApiError(401, 'Email ou mot de passe incorrect'));
+      render(<LoginModal />);
+
+      loginViaOtherAccount();
+
+      await waitFor(() => expect(screen.getByText('Email ou mot de passe incorrect')).toBeInTheDocument());
+      expect(useStore.getState().currentUser).toBeNull();
+    });
+
+    it('mémorise le compte et le propose dans la liste au lancement suivant', async () => {
+      vi.mocked(api.login).mockResolvedValue(NEW_LOGIN);
+      const first = render(<LoginModal />);
+      loginViaOtherAccount();
+      await waitFor(() => expect(useStore.getState().currentUser).toBe('new-uuid'));
+      first.unmount();
+
+      useStore.setState({ currentUser: null, authToken: null, localAuthUserId: null });
+      render(<LoginModal />);
+
+      expect(screen.getByText('Nouveau Membre')).toBeInTheDocument();
+    });
+
+    it("n'affiche jamais en double un compte mémorisé dont l'email est déjà dans la liste", () => {
+      localStorage.setItem('todox_extra_login_accounts', JSON.stringify([{ id: 'other-uuid', name: 'Alice Dupont', email: 'ALICE@test.com' }]));
+      render(<LoginModal />);
+
+      expect(screen.getAllByText('Alice Dupont')).toHaveLength(1);
+    });
+
+    it('affiche quand même la liste si le stockage des comptes mémorisés est corrompu', () => {
+      localStorage.setItem('todox_extra_login_accounts', '{pas du json');
+      render(<LoginModal />);
+
+      expect(screen.getByText('Alice Dupont')).toBeInTheDocument();
+    });
   });
 });
