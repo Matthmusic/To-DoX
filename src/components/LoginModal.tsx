@@ -69,6 +69,11 @@ export function LoginModal() {
     return [last, ...filtered.filter(u => u.id !== lastUsedId)];
   })();
 
+  // Un compte mémorisé via « Autre compte » est absent de `users` : on le cherche aussi dans `extraAccounts`.
+  function findAccount(id: string) {
+    return users.find(u => u.id === id) ?? extraAccounts.find(a => a.id === id);
+  }
+
   async function handlePickUser(userId: string) {
     setAuthError(null);
     const existingToken = await getToken(userId);
@@ -94,7 +99,7 @@ export function LoginModal() {
   async function handleSubmitPassword(e: React.FormEvent) {
     e.preventDefault();
     if (!pendingUserId) return;
-    const user = users.find(u => u.id === pendingUserId);
+    const user = findAccount(pendingUserId);
     if (!user) return;
 
     setSubmitting(true);
@@ -191,7 +196,7 @@ export function LoginModal() {
   }
 
   if (pendingUserId) {
-    const user = users.find(u => u.id === pendingUserId);
+    const user = findAccount(pendingUserId);
     return (
       <GlassModal isOpen={true} onClose={() => {}} size="sm" showCloseButton={false} closeOnBackdrop={false}>
         <form onSubmit={handleSubmitPassword} className="text-center">

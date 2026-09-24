@@ -155,5 +155,27 @@ describe('LoginModal', () => {
 
       expect(screen.getByText('Alice Dupont')).toBeInTheDocument();
     });
+
+    it("permet de se reconnecter à un compte mémorisé dont le token est périmé", async () => {
+      localStorage.setItem('todox_extra_login_accounts', JSON.stringify([{ id: 'new-uuid', name: 'Nouveau Membre', email: 'nouveau@test.com' }]));
+      vi.mocked(api.getToken).mockResolvedValue('stale-tok');
+      vi.mocked(api.apiGet).mockRejectedValue(new api.ApiError(401, 'Session expirée'));
+      vi.mocked(api.login).mockResolvedValue(NEW_LOGIN);
+      render(<LoginModal />);
+
+      fireEvent.click(screen.getByText('Nouveau Membre'));
+
+      await waitFor(() => expect(screen.getByPlaceholderText('Mot de passe')).toBeInTheDocument());
+      // Le compte n'est pas dans `users` du store : le titre doit quand même porter son nom.
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Nouveau Membre');
+      expect(api.clearToken).toHaveBeenCalledWith('new-uuid');
+
+      fireEvent.change(screen.getByPlaceholderText('Mot de passe'), { target: { value: 'motdepasse1' } });
+      fireEvent.click(screen.getByText('Se connecter'));
+
+      await waitFor(() => expect(useStore.getState().currentUser).toBe('new-uuid'));
+      expect(api.login).toHaveBeenCalledWith('nouveau@test.com', 'motdepasse1');
+      expect(useStore.getState().localAuthUserId).toBe('new-uuid');
+    });
   });
 });
