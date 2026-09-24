@@ -4,7 +4,7 @@
   "app": {
     "id": "to-dox",
     "name": "To-DoX",
-    "version": "2.2.2",
+    "version": "2.3.0",
     "description": {
       "short": "Kanban intelligent avec interface mobile-first, workflow de revision et notifications.",
       "long": "To-DoX est une application Kanban moderne pour organiser les taches par statut, priorite et echeance. Elle propose le drag and drop, la recurrence, des templates, un dashboard KPIs, une vue Timeline/Gantt, un workflow de revision complet, une vue Terminees, des notifications in-app, une interface responsive mobile-first (burger menu, onglets Kanban), ainsi que l'export et l'import des donnees. Les donnees sont stockees localement et peuvent etre synchronisees via OneDrive."
@@ -72,9 +72,23 @@
   },
   "installation": {
     "type": "installer",
-    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.2.2.exe"
+    "downloadUrl": "https://github.com/Matthmusic/To-DoX/releases/latest/download/To-DoX-Setup-2.3.0.exe"
   },
   "changelog": {
+    "2.3.0": {
+      "date": "2026-09-23",
+      "changes": [
+        "Connexion au serveur To-DoX : authentification par utilisateur (changement de mot de passe depuis le panneau Compte)",
+        "Nouvelle tâche : assignation à plusieurs utilisateurs, utilisateur connecté en tête de liste, barre alignée sur la largeur du bandeau de navigation",
+        "Six thèmes clairs supplémentaires (12 thèmes au total), classés en premier dans les paramètres",
+        "Centre d'activité : position gauche ou droite au choix (Thèmes > Disposition), mise en page centrée dans les deux cas",
+        "Timeline sur mobile : liste planning par projet à la place du message « écran plus large requis »",
+        "Aide (F1) : rappel de l'alternative au glisser-déposer (champ Statut d'une tâche)",
+        "Chargement plus léger et mises à jour plus rapides (bibliothèques séparées du code applicatif)",
+        "Fix: la barre « Nouvelle tâche » ne se referme plus au clic dans le champ Projet",
+        "Fix: numéro de version illisible en thème clair"
+      ]
+    },
     "2.2.2": {
       "date": "2026-04-24",
       "changes": [
