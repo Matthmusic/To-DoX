@@ -384,6 +384,8 @@ Tasks can have a `parentTaskId` linking them to a parent task. `convertSubtaskBa
 
 Standalone Node package (TypeScript, `@modelcontextprotocol/sdk`) exposing To-DoX to Claude: Kanban tasks, review workflow, timesheets. It is a client of the backend REST API (same routes as `src/services/api.ts`), logging in with `TODOX_API_URL` / `TODOX_EMAIL` / `TODOX_PASSWORD`. It mirrors store side effects that the backend does not handle (`movedToReviewBy/At`, recurring task clone on `done`, timesheet upsert per project/day/user). Build: `cd mcp-server && npm install && npm run build`. See [mcp-server/README.md](mcp-server/README.md).
 
+**Embedded in the desktop app:** `npm run build:mcp` bundles it into `mcp-server/dist/todox-mcp.cjs` (run automatically by the `electron:build:*` scripts), shipped as `resources/mcp/todox-mcp.cjs` via `extraResources`. [claude-integration.js](claude-integration.js) (main process, IPC `claude:*`) writes the `todox` entry into Claude Desktop's `claude_desktop_config.json` (command = To-DoX exe with `ELECTRON_RUN_AS_NODE=1`, so no Node install needed) and the shared session file `userData/claude-mcp-session.json` (`TODOX_SESSION_FILE`), only while the integration is enabled. `useClaudeSession` (App.tsx) keeps that session in sync with login/logout. UI: `ClaudePanel` (first-run onboarding, key `todox_claude_onboarding_seen`, + Menu → Claude (IA)). In dev, run `npm run build:mcp` once before testing the integration.
+
 ## Code Style
 
 - Use named exports for components (`export function ComponentName`)

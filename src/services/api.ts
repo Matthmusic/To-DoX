@@ -2,6 +2,11 @@
  *  Fallback sur le backend local pour que `npm run dev` fonctionne sans config supplémentaire. */
 const API_BASE_URL: string = import.meta.env?.VITE_API_URL || 'http://localhost:3001';
 
+/** URL du backend utilisée par l'app (partagée avec le serveur MCP Claude). */
+export function getApiBaseUrl(): string {
+  return API_BASE_URL;
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {

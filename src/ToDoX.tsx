@@ -44,6 +44,15 @@ const NotificationsPanel = lazy(() => import("./components/settings/Notification
 const ThemePanel = lazy(() => import("./components/settings/ThemePanel").then(m => ({ default: m.ThemePanel })));
 const TemplatesPanel = lazy(() => import("./components/settings/TemplatesPanel").then(m => ({ default: m.TemplatesPanel })));
 const OutlookPanel = lazy(() => import("./components/settings/OutlookPanel").then(m => ({ default: m.OutlookPanel })));
+const ClaudePanel = lazy(() => import("./components/settings/ClaudePanel").then(m => ({ default: m.ClaudePanel })));
+
+// Clé dupliquée depuis ClaudePanel (CLAUDE_ONBOARDING_KEY) : l'importer directement
+// ferait entrer ClaudePanel dans le bundle principal et annulerait le lazy() ci-dessus.
+const CLAUDE_ONBOARDING_KEY = 'todox_claude_onboarding_seen';
+function shouldShowClaudeOnboarding(): boolean {
+    if (!window.electronAPI?.claude) return false;
+    try { return !localStorage.getItem(CLAUDE_ONBOARDING_KEY); } catch { return false; }
+}
 
 // Hooks personnalisés
 import { useFilters } from "./hooks/useFilters";
@@ -184,6 +193,8 @@ export default function ToDoX() {
     const [showThemesPanel, setShowThemesPanel] = useState(false);
     const [showTemplatesPanel, setShowTemplatesPanel] = useState(false);
     const [showOutlookPanel, setShowOutlookPanel] = useState(false);
+    // Assistant « Utiliser To-DoX avec Claude » : ouvert automatiquement au premier démarrage
+    const [showClaudePanel, setShowClaudePanel] = useState<boolean>(shouldShowClaudeOnboarding);
     const [contextMenu, setContextMenu] = useState<ContextMenuData | null>(null);
     const [centeredTask, setCenteredTask] = useState<Task | null>(null);
     const [activeView, setActiveView] = useState<'kanban' | 'timeline' | 'dashboard' | 'terminées' | 'pointage'>('kanban');
@@ -370,6 +381,7 @@ export default function ToDoX() {
         showNotificationsPanel ||
         showThemesPanel ||
         showOutlookPanel ||
+        showClaudePanel ||
         contextMenu !== null;
 
     // Callbacks pour les raccourcis clavier
@@ -398,6 +410,7 @@ export default function ToDoX() {
             setShowWeeklyReportPanel(false);
             setShowProjectsListPanel(false);
             setShowAdminProjectsPanel(false);
+            setShowClaudePanel(false);
             setShowHelpPanel(false);
             setShowNotificationsPanel(false);
             setShowSearch(false);
@@ -454,6 +467,7 @@ export default function ToDoX() {
                 onOpenHelp={() => setShowHelpPanel(true)}
                 onOpenTemplates={() => setShowTemplatesPanel(true)}
                 onOpenOutlook={() => setShowOutlookPanel(true)}
+                onOpenClaude={window.electronAPI?.claude ? () => setShowClaudePanel(true) : undefined}
                 activeView={activeView}
                 onViewChange={setActiveView}
                 filterSearch={filterSearch}
@@ -645,6 +659,10 @@ export default function ToDoX() {
                     icsExportPath={icsExportPath}
                     icsServerUrl={icsServerUrl}
                 />
+            )}
+
+            {showClaudePanel && (
+                <ClaudePanel onClose={() => setShowClaudePanel(false)} />
             )}
             </Suspense>
 

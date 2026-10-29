@@ -1,3 +1,4 @@
+import { readFileSync, statSync } from 'node:fs';
 import type { User } from './types.js';
 
 export class ApiError extends Error {
@@ -14,7 +15,23 @@ export interface ClientConfig {
   email?: string;
   password?: string;
   token?: string;
+  /**
+   * Fichier de session écrit par l'app To-DoX (mode intégré) : { apiUrl, token, userId }.
+   * Relu à chaque modification, pour suivre les reconnexions faites dans l'app.
+   */
+  sessionFile?: string;
 }
+
+interface SessionFile {
+  apiUrl: string;
+  token: string;
+  userId?: string;
+}
+
+const SESSION_MISSING =
+  "Aucune session To-DoX : ouvre l'application To-DoX et connecte-toi, puis réessaie.";
+const SESSION_EXPIRED =
+  "Session To-DoX expirée : ouvre l'application To-DoX et reconnecte-toi, puis réessaie.";
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -27,6 +44,7 @@ export class TodoxClient {
   private token: string | null;
   private me: User | null = null;
   private usersCache: { at: number; users: User[] } | null = null;
+  private sessionMtime = 0;
 
   constructor(private config: ClientConfig) {
     this.token = config.token ?? null;
@@ -36,7 +54,36 @@ export class TodoxClient {
     return this.config.baseUrl;
   }
 
+  /** Recharge le fichier de session de l'app s'il a changé (connexion, changement de compte). */
+  private loadSession(): void {
+    const file = this.config.sessionFile;
+    if (!file) return;
+    let mtime: number;
+    try {
+      mtime = statSync(file).mtimeMs;
+    } catch {
+      this.token = null;
+      throw new Error(SESSION_MISSING);
+    }
+    if (mtime === this.sessionMtime && this.token) return;
+    let session: SessionFile;
+    try {
+      session = JSON.parse(readFileSync(file, 'utf-8')) as SessionFile;
+    } catch {
+      throw new Error(SESSION_MISSING);
+    }
+    if (!session.token || !session.apiUrl) throw new Error(SESSION_MISSING);
+    this.sessionMtime = mtime;
+    if (session.token !== this.token) {
+      this.me = null;
+      this.usersCache = null;
+    }
+    this.token = session.token;
+    this.config.baseUrl = session.apiUrl.replace(/\/+$/, '');
+  }
+
   private async login(): Promise<void> {
+    if (this.config.sessionFile) throw new Error(SESSION_EXPIRED);
     const { email, password } = this.config;
     if (!email || !password) {
       throw new Error(
@@ -80,14 +127,17 @@ export class TodoxClient {
   }
 
   async request<T>(method: Method, path: string, body?: unknown): Promise<T> {
+    this.loadSession();
     if (!this.token) await this.login();
     try {
       return await this.raw<T>(method, path, body, true);
     } catch (e) {
-      const canRelogin = this.config.email && this.config.password;
-      if (e instanceof ApiError && e.status === 401 && canRelogin) {
-        await this.login();
-        return this.raw<T>(method, path, body, true);
+      if (e instanceof ApiError && e.status === 401) {
+        if (this.config.sessionFile) throw new Error(SESSION_EXPIRED);
+        if (this.config.email && this.config.password) {
+          await this.login();
+          return this.raw<T>(method, path, body, true);
+        }
       }
       throw e;
     }
@@ -101,6 +151,7 @@ export class TodoxClient {
 
   /** Utilisateur connecté (celui au nom duquel le MCP agit). */
   async currentUser(): Promise<User> {
+    this.loadSession(); // un changement de compte dans l'app invalide `me`
     if (this.me) return this.me;
     const res = await this.get<{ user: User }>('/api/auth/me');
     this.me = res.user;

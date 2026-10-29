@@ -82,6 +82,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveDroppedMail: (storagePath, fileName, bytes) => ipcRenderer.invoke('outlook:save-dropped-mail', storagePath, fileName, bytes),
   },
 
+  // Intégration Claude Desktop (serveur MCP To-DoX)
+  claude: {
+    status: () => ipcRenderer.invoke('claude:status'),
+    install: (session) => ipcRenderer.invoke('claude:install', session),
+    uninstall: () => ipcRenderer.invoke('claude:uninstall'),
+    syncSession: (session) => ipcRenderer.invoke('claude:sync-session', session),
+  },
+
   // Vérifier si on est dans Electron
   isElectron: true
 });

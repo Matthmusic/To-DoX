@@ -10,11 +10,15 @@ import { registerTimesheetTools } from './tools/timesheet.js';
 //   TODOX_API_URL   URL du backend To-DoX (même valeur que VITE_API_URL de l'app)
 //   TODOX_EMAIL     + TODOX_PASSWORD : identifiants To-DoX
 //   TODOX_TOKEN     (alternative) JWT déjà obtenu
+//   TODOX_SESSION_FILE  (mode intégré) session partagée par l'app To-DoX : remplace
+//                       les trois variables ci-dessus, configuré automatiquement par
+//                       le bouton « Connecter Claude » de l'app.
 const client = new TodoxClient({
   baseUrl: (process.env.TODOX_API_URL || 'http://localhost:3001').replace(/\/+$/, ''),
   email: process.env.TODOX_EMAIL,
   password: process.env.TODOX_PASSWORD,
   token: process.env.TODOX_TOKEN,
+  sessionFile: process.env.TODOX_SESSION_FILE,
 });
 
 const server = new McpServer(
@@ -32,7 +36,15 @@ registerTaskTools(server, client);
 registerReviewTools(server, client);
 registerTimesheetTools(server, client);
 
-await server.connect(new StdioServerTransport());
-// stdout est réservé au protocole MCP : les logs vont sur stderr.
-// eslint-disable-next-line no-console
-console.error(`[todox-mcp] prêt — backend ${client.baseUrl}`);
+async function main() {
+  await server.connect(new StdioServerTransport());
+  // stdout est réservé au protocole MCP : les logs vont sur stderr.
+  // eslint-disable-next-line no-console
+  console.error(`[todox-mcp] prêt${process.env.TODOX_SESSION_FILE ? ' (session To-DoX)' : ` — backend ${client.baseUrl}`}`);
+}
+
+main().catch((e: unknown) => {
+  // eslint-disable-next-line no-console
+  console.error('[todox-mcp] erreur fatale', e);
+  process.exit(1);
+});

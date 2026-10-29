@@ -4,7 +4,19 @@ Serveur [MCP](https://modelcontextprotocol.io) qui permet à Claude (Claude Desk
 
 Il passe par **la même API backend que l'app** (connexion avec ton compte To-DoX). Les changements apparaissent dans l'app au prochain rafraîchissement automatique (~10 s).
 
-## Installation
+## Intégration automatique (recommandé)
+
+Depuis la version de bureau de To-DoX : **Menu → Claude (IA) → Connecter Claude** (l'assistant s'ouvre aussi tout seul au premier démarrage). To-DoX :
+
+- ajoute l'entrée `todox` dans `claude_desktop_config.json` (les autres serveurs MCP sont conservés, une sauvegarde `.todox-backup` est faite) ;
+- lance le serveur avec son propre exécutable (`ELECTRON_RUN_AS_NODE=1`) : **pas besoin d'installer Node.js** ;
+- partage sa session (URL du backend + jeton) via `claude-mcp-session.json` dans son dossier de données : **pas de mot de passe dans la config de Claude**. Se reconnecter dans To-DoX suffit si la session expire ; se déconnecter coupe l'accès de Claude.
+
+Ensuite : quitter complètement Claude, le rouvrir, et tester (« Qu'est-ce que j'ai à faire cette semaine dans To-DoX ? »).
+
+Le backend peut tourner n'importe où (serveur, conteneurs Docker…) : le serveur MCP tourne sur le poste de l'utilisateur et appelle la même API que l'app.
+
+## Installation manuelle (sans l'app de bureau)
 
 ```bash
 cd mcp-server

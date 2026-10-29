@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import {
+    Bot,
     FolderPlus,
     Users,
     Printer,
@@ -58,6 +59,8 @@ interface KanbanHeaderPremiumProps {
     onOpenHelp: () => void;
     onOpenTemplates: () => void;
     onOpenOutlook: () => void;
+    // Absent hors Electron (intégration Claude Desktop indisponible)
+    onOpenClaude?: () => void;
     // Mentions non lues
     mentionCount: number;
     // Vue active
@@ -104,6 +107,7 @@ export function KanbanHeaderPremium({
     onOpenHelp,
     onOpenTemplates,
     onOpenOutlook,
+    onOpenClaude,
     mentionCount,
     activeView,
     onViewChange,
@@ -291,6 +295,7 @@ export function KanbanHeaderPremium({
                             <DropdownItem icon={Palette} label="Thèmes" onClick={onOpenThemes} />
                             <DropdownItem icon={LayoutTemplate} label="Templates" onClick={onOpenTemplates} />
                             <DropdownItem icon={Calendar} label="Outlook / ICS" onClick={onOpenOutlook} />
+                            {onOpenClaude && <DropdownItem icon={Bot} label="Claude (IA)" onClick={onOpenClaude} />}
                             <DropdownItem icon={Users} label="Utilisateurs" onClick={onOpenUsers} />
                             <DropdownSection label="Projets" />
                             <DropdownItem icon={FolderPlus} label="Dossiers projets" onClick={onOpenDirPanel} />

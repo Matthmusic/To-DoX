@@ -172,8 +172,13 @@ function createWindow() {
   });
 }
 
+// Intégration Claude Desktop (serveur MCP embarqué) -- voir claude-integration.js
+const claudeIntegration = require('./claude-integration');
+claudeIntegration.registerClaudeIntegration(ipcMain);
+
 // Gestion du cycle de vie de l'app
 app.whenReady().then(() => {
+  claudeIntegration.refreshOnStartup().catch((e) => console.warn('[claude-mcp]', e.message));
   // Enregistrer le protocole app:// pour servir les fichiers locaux
   if (!isDev) {
     protocol.handle('app', async (request) => {

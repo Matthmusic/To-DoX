@@ -160,6 +160,29 @@ export interface ElectronAPI {
     getServerUrl: () => Promise<{ success: boolean; url?: string; port?: number }>;
     saveDroppedMail: (storagePath: string, fileName: string, bytes: Uint8Array) => Promise<{ success: boolean; path?: string; error?: string }>;
   };
+  // Intégration Claude Desktop (optionnel : absent des anciennes versions du preload)
+  claude?: {
+    status: () => Promise<ClaudeIntegrationStatus>;
+    install: (session: ClaudeSession | null) => Promise<{ success: boolean; files?: string[]; changed?: boolean; error?: string }>;
+    uninstall: () => Promise<{ success: boolean; error?: string }>;
+    syncSession: (session: ClaudeSession | null) => Promise<{ success: boolean; written?: boolean; error?: string }>;
+  };
+}
+
+/** Session partagée avec le serveur MCP To-DoX (intégration Claude Desktop) */
+export interface ClaudeSession {
+  apiUrl: string;
+  token: string;
+  userId: string | null;
+}
+
+export interface ClaudeIntegrationStatus {
+  supported: boolean;
+  enabled: boolean;         // intégration activée dans To-DoX
+  claudeDetected: boolean;  // dossier de config de Claude Desktop trouvé
+  configured: boolean;      // entrée « todox » présente dans la config de Claude
+  bundleFound: boolean;     // serveur MCP embarqué présent
+  sessionPresent: boolean;  // session partagée écrite
 }
 
 export interface CastDevice {
