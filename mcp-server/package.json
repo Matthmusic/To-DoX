@@ -1,0 +1,27 @@
+{
+  "name": "todox-mcp-server",
+  "version": "0.1.0",
+  "description": "Serveur MCP pour piloter To-DoX (Kanban, révisions, feuilles d'heures) depuis Claude",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "todox-mcp": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "typescript": "~5.9.3"
+  }
+}

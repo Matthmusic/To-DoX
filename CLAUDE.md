@@ -380,6 +380,10 @@ Tasks can have a `parentTaskId` linking them to a parent task. `convertSubtaskBa
 - `KanbanBoard`: mobile tabs + single active column (`activeMobileTab` state)
 - `TimelineView`: list view on mobile (`md:hidden`), Gantt on desktop (`hidden md:flex`)
 
+## MCP Server (`mcp-server/`)
+
+Standalone Node package (TypeScript, `@modelcontextprotocol/sdk`) exposing To-DoX to Claude: Kanban tasks, review workflow, timesheets. It is a client of the backend REST API (same routes as `src/services/api.ts`), logging in with `TODOX_API_URL` / `TODOX_EMAIL` / `TODOX_PASSWORD`. It mirrors store side effects that the backend does not handle (`movedToReviewBy/At`, recurring task clone on `done`, timesheet upsert per project/day/user). Build: `cd mcp-server && npm install && npm run build`. See [mcp-server/README.md](mcp-server/README.md).
+
 ## Code Style
 
 - Use named exports for components (`export function ComponentName`)
