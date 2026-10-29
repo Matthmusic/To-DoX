@@ -5,7 +5,7 @@ Format : [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) — Versioning
 
 ---
 
-## [Non publié]
+## [2.4.0] — 2026-10-29
 
 ### ✨ Ajouts
 - **Intégration Claude Desktop (MCP)** : To-DoX embarque un serveur MCP qui permet à Claude de consulter le Kanban, créer/déplacer des tâches, gérer les révisions et remplir les feuilles d'heures. Assistant au premier démarrage (« Utiliser To-DoX avec Claude ») et entrée **Menu → Claude (IA)** : un clic configure Claude Desktop, sans installer Node.js ni enregistrer de mot de passe (Claude utilise la session To-DoX).
