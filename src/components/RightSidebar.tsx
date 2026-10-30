@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Bell, MessageCircle, CheckCheck, Trash2,
     CheckCircle2, RotateCcw, Eye, Clock, AtSign,
-    ChevronRight, Sparkles, MessagesSquare,
+    ChevronRight, Sparkles, MessagesSquare, History,
 } from "lucide-react";
 import useStore from "../store/useStore";
 import { useShallow } from 'zustand/react/shallow';
@@ -12,8 +12,10 @@ import type { AppNotification, Task } from "../types";
 import { getInitials } from "../utils";
 import useChatStore, { selectUnreadTotal } from "../store/useChatStore";
 import { ChatView } from "./chat/ChatView";
+import useActivityStore, { selectUnseenCount } from "../store/useActivityStore";
+import { ActivityView } from "./activity/ActivityView";
 
-type SidebarTab = 'notifs' | 'messages' | 'chat';
+type SidebarTab = 'notifs' | 'messages' | 'chat' | 'activity';
 
 // ── Utilitaires ───────────────────────────────────────────────────────────────
 
@@ -68,6 +70,9 @@ export function RightSidebar() {
     // Messagerie instantanée : onglet masqué tant que le serveur ne la propose pas
     const chatAvailable = useChatStore(s => s.available) !== false;
     const chatUnread = useChatStore(selectUnreadTotal);
+    // Journal d'activité : onglet masqué tant que le serveur ne le propose pas
+    const activityAvailable = useActivityStore(s => s.available) === true;
+    const activityUnseen = useActivityStore(selectUnseenCount);
 
     const { currentUser, users, tasks, comments, appNotifications, notificationPanelSide, markNotificationRead, markAllNotificationsRead, markNotificationsByTypeRead, deleteNotificationForUser, setHighlightedTaskId, setHighlightedCommentId } = useStore(useShallow((s) => ({ currentUser: s.currentUser, users: s.users, tasks: s.tasks, comments: s.comments, appNotifications: s.appNotifications, notificationPanelSide: s.notificationPanelSide, markNotificationRead: s.markNotificationRead, markAllNotificationsRead: s.markAllNotificationsRead, markNotificationsByTypeRead: s.markNotificationsByTypeRead, deleteNotificationForUser: s.deleteNotificationForUser, setHighlightedTaskId: s.setHighlightedTaskId, setHighlightedCommentId: s.setHighlightedCommentId })));
     const isLeft = notificationPanelSide === 'left';
@@ -441,6 +446,43 @@ export function RightSidebar() {
                         </button>
                     </>
                 )}
+
+                {/* Zone Activité — journal des modifications sur mes projets */}
+                {activityAvailable && (
+                    <>
+                        <div className="mx-4 h-px shrink-0"
+                            style={{ background: withOpacity(primary, 0.15) }} />
+                        <button
+                            className="flex-1 flex items-center justify-center transition-all duration-200 relative"
+                            onClick={() => handleTabClick('activity')}
+                            title="Activité"
+                            aria-label={activityUnseen > 0 ? `Activité, ${activityUnseen} nouvelle(s) modification(s)` : 'Activité'}
+                            style={{
+                                background: isOpen && activeTab === 'activity'
+                                    ? `radial-gradient(ellipse at 70% 50%, ${withOpacity(primary, 0.10)} 0%, transparent 70%)`
+                                    : 'transparent',
+                            }}
+                        >
+                            <div className="relative">
+                                <History
+                                    className="h-[22px] w-[22px] transition-all duration-200"
+                                    style={{
+                                        color: (activeTab === 'activity' && isOpen) || activityUnseen > 0 ? primary : withOpacity(primary, 0.30),
+                                        filter: activeTab === 'activity' && isOpen ? `drop-shadow(0 0 7px ${withOpacity(primary, 0.85)})` : 'none',
+                                    }}
+                                />
+                                {activityUnseen > 0 && (
+                                    <span
+                                        className="absolute -top-2 -right-2.5 flex items-center justify-center min-w-[15px] h-[15px] rounded-full text-[7px] font-black text-white px-0.5"
+                                        style={{ backgroundColor: primary, boxShadow: `0 2px 6px ${withOpacity(primary, 0.6)}` }}
+                                    >
+                                        {activityUnseen > 9 ? '9+' : activityUnseen}
+                                    </span>
+                                )}
+                            </div>
+                        </button>
+                    </>
+                )}
             </div>
 
             {/* ── Panneau de contenu (à gauche, se déploie) ─────────────────── */}
@@ -464,10 +506,14 @@ export function RightSidebar() {
                             </div>
 
                             {/* Tabs pills */}
-                            <div className="flex items-center gap-2 px-4 pb-4 shrink-0">
-                                {(chatAvailable ? ['notifs', 'messages', 'chat'] as const : ['notifs', 'messages'] as const).map(tab => {
+                            <div className="flex flex-wrap items-center gap-2 px-4 pb-4 shrink-0">
+                                {([
+                                    'notifs', 'messages',
+                                    ...(chatAvailable ? ['chat'] as const : []),
+                                    ...(activityAvailable ? ['activity'] as const : []),
+                                ] as SidebarTab[]).map(tab => {
                                     const isActive = activeTab === tab;
-                                    const count = tab === 'notifs' ? unreadCount : tab === 'chat' ? chatUnread : (unreadMsgCount + unreadMentionCount);
+                                    const count = tab === 'notifs' ? unreadCount : tab === 'chat' ? chatUnread : tab === 'activity' ? 0 : (unreadMsgCount + unreadMentionCount);
                                     return (
                                         <button
                                             key={tab}
@@ -482,8 +528,8 @@ export function RightSidebar() {
                                                 : { color: withOpacity(primary, 0.35) }
                                             }
                                         >
-                                            {tab === 'notifs' ? <Bell className="h-3.5 w-3.5" /> : tab === 'chat' ? <MessagesSquare className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />}
-                                            {tab === 'notifs' ? 'Notifications' : tab === 'chat' ? 'Chat' : 'Commentaires'}
+                                            {tab === 'notifs' ? <Bell className="h-3.5 w-3.5" /> : tab === 'chat' ? <MessagesSquare className="h-3.5 w-3.5" /> : tab === 'activity' ? <History className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />}
+                                            {tab === 'notifs' ? 'Notifications' : tab === 'chat' ? 'Chat' : tab === 'activity' ? 'Activité' : 'Commentaires'}
                                             {count > 0 && (
                                                 <span
                                                     className="flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[9px] font-black text-white px-1"
@@ -529,8 +575,14 @@ export function RightSidebar() {
                                 </div>
                             )}
 
+                            {activeTab === 'activity' && (
+                                <div className="flex-1 min-h-0 flex flex-col pt-1">
+                                    <ActivityView onOpenTask={handleChatOpenTask} />
+                                </div>
+                            )}
+
                             {/* Contenu scrollable */}
-                            {activeTab !== 'chat' && (
+                            {activeTab !== 'chat' && activeTab !== 'activity' && (
                             <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[rgba(var(--overlay-rgb),0.1)] px-2 py-2">
 
                                 {/* ── Notifications ──────────────────────────── */}

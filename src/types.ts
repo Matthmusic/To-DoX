@@ -451,3 +451,24 @@ export interface ChatConversation {
   unreadCount: number;
   lastMessage: ChatMessage | null;
 }
+
+/**
+ * Journal d'activité (backend : /api/activity)
+ */
+export type ActivityType =
+  | 'task_created' | 'task_deleted' | 'task_restored' | 'task_archived' | 'task_unarchived'
+  | 'status_changed' | 'title_changed' | 'project_changed' | 'due_changed' | 'priority_changed'
+  | 'assignees_changed' | 'reviewers_added' | 'review_validated' | 'review_rejected'
+  | 'subtask_added' | 'subtask_checked' | 'subtask_unchecked' | 'subtask_renamed' | 'subtask_deleted'
+  | 'comment_added';
+
+export interface ActivityLog {
+  id: string;
+  userId: string;          // auteur de la modification
+  taskId: string;
+  taskTitle: string;       // titre au moment de l'action
+  project: string;         // projet au moment de l'action
+  type: ActivityType;
+  details: Record<string, unknown>;
+  createdAt: number;
+}

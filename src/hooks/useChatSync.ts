@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import useStore from '../store/useStore';
 import useChatStore from '../store/useChatStore';
+import useActivityStore from '../store/useActivityStore';
 import { openChatStream, type ChatStreamEvent } from '../services/chatApi';
 import { playSoundFile } from '../utils/sound';
 import type { ChatMessage } from '../types';
@@ -39,6 +40,7 @@ function handleEvent(e: ChatStreamEvent) {
       // Rattrapage après une (re)connexion : liste + conversation affichée
       chat.loadConversations().catch(() => {});
       if (chat.activeConversationId) chat.loadMessages(chat.activeConversationId).catch(() => {});
+      useActivityStore.getState().load().catch(() => {});
       break;
     }
     case 'message': {
@@ -53,6 +55,9 @@ function handleEvent(e: ChatStreamEvent) {
     case 'read':
       chat.receiveRead(e.data.conversationId, e.data.lastReadAt);
       break;
+    case 'activity':
+      useActivityStore.getState().receive(e.data.activity);
+      break;
   }
 }
 
@@ -66,6 +71,7 @@ export function useChatSync() {
   useEffect(() => {
     if (!authToken) {
       useChatStore.getState().reset();
+      useActivityStore.getState().reset();
       return;
     }
     const controller = new AbortController();

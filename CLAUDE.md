@@ -379,6 +379,12 @@ Backend : `todox-backend/src/routes/chat.ts` (routes `/api/chat/*`, tables `conv
 - **UI :** onglet « Chat » de `RightSidebar` → `src/components/chat/` (`ChatView`, `ChatConversationList`, `ChatThread`, `ChatMessageItem`, `ChatComposer`). L'ancien onglet « Messages » (fil des commentaires de tâches) s'appelle désormais « Commentaires ».
 - Les non-lus sont comptés côté serveur (`lastReadAt` par participant) ; `ChatThread` marque lu quand la conversation est affichée et la fenêtre active.
 
+### Journal d'activité
+
+Backend : `todox-backend/src/lib/activity.ts` + `routes/activity.ts` (table `activity_logs`). Les routes tâches / sous-tâches / commentaires enregistrent ce qui a réellement changé (`diffTaskUpdate` compare avant/après : changement de colonne, priorité, échéance, assignés, révision, sous-tâches cochées…), diffusé en direct par l'événement SSE `activity` du flux du chat. `GET /api/activity` ne renvoie que les projets où l'utilisateur a une tâche assignée.
+
+Front : `src/store/useActivityStore.ts` (chargé à chaque `ready` du flux, badge « nouveau » via `localStorage['todox_activity_seen_at']`), onglet « Activité » de `RightSidebar` → `src/components/activity/` (`ActivityView`, phrases dans `activityText.ts`). `fetchActivity` utilise `fetch()` direct : un 404 (serveur pas à jour) masque l'onglet sans bandeau d'erreur.
+
 ### Custom Event: `todox:openTask`
 
 `TitleBar` dispatches `window.dispatchEvent(new CustomEvent('todox:openTask', { detail: { taskId } }))` when a notification is clicked. `ToDoX.tsx` listens for this event to open the `TaskEditPanel` for the corresponding task.

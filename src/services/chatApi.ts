@@ -1,5 +1,5 @@
 import { apiGet, apiPost, apiDelete, getApiBaseUrl } from './api';
-import type { ChatConversation, ChatMessage } from '../types';
+import type { ActivityLog, ChatConversation, ChatMessage } from '../types';
 
 // Client de la messagerie (backend : todox-backend/src/routes/chat.ts).
 
@@ -32,7 +32,8 @@ export type ChatStreamEvent =
   | { event: 'ready'; data: { ok: true } }
   | { event: 'message'; data: { message: ChatMessage } }
   | { event: 'message_deleted'; data: { conversationId: string; messageId: string } }
-  | { event: 'read'; data: { conversationId: string; lastReadAt: number } };
+  | { event: 'read'; data: { conversationId: string; lastReadAt: number } }
+  | { event: 'activity'; data: { activity: ActivityLog } };
 
 /** Découpe un flux SSE en événements ; renvoie le reste non terminé du tampon. */
 export function parseSseChunk(buffer: string, onEvent: (e: ChatStreamEvent) => void): string {
