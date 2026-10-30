@@ -37,13 +37,15 @@ function App() {
         {/* Toujours afficher le modal si pas d'utilisateur - BLOQUER l'app */}
         {showLogin && <LoginModal />}
         <TitleBar />
-        {saveError && (
-          <div className="flex items-center justify-between bg-rose-900/60 border border-rose-500/40 px-4 py-2 text-sm text-rose-200">
-            <span>{saveError}</span>
-            <button onClick={() => setSaveError(null)} className="ml-4 text-rose-400 hover:text-rose-200 transition-colors">✕</button>
-          </div>
-        )}
         <div className={`flex-1 flex flex-col overflow-hidden ${window.electronAPI?.isElectron ? 'pt-8' : ''}`}>
+          {/* Bandeau d'erreur DANS la zone décalée de pt-8 : au-dessus, il passait sous la
+              barre de titre Electron (position fixe, z-[9999]) et restait invisible. */}
+          {saveError && (
+            <div role="alert" className="flex shrink-0 items-center justify-between bg-rose-900/60 border border-rose-500/40 px-4 py-2 text-sm text-rose-200">
+              <span>{saveError}</span>
+              <button onClick={() => setSaveError(null)} aria-label="Fermer le message d'erreur" className="ml-4 text-rose-400 hover:text-rose-200 transition-colors">✕</button>
+            </div>
+          )}
           {/* Afficher l'app seulement si un utilisateur est connecté */}
           {currentUser && !isLoadingData && <ToDoX />}
           {/* Écran de chargement si les données chargent */}
