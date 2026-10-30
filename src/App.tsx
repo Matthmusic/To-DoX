@@ -8,6 +8,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useApiSync } from './hooks/useApiSync'
 import { useThemeEffects } from './hooks/useTheme'
 import { useClaudeSession } from './hooks/useClaudeSession'
+import { useChatSync } from './hooks/useChatSync'
 
 function App() {
   // IMPORTANT: Charger les données dès le début de l'app
@@ -15,6 +16,9 @@ function App() {
 
   // Session partagée avec Claude Desktop (serveur MCP To-DoX), si l'intégration est activée
   useClaudeSession();
+
+  // Messagerie instantanée : flux temps réel ouvert tant qu'on est connecté
+  useChatSync();
 
   // Appliquer le thème dès le chargement de l'app -- une seule fois ici (pas useTheme(),
   // appelé dans ~24 composants pour ses valeurs : voir le commentaire de useThemeEffects).

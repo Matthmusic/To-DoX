@@ -3,13 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Bell, MessageCircle, CheckCheck, Trash2,
     CheckCircle2, RotateCcw, Eye, Clock, AtSign,
-    ChevronRight, Sparkles,
+    ChevronRight, Sparkles, MessagesSquare,
 } from "lucide-react";
 import useStore from "../store/useStore";
 import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from "../hooks/useTheme";
 import type { AppNotification, Task } from "../types";
 import { getInitials } from "../utils";
+import useChatStore, { selectUnreadTotal } from "../store/useChatStore";
+import { ChatView } from "./chat/ChatView";
+
+type SidebarTab = 'notifs' | 'messages' | 'chat';
 
 // ── Utilitaires ───────────────────────────────────────────────────────────────
 
@@ -59,7 +63,11 @@ function getNotifIcon(type: AppNotification["type"]) {
 
 export function RightSidebar() {
     const [isOpen, setIsOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'notifs' | 'messages'>('notifs');
+    const [activeTab, setActiveTab] = useState<SidebarTab>('notifs');
+
+    // Messagerie instantanée : onglet masqué tant que le serveur ne la propose pas
+    const chatAvailable = useChatStore(s => s.available) !== false;
+    const chatUnread = useChatStore(selectUnreadTotal);
 
     const { currentUser, users, tasks, comments, appNotifications, notificationPanelSide, markNotificationRead, markAllNotificationsRead, markNotificationsByTypeRead, deleteNotificationForUser, setHighlightedTaskId, setHighlightedCommentId } = useStore(useShallow((s) => ({ currentUser: s.currentUser, users: s.users, tasks: s.tasks, comments: s.comments, appNotifications: s.appNotifications, notificationPanelSide: s.notificationPanelSide, markNotificationRead: s.markNotificationRead, markAllNotificationsRead: s.markAllNotificationsRead, markNotificationsByTypeRead: s.markNotificationsByTypeRead, deleteNotificationForUser: s.deleteNotificationForUser, setHighlightedTaskId: s.setHighlightedTaskId, setHighlightedCommentId: s.setHighlightedCommentId })));
     const isLeft = notificationPanelSide === 'left';
@@ -212,7 +220,7 @@ export function RightSidebar() {
         return () => { clearInterval(interval); if (msgShakeRef.current) clearTimeout(msgShakeRef.current); };
     }, [unreadMentionCount, unreadMsgCount]);
 
-    const handleTabClick = (tab: 'notifs' | 'messages') => {
+    const handleTabClick = (tab: SidebarTab) => {
         if (tab === 'messages' && currentUser) {
             // Marquer les notifications de commentaires comme lues à l'ouverture
             markNotificationsByTypeRead(['comment_added', 'comment_mention'], currentUser);
@@ -231,6 +239,11 @@ export function RightSidebar() {
         setHighlightedTaskId(notif.taskId);
         setIsOpen(false);
         setShakingBell(false);
+    };
+
+    const handleChatOpenTask = (taskId: string) => {
+        window.dispatchEvent(new CustomEvent('todox:openTask', { detail: { taskId } }));
+        setIsOpen(false);
     };
 
     const handleMessageClick = (item: (typeof messageFeed)[number]) => {
@@ -290,7 +303,7 @@ export function RightSidebar() {
                 <div className={`absolute top-8 bottom-8 w-px pointer-events-none ${isLeft ? 'right-0' : 'left-0'}`}
                     style={{ background: `linear-gradient(to bottom, transparent, ${withOpacity(primary, 0.25)}, transparent)` }} />
 
-                {/* Zone HAUTE — Notifications (occupe 50% de la hauteur) */}
+                {/* Zone HAUTE — Notifications */}
                 <button
                     className="flex-1 flex items-center justify-center transition-all duration-200 relative"
                     onClick={() => handleTabClick('notifs')}
@@ -336,12 +349,12 @@ export function RightSidebar() {
                 <div className="mx-4 h-px shrink-0"
                     style={{ background: withOpacity(primary, 0.15) }} />
 
-                {/* Zone BASSE — Messages (occupe 50% de la hauteur) */}
+                {/* Zone Commentaires des tâches */}
                 <button
                     className="flex-1 flex items-center justify-center transition-all duration-200 relative"
                     onClick={() => handleTabClick('messages')}
-                    title="Messages"
-                    aria-label="Messages"
+                    title="Commentaires"
+                    aria-label="Commentaires"
                     style={{
                         background: isOpen && activeTab === 'messages'
                             ? `radial-gradient(ellipse at 70% 50%, ${withOpacity(primary, 0.10)} 0%, transparent 70%)`
@@ -387,6 +400,47 @@ export function RightSidebar() {
                         )}
                     </motion.div>
                 </button>
+
+                {/* Zone Chat — messagerie instantanée */}
+                {chatAvailable && (
+                    <>
+                        <div className="mx-4 h-px shrink-0"
+                            style={{ background: withOpacity(primary, 0.15) }} />
+                        <button
+                            className="flex-1 flex items-center justify-center transition-all duration-200 relative"
+                            onClick={() => handleTabClick('chat')}
+                            title="Chat"
+                            aria-label={chatUnread > 0 ? `Chat, ${chatUnread} message(s) non lu(s)` : 'Chat'}
+                            style={{
+                                background: isOpen && activeTab === 'chat'
+                                    ? `radial-gradient(ellipse at 70% 50%, ${withOpacity(primary, 0.10)} 0%, transparent 70%)`
+                                    : 'transparent',
+                            }}
+                        >
+                            <div className="relative">
+                                <MessagesSquare
+                                    className="h-[22px] w-[22px] transition-all duration-200"
+                                    style={{
+                                        color: (activeTab === 'chat' && isOpen) || chatUnread > 0
+                                            ? primary
+                                            : withOpacity(primary, 0.30),
+                                        filter: (activeTab === 'chat' && isOpen) || (!isOpen && chatUnread > 0)
+                                            ? `drop-shadow(0 0 7px ${withOpacity(primary, 0.85)})`
+                                            : 'none',
+                                    }}
+                                />
+                                {chatUnread > 0 && (
+                                    <span
+                                        className="absolute -top-2 -right-2.5 flex items-center justify-center min-w-[15px] h-[15px] rounded-full bg-rose-500 text-[7px] font-black text-white px-0.5"
+                                        style={{ boxShadow: '0 2px 6px rgba(244,63,94,0.7)' }}
+                                    >
+                                        {chatUnread > 9 ? '9+' : chatUnread}
+                                    </span>
+                                )}
+                            </div>
+                        </button>
+                    </>
+                )}
             </div>
 
             {/* ── Panneau de contenu (à gauche, se déploie) ─────────────────── */}
@@ -411,9 +465,9 @@ export function RightSidebar() {
 
                             {/* Tabs pills */}
                             <div className="flex items-center gap-2 px-4 pb-4 shrink-0">
-                                {(['notifs', 'messages'] as const).map(tab => {
+                                {(chatAvailable ? ['notifs', 'messages', 'chat'] as const : ['notifs', 'messages'] as const).map(tab => {
                                     const isActive = activeTab === tab;
-                                    const count = tab === 'notifs' ? unreadCount : (unreadMsgCount + unreadMentionCount);
+                                    const count = tab === 'notifs' ? unreadCount : tab === 'chat' ? chatUnread : (unreadMsgCount + unreadMentionCount);
                                     return (
                                         <button
                                             key={tab}
@@ -428,8 +482,8 @@ export function RightSidebar() {
                                                 : { color: withOpacity(primary, 0.35) }
                                             }
                                         >
-                                            {tab === 'notifs' ? <Bell className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />}
-                                            {tab === 'notifs' ? 'Notifications' : 'Messages'}
+                                            {tab === 'notifs' ? <Bell className="h-3.5 w-3.5" /> : tab === 'chat' ? <MessagesSquare className="h-3.5 w-3.5" /> : <MessageCircle className="h-3.5 w-3.5" />}
+                                            {tab === 'notifs' ? 'Notifications' : tab === 'chat' ? 'Chat' : 'Commentaires'}
                                             {count > 0 && (
                                                 <span
                                                     className="flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[9px] font-black text-white px-1"
@@ -468,7 +522,15 @@ export function RightSidebar() {
                             <div className="mx-4 mb-1 h-px shrink-0"
                                 style={{ background: `linear-gradient(to right, transparent, ${withOpacity(primary, 0.2)}, transparent)` }} />
 
+                            {/* Chat : gère son propre défilement (fil + zone de saisie) */}
+                            {activeTab === 'chat' && (
+                                <div className="flex-1 min-h-0 flex flex-col pt-1">
+                                    <ChatView onOpenTask={handleChatOpenTask} />
+                                </div>
+                            )}
+
                             {/* Contenu scrollable */}
+                            {activeTab !== 'chat' && (
                             <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[rgba(var(--overlay-rgb),0.1)] px-2 py-2">
 
                                 {/* ── Notifications ──────────────────────────── */}
@@ -620,6 +682,7 @@ export function RightSidebar() {
                                     </div>
                                 )}
                             </div>
+                            )}
                         </motion.div>
                     )}
                 </AnimatePresence>

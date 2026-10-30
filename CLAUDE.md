@@ -370,6 +370,15 @@ When `updateTask()` transitions a task with `recurrence` to `status: 'done'`, it
 
 Tasks can have a `parentTaskId` linking them to a parent task. `convertSubtaskBack()` converts a task back into a subtask on its parent. `setTaskParent()` sets or clears the parent link.
 
+### Messagerie instantanée (Chat)
+
+Backend : `todox-backend/src/routes/chat.ts` (routes `/api/chat/*`, tables `conversations`, `conversation_participants`, `messages`). Deux types de conversation : `direct` (une par paire d'utilisateurs) et `project` (salon par projet, ouvert à toute l'organisation). Les messages peuvent être liés à une tâche (`taskId`).
+
+- **Temps réel :** Server-Sent Events sur `GET /api/chat/stream`, lus avec `fetch()` (pas `EventSource`, qui ne peut pas envoyer l'en-tête `Authorization`). Hook `useChatSync` (monté dans `App.tsx`) : reconnexion automatique, rattrapage à chaque événement `ready`, notifications bureau quand le message n'est pas visible à l'écran.
+- **État :** store séparé `src/store/useChatStore.ts` (non persisté, non concerné par `useApiSync`). `available === false` quand le backend n'a pas encore la messagerie (404) : l'onglet est alors masqué.
+- **UI :** onglet « Chat » de `RightSidebar` → `src/components/chat/` (`ChatView`, `ChatConversationList`, `ChatThread`, `ChatMessageItem`, `ChatComposer`). L'ancien onglet « Messages » (fil des commentaires de tâches) s'appelle désormais « Commentaires ».
+- Les non-lus sont comptés côté serveur (`lastReadAt` par participant) ; `ChatThread` marque lu quand la conversation est affichée et la fenêtre active.
+
 ### Custom Event: `todox:openTask`
 
 `TitleBar` dispatches `window.dispatchEvent(new CustomEvent('todox:openTask', { detail: { taskId } }))` when a notification is clicked. `ToDoX.tsx` listens for this event to open the `TaskEditPanel` for the corresponding task.

@@ -427,3 +427,27 @@ export interface NotificationSettings {
   soundFile: string; // Fichier audio à jouer (nom du fichier dans src/sounds)
   ganttNotifications?: boolean; // Notifier les journées Gantt planifiées pour aujourd'hui
 }
+
+/**
+ * Messagerie instantanée (backend : /api/chat)
+ */
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  userId: string;
+  text: string;              // vide si le message a été supprimé
+  taskId: string | null;     // tâche liée (cliquable)
+  createdAt: number;
+  deletedAt: number | null;
+}
+
+export interface ChatConversation {
+  id: string;
+  type: 'direct' | 'project';
+  project: string | null;       // salon de projet
+  participantIds: string[];     // conversation directe : les deux membres
+  lastMessageAt: number;
+  lastReadAt: number | null;
+  unreadCount: number;
+  lastMessage: ChatMessage | null;
+}
